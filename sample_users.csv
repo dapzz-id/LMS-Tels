@@ -1,0 +1,5 @@
+nama_lengkap,username,email,tipe_user,class,password
+Test Student 1,teststudent1,test1@example.com,siswa,XII TKJ 1,password123
+Test Student 2,teststudent2,test2@example.com,siswa,XII TKJ 2,password123
+Test Teacher 1,testteacher1,teacher1@example.com,guru,,password123
+Test Admin 1,testadmin1,admin1@example.com,admin,,password123

@@ -1,0 +1,501 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { Head, Link, router, usePage } from "@inertiajs/react"
+import {
+  Bell,
+  BookOpen,
+  ChevronDown,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  Settings,
+  X,
+  Play,
+  GraduationCap,
+  FileText,
+  Clock,
+  Award,
+  Calendar,
+  Book,
+  ChevronRight,
+  Grid,
+  List,
+} from "lucide-react"
+
+import { Button } from "@/Components/ui/button"
+import { Avatar, AvatarFallback, AvatarImage } from "@/Components/ui/avatar"
+import { Input } from "@/Components/ui/input"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/Components/ui/dropdown-menu"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/Components/ui/card"
+import { Progress } from "@/Components/ui/progress"
+import { Badge } from "@/Components/ui/badge"
+import { toast } from "sonner"
+
+import Swal from "sweetalert2"
+import axios from "axios"
+
+interface Course {
+  id: number
+  judul_kursus: string
+  deskripsi_kursus: string
+  url_thumbnail: string
+  created_at: string
+  mapel: {
+    id: number
+    nama_mapel: string
+  }
+  contents: Array<{
+    id: number
+    type: 'video' | 'quiz' | 'pdf'
+    title: string
+    description?: string
+    url?: string
+    duration?: number
+    quiz_data?: string
+    order: number
+  }>
+}
+
+interface Department {
+  id: number
+  nama_mapel: string
+  courses: Course[]
+}
+
+const StudentCoursesPage = () => {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
+  const API_BASE_URL = import.meta.env.VITE_APP_URL;
+  const { auth } = usePage().props as any
+  const user = auth.user
+
+  const [courses, setCourses] = useState<Course[]>([])
+  const [departments, setDepartments] = useState<Department[]>([])
+  const [loading, setLoading] = useState(true)
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+
+  useEffect(() => {
+    const checkIfMobile = () => {
+      const isMobileView = window.innerWidth < 1024
+      setIsMobile(isMobileView)
+      setIsSidebarOpen(!isMobileView)
+    }
+
+    checkIfMobile()
+    window.addEventListener("resize", checkIfMobile)
+
+    return () => {
+      window.removeEventListener("resize", checkIfMobile)
+    }
+  }, [])
+
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        console.log('Fetching courses...');
+        const coursesResponse = await axios.get('/api/getDataCourseku')
+        console.log('Courses Response:', coursesResponse.data)
+
+        // Check if we have valid courses data
+        if (coursesResponse.data && Array.isArray(coursesResponse.data.kursus)) {
+          console.log('Setting courses:', coursesResponse.data.kursus);
+          setCourses(coursesResponse.data.kursus)
+
+          // Group courses by department
+          const groupedDepartments = groupCoursesByDepartment(coursesResponse.data.kursus)
+          setDepartments(groupedDepartments)
+        } else {
+          console.log('No courses data in response:', coursesResponse.data)
+          setCourses([])
+          setDepartments([])
+          if (coursesResponse.data?.message) {
+            toast.error(coursesResponse.data.message)
+          } else {
+            toast.error("Failed to load courses. Please try again later.")
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching courses:", err)
+        if (axios.isAxiosError(err)) {
+          console.error("Axios error details:", {
+            status: err.response?.status,
+            data: err.response?.data,
+            headers: err.response?.headers
+          });
+
+          // Handle specific error cases
+          if (err.response?.status === 404) {
+            toast.error("No courses found.")
+          } else if (err.response?.data?.message) {
+            toast.error(err.response.data.message)
+          } else {
+            toast.error("Failed to load courses. Please try again later.")
+          }
+        } else {
+          toast.error("An unexpected error occurred. Please try again later.")
+        }
+        setCourses([])
+        setDepartments([])
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchCourses()
+  }, [])
+
+  // Function to group courses by department
+  const groupCoursesByDepartment = (courses: Course[]): Department[] => {
+    const departmentMap: Record<string, { id: number; nama_mapel: string; courses: Course[] }> = {}
+
+    courses.forEach(course => {
+      const departmentId = course.mapel?.id || 0
+      const departmentName = course.mapel?.nama_mapel || 'No Department'
+
+      if (!departmentMap[departmentId]) {
+        departmentMap[departmentId] = {
+          id: departmentId,
+          nama_mapel: departmentName,
+          courses: []
+        }
+      }
+
+      departmentMap[departmentId].courses.push(course)
+    })
+
+    return Object.values(departmentMap)
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="w-8 h-8 border-b-2 rounded-full animate-spin border-primary"></div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex min-h-screen">
+      {/* Sidebar */}
+      <aside className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r bg-white dark:bg-slate-950 shadow-sm transition-transform duration-300 lg:relative lg:translate-x-0 ${
+        isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+      }`}>
+        <div className="flex h-16 items-center justify-between border-b px-6 lg:hidden">
+          <h2 className="text-lg font-semibold bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">
+            LMS Tels
+          </h2>
+          <button
+            onClick={() => setIsSidebarOpen(false)}
+            className="rounded-lg p-2 hover:bg-slate-100 dark:hover:bg-slate-800"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        <div className="p-6">
+          <h2 className="text-lg font-semibold bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent hidden lg:block">
+            LMS Tels
+          </h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 hidden lg:block">Learning Management System</p>
+        </div>
+
+        {/* Sidebar Content */}
+        <nav className="grid gap-1 px-2">
+          <Link href="/">
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-2 h-12 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-950"
+            >
+              <LayoutDashboard className="h-5 w-5 text-blue-600 dark:text-blue-500" />
+              <span>Dashboard</span>
+            </Button>
+          </Link>
+          <Link href="/dashboard/courses">
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-2 h-12 rounded-xl bg-blue-50 dark:bg-blue-950 hover:bg-blue-50 dark:hover:bg-blue-950"
+            >
+              <BookOpen className="h-5 w-5 text-blue-600 dark:text-blue-500" />
+              <span>My Courses</span>
+            </Button>
+          </Link>
+          <Link href="/dashboard/grades">
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-2 h-12 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-950"
+            >
+              <Award className="h-5 w-5 text-blue-600 dark:text-blue-500" />
+              <span>Grades</span>
+            </Button>
+          </Link>
+          <Link href="/dashboard/settings">
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-2 h-12 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-950"
+            >
+              <Settings className="h-5 w-5 text-blue-500" />
+              <span>Settings</span>
+            </Button>
+          </Link>
+        </nav>
+
+        <div className="mt-auto p-4">
+          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 border-blue-200 dark:border-blue-800 rounded-xl shadow-sm overflow-hidden">
+            <CardContent className="p-4">
+              <div className="flex flex-col space-y-2">
+                <div className="flex items-center gap-2">
+                  <GraduationCap className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  <p className="text-sm font-medium text-blue-700 dark:text-blue-300">Student Info</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-blue-700 dark:text-blue-300">
+                    {user?.nama_lengkap || 'Student Name'}
+                  </p>
+                  <p className="text-xs text-blue-600/80 dark:text-blue-400/80">
+                    Class: {user?.class || 'Not Assigned'}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </aside>
+
+      {/* Mobile overlay */}
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
+      {/* Main content */}
+      <div className="flex-1">
+        <header className="sticky top-0 z-40 flex h-16 items-center border-b bg-white px-4 dark:border-slate-800 dark:bg-slate-950 lg:px-6">
+          <button
+            onClick={() => setIsSidebarOpen(true)}
+            className="rounded-lg p-2 hover:bg-slate-100 dark:hover:bg-slate-800 lg:hidden"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+          <Link href="/" className="flex items-center gap-2 font-semibold">
+            <BookOpen className="h-6 w-6 text-blue-600 dark:text-blue-500" />
+            <span className="text-lg font-bold bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">
+              LMS Tels
+            </span>
+            <span className="rounded-md bg-blue-100 dark:bg-blue-900 px-2 py-0.5 text-xs font-medium text-blue-600 dark:text-blue-400">
+              Student
+            </span>
+          </Link>
+          <div className="flex items-center gap-4 ml-auto">
+            <Button
+              variant="outline"
+              size="icon"
+              className="relative rounded-full border-blue-200 dark:border-blue-800"
+            >
+              <Bell className="h-5 w-5 text-slate-600 dark:text-slate-400" />
+              <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-[10px] text-white">
+                3
+              </span>
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="gap-2 rounded-full">
+                  <Avatar className="h-8 w-8 border-2 border-blue-100 dark:border-blue-800">
+                    <AvatarImage src="/placeholder.svg?height=32&width=32" alt="Student" />
+                    <AvatarFallback className="bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400">
+                      ST
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="hidden md:inline-flex font-medium">{user?.nama_lengkap || 'Student'}</span>
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 rounded-xl p-2">
+                <Link href="/profile">
+                  <DropdownMenuItem className="rounded-lg cursor-pointer">
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>Profile</span>
+                  </DropdownMenuItem>
+                </Link>
+                <Link href="/logout" method="post" as="button">
+                  <DropdownMenuItem className="rounded-lg cursor-pointer">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Logout</span>
+                  </DropdownMenuItem>
+                </Link>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </header>
+        <main className="flex-1 overflow-auto bg-slate-50 dark:bg-slate-950 p-6">
+          <div className="space-y-6 max-w-6xl mx-auto">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div>
+                <h1 className="text-3xl font-bold tracking-tight text-transparent bg-gradient-to-r from-blue-700 to-blue-500 bg-clip-text">
+                  My Courses
+                </h1>
+                <p className="text-slate-500 dark:text-slate-400">Browse courses organized by department</p>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant={viewMode === 'grid' ? 'default' : 'outline'}
+                  size="icon"
+                  onClick={() => setViewMode('grid')}
+                >
+                  <Grid className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={viewMode === 'list' ? 'default' : 'outline'}
+                  size="icon"
+                  onClick={() => setViewMode('list')}
+                >
+                  <List className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            {departments.length === 0 ? (
+              <Card className="border-0 shadow-sm rounded-xl">
+                <CardContent className="p-12 text-center">
+                  <div className="space-y-4">
+                    <BookOpen className="w-16 h-16 text-slate-400 mx-auto" />
+                    <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100">No courses available for your class</h3>
+                    <p className="text-slate-500 dark:text-slate-400">
+                      {user?.class ?
+                        `No courses have been assigned to class "${user.class}" yet.` :
+                        'Your class has not been assigned yet. Please contact your administrator.'
+                      }
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-8">
+                {departments.map((department) => (
+                  <div key={department.id} className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+                        {department.nama_mapel}
+                      </h2>
+                      <Badge variant="secondary" className="text-sm">
+                        {department.courses.length} {department.courses.length === 1 ? 'Course' : 'Courses'}
+                      </Badge>
+                    </div>
+
+                    {viewMode === 'grid' ? (
+                      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                        {department.courses.map((course) => (
+                          <Card key={course.id} className="overflow-hidden transition-shadow hover:shadow-lg bg-white dark:bg-slate-900">
+                            <div className="relative w-full h-48">
+                              <img
+                                src={API_BASE_URL + course.url_thumbnail || 'https://placehold.co/600x400/e2e8f0/64748b?text=No+Image'}
+                                alt={course.judul_kursus}
+                                className="object-cover w-full h-full"
+                                onError={(e) => {
+                                  e.currentTarget.src = 'https://placehold.co/600x400/e2e8f0/64748b?text=No+Image';
+                                }}
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                            </div>
+                            <CardHeader>
+                              <CardTitle className="line-clamp-1 text-slate-900 dark:text-slate-100">{course.judul_kursus}</CardTitle>
+                              <CardDescription className="line-clamp-2">
+                                {course.deskripsi_kursus}
+                              </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
+                                <div className="flex items-center gap-2">
+                                  <Book className="w-4 h-4" />
+                                  <span>{course.contents?.length || 0} lessons</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Calendar className="w-4 h-4" />
+                                  <span>{new Date(course.created_at).toLocaleDateString()}</span>
+                                </div>
+                              </div>
+                            </CardContent>
+                            <CardFooter>
+                              <Button
+                                className="w-full text-white bg-blue-600 hover:bg-blue-700"
+                                onClick={() => router.get(route('student.courses.learn', { id: course.id }))}
+                              >
+                                <Play className="w-4 h-4 mr-2" />
+                                Start Learning
+                              </Button>
+                            </CardFooter>
+                          </Card>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {department.courses.map((course) => (
+                          <Card key={course.id} className="transition-shadow hover:shadow-lg bg-white dark:bg-slate-900">
+                            <div className="flex flex-col md:flex-row">
+                              <div className="md:w-1/3">
+                                <img
+                                  src={API_BASE_URL + course.url_thumbnail || 'https://placehold.co/600x400/e2e8f0/64748b?text=No+Image'}
+                                  alt={course.judul_kursus}
+                                  className="object-cover w-full h-48 md:h-full"
+                                  onError={(e) => {
+                                    e.currentTarget.src = 'https://placehold.co/600x400/e2e8f0/64748b?text=No+Image';
+                                  }}
+                                />
+                              </div>
+                              <div className="flex-1 p-6">
+                                <div className="flex flex-col h-full">
+                                  <div>
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100">
+                                        {course.mapel?.nama_mapel || 'No Subject'}
+                                      </span>
+                                    </div>
+                                    <CardTitle className="text-xl mb-2 text-slate-900 dark:text-slate-100">{course.judul_kursus}</CardTitle>
+                                    <CardDescription className="mb-4">
+                                      {course.deskripsi_kursus}
+                                    </CardDescription>
+                                    <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400 mb-4">
+                                      <div className="flex items-center gap-1">
+                                        <Book className="w-4 h-4" />
+                                        <span>{course.contents?.length || 0} lessons</span>
+                                      </div>
+                                      <div className="flex items-center gap-1">
+                                        <Calendar className="w-4 h-4" />
+                                        <span>{new Date(course.created_at).toLocaleDateString()}</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="mt-auto">
+                                    <Button
+                                      className="text-white bg-blue-600 hover:bg-blue-700"
+                                      onClick={() => router.get(route('student.courses.learn', { id: course.id }))}
+                                    >
+                                      <Play className="w-4 h-4 mr-2" />
+                                      Start Learning
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </main>
+      </div>
+    </div>
+  )
+}
+
+export default StudentCoursesPage

@@ -1,0 +1,572 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\ProgressCourse;
+use App\Models\User;
+use App\Models\Kursus;
+use App\Models\QuizSubmission;
+use App\Models\StudentActivity;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Inertia\Inertia;
+
+class CourseController extends Controller
+{
+    public function getDataCourse($id)
+    {
+        $user = User::with(['kursus.progress'])->find($id);
+
+        if (!$user || $user->kursus->isEmpty()) {
+            return response()->json(['message' => 'Course not found'], 404);
+        }
+
+        $validKursus = $user->kursus->filter(function ($kursus) {
+            return $kursus->progress->contains(function ($progress) {
+                return strtolower($progress->status) !== 'belum dimulai' &&
+                    $progress->id_sub_pembahasan !== null;
+            });
+        });
+
+        if ($validKursus->isNotEmpty()) {
+            return response()->json([
+                'kursus' => $user->kursus,
+                'validKursus' => $validKursus->values(),
+            ]);
+        }
+
+        return response()->json([
+            'kursus' => $user->kursus,
+            'message' => "You haven't started any of the courses you have"
+        ], 200);
+    }
+
+    public function getDataCourseku($id = null)
+    {
+        try {
+            Log::info('Fetching course(s). ID: ' . ($id ?? 'all'));
+
+            // Get the authenticated user's class
+            $user = auth()->user();
+            $userClass = $user->class;
+
+            $query = Kursus::with([
+                'mapel:id,nama_mapel',
+                'contents' => function($query) {
+                    $query->orderBy('order')
+                          ->select(['id', 'kursus_id', 'sub_pembahasan_id', 'type', 'title', 'description', 'url', 'duration', 'quiz_data', 'one_submission_only', 'order']);
+                },
+                'sub_pembahasan'
+            ])
+            ->select(['id', 'id_mapel', 'judul_kursus', 'deskripsi_kursus', 'url_thumbnail', 'created_at', 'class'])
+            ->latest(); // Order by latest first
+
+            // Filter courses by user's class - only show courses where user's class matches
+            if ($userClass) {
+                $query->whereJsonContains('class', $userClass);
+            } else {
+                // If user has no class assigned, don't show any courses
+                $query->whereRaw('1 = 0'); // This will return no results
+            }
+
+            if ($id !== null) {
+                // Get specific course
+                $course = $query->find($id);
+
+                if (!$course) {
+                    Log::warning('Course not found for ID: ' . $id);
+                    return response()->json([
+                        'message' => "User doesn't have any course yet",
+                        'kursus' => []
+                    ]);
+                }
+
+                Log::info('Found course:', ['course' => $course->toArray()]);
+                return response()->json([
+                    'kursus' => [$course] // Wrap single course in array for consistent format
+                ]);
+            }
+
+            // Get all courses
+            $courses = $query->get();
+
+            // dikomen aja lah ya :v
+            // if ($courses->isEmpty()) {
+            //     Log::info('No courses found');
+            //     return response()->json([
+            //         'message' => 'No courses found',
+            //         'kursus' => []
+            //     ]);
+            // }
+
+            Log::info('Found courses:', ['count' => $courses->count()]);
+            return response()->json([
+                'kursus' => $courses
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error in getDataCourseku: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+
+            return response()->json([
+                'message' => 'Failed to load courses. Please try again later.',
+                'kursus' => []
+            ], 500);
+        }
+    }
+
+    /**
+     * Get quiz submissions for a specific course and user
+     */
+    public function getQuizSubmissions($courseId)
+    {
+        try {
+            $user = auth()->user();
+
+            if (!$user) {
+                return response()->json(['message' => 'Unauthorized'], 401);
+            }
+
+            $submissions = QuizSubmission::where('user_id', $user->id)
+                ->where('course_id', $courseId)
+                ->with(['quizContent:id,title,type'])
+                ->orderBy('created_at', 'desc')
+                ->get()
+                ->map(function ($submission) {
+                    return [
+                        'id' => $submission->id,
+                        'quiz_content_id' => $submission->quiz_content_id,
+                        'quiz_title' => $submission->quizContent->title ?? 'Unknown Quiz',
+                        'score' => $submission->score,
+                        'submitted_at' => $submission->submitted_at,
+                        'passed' => $submission->score >= 70, // Assuming 70% is passing
+                    ];
+                });
+
+            return response()->json([
+                'submissions' => $submissions
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error fetching quiz submissions: ' . $e->getMessage());
+            return response()->json(['message' => 'Error fetching quiz submissions'], 500);
+        }
+    }
+
+    public function updateProgress(Request $request)
+    {
+        $validated = $request->validate([
+            'siswa_id'=> 'required|exists:users,id',
+            'kursus_id'=> 'required|exists:kursus,id',
+            'id_sub_pembahasan'=> 'required|exists:sub_pembahasan,id',
+            'status'=> 'required|in:belum dimulai,sedang berlangsung,selesai',
+            'progress_per_subbab' => 'nullable|integer', // 1 (Video), 2 (PDF), 3 (Quiz)
+        ], [
+            'siswa_id.required' => 'ID Siswa is required',
+            'kursus_id.required' => 'ID Kursus is required',
+            'id_sub_pembahasan.required' => 'ID Sub Pembahasan is required',
+            'status.required' => 'Status is required',
+            'status.in' => 'Status must be one of: belum dimulai, sedang berlangsung, selesai',
+            'progress_per_subbab.integer' => 'Progress per subbab must be an integer',
+        ]);
+
+        if($validated){
+            $progress = ProgressCourse::updateOrCreate(
+                [
+                    'id_siswa' => $validated['siswa_id'],
+                    'id_kursus' => $validated['kursus_id'],
+                    'id_sub_pembahasan' => $validated['id_sub_pembahasan'],
+                ],
+                [
+                    'progress_per_subbab' => $validated['progress_per_subbab'] ?? null,
+                    'status' => $validated['status'],
+                ]
+            );
+
+            if ($progress->wasRecentlyCreated) {
+                return response()->json([
+                    'message' => "Let's start your first lesson 🔥",
+                ]);
+            } else {
+                return response()->json([
+                    'message' => 'Progress saved successfully',
+                    'progress' => $progress
+                ]);
+            }
+        }
+    }
+
+    /**
+     * Get completed videos for a specific course and user
+     */
+    public function getCompletedVideos($courseId)
+    {
+        try {
+            $user = auth()->user();
+
+            if (!$user) {
+                return response()->json(['message' => 'Unauthorized'], 401);
+            }
+
+            // Get all video content for this course
+            $videoContents = \App\Models\CourseContent::where('kursus_id', $courseId)
+                ->where('type', 'video')
+                ->get();
+
+            $completedVideoIds = [];
+            foreach ($videoContents as $content) {
+                // Check if this video has been completed
+                $isCompleted = ProgressCourse::where('id_siswa', $user->id)
+                    ->where('id_kursus', $courseId)
+                    ->where('id_sub_pembahasan', $content->sub_pembahasan_id)
+                    ->where('progress_per_subbab', 1) // 1 indicates video completion
+                    ->exists();
+
+                if ($isCompleted) {
+                    // Extract YouTube video ID from URL
+                    $videoId = $this->extractYouTubeVideoId($content->url);
+                    if ($videoId) {
+                        $completedVideoIds[] = $videoId;
+                    }
+                }
+            }
+
+            return response()->json([
+                'completedVideos' => $completedVideoIds
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error fetching completed videos: ' . $e->getMessage());
+            return response()->json(['message' => 'Error fetching completed videos'], 500);
+        }
+    }
+
+    /**
+     * Get downloaded PDFs for a specific course and user
+     */
+    public function getDownloadedPDFs($courseId)
+    {
+        try {
+            $user = auth()->user();
+
+            if (!$user) {
+                return response()->json(['message' => 'Unauthorized'], 401);
+            }
+
+            // Get all PDF content for this course
+            $pdfContents = \App\Models\CourseContent::where('kursus_id', $courseId)
+                ->where('type', 'pdf')
+                ->get();
+
+            $downloadedPDFs = [];
+            foreach ($pdfContents as $content) {
+                // Check if this PDF has been downloaded
+                $isDownloaded = ProgressCourse::where('id_siswa', $user->id)
+                    ->where('id_kursus', $courseId)
+                    ->where('id_sub_pembahasan', $content->sub_pembahasan_id)
+                    ->where('progress_per_subbab', 2) // 2 indicates PDF download
+                    ->exists();
+
+                if ($isDownloaded) {
+                    // Extract PDF filename from URL
+                    $pdfFilename = $content->url ? basename($content->url) : null;
+                    if ($pdfFilename) {
+                        $downloadedPDFs[] = $pdfFilename;
+                    }
+                }
+            }
+
+            return response()->json([
+                'downloadedPDFs' => $downloadedPDFs
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error fetching downloaded PDFs: ' . $e->getMessage());
+            return response()->json(['message' => 'Error fetching downloaded PDFs'], 500);
+        }
+    }
+
+    /**
+     * Save video completion progress to database
+     */
+    public function saveVideoCompletion(Request $request)
+    {
+        try {
+            $user = auth()->user();
+
+            if (!$user || $user->tipe_user !== 'siswa') {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Only students can save progress'
+                ], 403);
+            }
+
+            $validated = $request->validate([
+                'course_id' => 'required|exists:kursus,id',
+                'content_id' => 'required|exists:course_contents,id',
+                'video_id' => 'required|string',
+                'duration' => 'required|integer'
+            ]);
+
+            // Find the sub_pembahasan_id for this content
+            $content = \App\Models\CourseContent::find($validated['content_id']);
+
+            // Save progress as completed - using progress_per_subbab = 1 for video completion
+            $progress = ProgressCourse::updateOrCreate(
+                [
+                    'id_siswa' => $user->id,
+                    'id_kursus' => $validated['course_id'],
+                    'id_sub_pembahasan' => $content->sub_pembahasan_id,
+                ],
+                [
+                    'progress_per_subbab' => 1, // 1 for video completion
+                    'status' => 'selesai',
+                ]
+            );
+
+            // Track activity
+            StudentActivity::trackActivity($user->id, 'video_completion', [
+                'course_id' => $validated['course_id'],
+                'content_id' => $validated['content_id'],
+                'video_id' => $validated['video_id'],
+                'duration' => $validated['duration']
+            ]);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Video completion saved successfully',
+                'progress' => $progress
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error saving video completion: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to save video completion'
+            ], 500);
+        }
+    }
+
+    /**
+     * Save PDF download progress to database
+     */
+    public function savePDFDownload(Request $request)
+    {
+        try {
+            $user = auth()->user();
+
+            if (!$user || $user->tipe_user !== 'siswa') {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Only students can save progress'
+                ], 403);
+            }
+
+            $validated = $request->validate([
+                'course_id' => 'required|exists:kursus,id',
+                'content_id' => 'required|exists:course_contents,id',
+                'pdf_filename' => 'required|string'
+            ]);
+
+            // Find the sub_pembahasan_id for this content
+            $content = \App\Models\CourseContent::find($validated['content_id']);
+
+            // Save progress as completed - using progress_per_subbab = 2 for PDF download
+            $progress = ProgressCourse::updateOrCreate(
+                [
+                    'id_siswa' => $user->id,
+                    'id_kursus' => $validated['course_id'],
+                    'id_sub_pembahasan' => $content->sub_pembahasan_id,
+                ],
+                [
+                    'progress_per_subbab' => 2, // 2 for PDF download
+                    'status' => 'selesai',
+                ]
+            );
+
+            // Track activity
+            StudentActivity::trackActivity($user->id, 'pdf_download_completion', [
+                'course_id' => $validated['course_id'],
+                'content_id' => $validated['content_id'],
+                'pdf_filename' => $validated['pdf_filename']
+            ]);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'PDF download saved successfully',
+                'progress' => $progress
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error saving PDF download: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to save PDF download'
+            ], 500);
+        }
+    }
+
+    /**
+     * Save quiz completion progress to database
+     */
+    public function saveQuizCompletion(Request $request)
+    {
+        try {
+            $user = auth()->user();
+
+            if (!$user || $user->tipe_user !== 'siswa') {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Only students can save progress'
+                ], 403);
+            }
+
+            $validated = $request->validate([
+                'course_id' => 'required|exists:kursus,id',
+                'content_id' => 'required|exists:course_contents,id',
+                'quiz_id' => 'required|exists:course_contents,id',
+                'score' => 'required|numeric|min:0|max:100'
+            ]);
+
+            // Find the sub_pembahasan_id for this content
+            $content = \App\Models\CourseContent::find($validated['content_id']);
+
+            // Save progress as completed - using progress_per_subbab = 3 for quiz completion
+            $progress = ProgressCourse::updateOrCreate(
+                [
+                    'id_siswa' => $user->id,
+                    'id_kursus' => $validated['course_id'],
+                    'id_sub_pembahasan' => $content->sub_pembahasan_id,
+                ],
+                [
+                    'progress_per_subbab' => 3, // 3 for quiz completion
+                    'status' => 'selesai',
+                ]
+            );
+
+            // Also save the quiz submission
+            $quizSubmission = QuizSubmission::updateOrCreate(
+                [
+                    'user_id' => $user->id,
+                    'course_id' => $validated['course_id'],
+                    'quiz_content_id' => $validated['quiz_id'],
+                ],
+                [
+                    'score' => $validated['score'],
+                    'submitted_at' => now(),
+                ]
+            );
+
+            // Track activity
+            StudentActivity::trackActivity($user->id, 'quiz_completion_progress', [
+                'course_id' => $validated['course_id'],
+                'content_id' => $validated['content_id'],
+                'quiz_id' => $validated['quiz_id'],
+                'score' => $validated['score']
+            ]);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Quiz completion saved successfully',
+                'progress' => $progress,
+                'quiz_submission' => $quizSubmission
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error saving quiz completion: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to save quiz completion'
+            ], 500);
+        }
+    }
+
+    /**
+     * Extract YouTube video ID from URL
+     */
+    private function extractYouTubeVideoId($url)
+    {
+        if (!$url) return null;
+
+        $regExp = '/^(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([^&\n?#]+)/';
+        preg_match($regExp, $url, $matches);
+        return isset($matches[1]) ? $matches[1] : null;
+    }
+
+    public function learn($id)
+    {
+        $mockCourse = [
+            'id' => (int)$id,
+            'title' => 'Administrasi Sistem Jaringan',
+            'subtitle' => 'dari Nol',
+            'category' => 'System Admin',
+            'description' => 'Pelajari dasar-dasar administrasi sistem dan jaringan untuk mengelola infrastruktur IT.',
+            'longDescription' => 'Kursus ini dirancang untuk pemula yang ingin memahami dasar-dasar administrasi sistem dan jaringan. Anda akan mempelajari konsep dasar sistem operasi Linux, konfigurasi server, manajemen jaringan, dan praktik terbaik dalam pengelolaan infrastruktur IT.',
+            'level' => 'Beginner',
+            'duration' => '15 jam',
+            'language' => 'Bahasa Indonesia',
+            'certification' => 'Sertifikat Penyelesaian',
+            'enrollmentStatus' => 'Free Access',
+            'startDate' => '2023-09-10',
+            'endDate' => '2023-12-10',
+            'price' => 'Free',
+            'prerequisites' => ['Pengetahuan dasar komputer', 'Koneksi internet'],
+            'objectives' => [
+                'Memahami dasar-dasar sistem operasi Linux',
+                'Menguasai konfigurasi server dasar',
+                'Memahami manajemen jaringan',
+                'Menerapkan praktik terbaik administrasi sistem'
+            ],
+            'instructor' => [
+                'name' => 'John Doe',
+                'title' => 'Senior System Administrator',
+                'bio' => 'Pengalaman 10+ tahun dalam administrasi sistem dan jaringan',
+                'avatar' => '/images/instructor.jpg'
+            ],
+            'rating' => 4.8,
+            'reviewCount' => 120,
+            'studentsEnrolled' => 500,
+            'portal' => 'LMS',
+            'bgColor' => '#4F46E5',
+            'syllabus' => [
+                [
+                    'id' => 1,
+                    'title' => 'Pengenalan Sistem Operasi Linux',
+                    'lessons' => [
+                        [
+                            'id' => 101,
+                            'title' => 'Apa itu Linux?',
+                            'type' => 'video',
+                            'duration' => '15 menit',
+                            'description' => 'Pengenalan dasar sistem operasi Linux'
+                        ],
+                        [
+                            'id' => 102,
+                            'title' => 'Instalasi Linux',
+                            'type' => 'video',
+                            'duration' => '20 menit',
+                            'description' => 'Panduan instalasi Linux untuk pemula'
+                        ]
+                    ]
+                ],
+                [
+                    'id' => 2,
+                    'title' => 'Dasar-dasar Command Line',
+                    'lessons' => [
+                        [
+                            'id' => 201,
+                            'title' => 'Navigasi File System',
+                            'type' => 'video',
+                            'duration' => '15 menit',
+                            'description' => 'Belajar navigasi menggunakan command line'
+                        ],
+                        [
+                            'id' => 202,
+                            'title' => 'Manipulasi File dan Direktori',
+                            'type' => 'video',
+                            'duration' => '20 menit',
+                            'description' => 'Operasi dasar file dan direktori'
+                        ]
+                    ]
+                ]
+            ]
+        ];
+
+        return Inertia::render('dashboard/courses/[id]/learn/page', [
+            'course' => $mockCourse
+        ]);
+    }
+}
