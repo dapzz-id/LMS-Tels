@@ -14,6 +14,7 @@ return new class extends Migration
             $table->string('judul_kursus');
             $table->text('deskripsi_kursus');
             $table->string('url_thumbnail');
+            $table->string('status');
             $table->integer('estimated_duration')->nullable(); // in minutes
             $table->json('prerequisites')->nullable();
             $table->json('learning_objectives')->nullable();

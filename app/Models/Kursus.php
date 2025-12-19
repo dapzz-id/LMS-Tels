@@ -30,7 +30,8 @@ class Kursus extends Model
         'class',
         'is_featured',
         'view_count',
-        'enrollment_count'
+        'enrollment_count',
+        'status'
     ];
 
     protected $casts = [
