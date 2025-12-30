@@ -57,6 +57,11 @@ class KelolaKuisAdminController extends Controller
         try {
             $validator = Validator::make($request->all(), [
                 'judul_kuis' => 'required|string|max:255|unique:kuis,judul_kuis'
+            ], [
+                'judul_kuis.required' => 'Judul kuis wajib diisi.',
+                'judul_kuis.string' => 'Judul kuis harus berupa teks.',
+                'judul_kuis.max' => 'Judul kuis maksimal 255 karakter.',
+                'judul_kuis.unique' => 'Judul kuis sudah digunakan.',
             ]);
 
             if ($validator->fails()) {
@@ -86,6 +91,11 @@ class KelolaKuisAdminController extends Controller
         try {
             $validator = Validator::make($request->all(), [
                 'judul_kuis' => 'required|string|max:255|unique:kuis,judul_kuis,'.$kuis->id
+            ], [
+                'judul_kuis.required' => 'Judul kuis wajib diisi.',
+                'judul_kuis.string' => 'Judul kuis harus berupa teks.',
+                'judul_kuis.max' => 'Judul kuis maksimal 255 karakter.',
+                'judul_kuis.unique' => 'Judul kuis sudah digunakan.',
             ]);
 
             if ($validator->fails()) {

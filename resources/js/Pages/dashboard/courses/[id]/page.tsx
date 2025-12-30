@@ -13,6 +13,7 @@ import {
   CheckCircle2,
   BookOpen,
   Users,
+  Menu,
 } from "lucide-react"
 
 import { Button } from "@/Components/ui/button"
@@ -22,6 +23,7 @@ import { toast } from "sonner"
 import axios from "axios"
 import { Badge } from "@/Components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/Components/ui/tabs"
+import StudentSidebar from "@/Components/StudentSidebar"
 
 interface Course {
   id: number
@@ -52,6 +54,34 @@ const CourseDetailsPage = ({ params }: { params: { id: string } }) => {
   const [loading, setLoading] = useState(true)
   const [activeContent, setActiveContent] = useState<Course['contents'][0] | null>(null)
   const [progress, setProgress] = useState(0)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+
+  const renderLayout = (content: JSX.Element) => (
+    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
+      <StudentSidebar
+        active="courses"
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+      />
+      <div className="flex-1 lg:pl-64">
+        <header className="sticky top-0 z-40 flex h-14 items-center border-b bg-white px-4 dark:border-slate-800 dark:bg-slate-950 lg:px-6">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="mr-2 lg:hidden"
+            onClick={() => setIsSidebarOpen(true)}
+          >
+            <Menu className="h-5 w-5" />
+            <span className="sr-only">Toggle sidebar</span>
+          </Button>
+          <h1 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Course</h1>
+        </header>
+        <main className="flex-1 overflow-auto">
+          {content}
+        </main>
+      </div>
+    </div>
+  )
 
   useEffect(() => {
     const fetchCourseDetails = async () => {
@@ -164,8 +194,8 @@ const CourseDetailsPage = ({ params }: { params: { id: string } }) => {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
+    return renderLayout(
+      <div className="flex items-center justify-center min-h-[70vh]">
         <div className="flex flex-col items-center gap-2">
           <div className="w-8 h-8 border-b-2 rounded-full animate-spin border-primary"></div>
           <p className="text-sm text-muted-foreground">Loading course details...</p>
@@ -175,8 +205,8 @@ const CourseDetailsPage = ({ params }: { params: { id: string } }) => {
   }
 
   if (!course) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
+    return renderLayout(
+      <div className="flex items-center justify-center min-h-[70vh]">
         <div className="text-center">
           <h2 className="mb-2 text-2xl font-bold">Course Not Found</h2>
           <p className="mb-4 text-muted-foreground">The course you're looking for doesn't exist or has been removed.</p>
@@ -189,7 +219,7 @@ const CourseDetailsPage = ({ params }: { params: { id: string } }) => {
     )
   }
 
-  return (
+  return renderLayout(
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Head title={course.judul_kursus} />
 

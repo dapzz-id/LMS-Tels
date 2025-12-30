@@ -49,6 +49,10 @@ class KelolaSubPembahasanAdminController extends Controller
         try {
             $validator = Validator::make($request->all(), [
                 'file' => 'required|mimes:pdf|max:10240', // 10MB max
+            ], [
+                'file.required' => 'File wajib diunggah.',
+                'file.mimes' => 'Format file harus PDF.',
+                'file.max' => 'Ukuran file maksimal 10240 KB.',
             ]);
 
             if ($validator->fails()) {
@@ -99,6 +103,18 @@ class KelolaSubPembahasanAdminController extends Controller
                 'contents.*.quiz_data.*.correctAnswer' => 'required|integer|min:0|max:3',
                 'contents.*.quiz_data.*.timeLimit' => 'nullable|integer|min:1|max:60',
                 'order' => 'nullable|integer'
+            ], [
+                'required' => 'Kolom :attribute wajib diisi.',
+                'exists' => 'Data :attribute tidak ditemukan.',
+                'string' => 'Kolom :attribute harus berupa teks.',
+                'max' => 'Kolom :attribute maksimal :max.',
+                'array' => 'Kolom :attribute harus berupa array.',
+                'min' => 'Kolom :attribute minimal :min.',
+                'in' => 'Kolom :attribute harus salah satu dari: :values.',
+                'required_if' => 'Kolom :attribute wajib diisi jika :other bernilai :values.',
+                'url' => 'Format :attribute tidak valid.',
+                'integer' => 'Kolom :attribute harus berupa angka.',
+                'size' => 'Kolom :attribute harus berisi :size item.',
             ]);
 
             if ($validator->fails()) {
@@ -199,6 +215,14 @@ class KelolaSubPembahasanAdminController extends Controller
                 'quiz_description' => 'sometimes|required|string',
                 'id_kuis' => 'sometimes|required|exists:kuis,id',
                 'order' => 'nullable|integer'
+            ], [
+                'required' => 'Kolom :attribute wajib diisi.',
+                'exists' => 'Data :attribute tidak ditemukan.',
+                'string' => 'Kolom :attribute harus berupa teks.',
+                'max' => 'Kolom :attribute maksimal :max.',
+                'url' => 'Format :attribute tidak valid.',
+                'mimes' => 'Format file harus PDF.',
+                'integer' => 'Kolom :attribute harus berupa angka.',
             ]);
 
             if ($validator->fails()) {

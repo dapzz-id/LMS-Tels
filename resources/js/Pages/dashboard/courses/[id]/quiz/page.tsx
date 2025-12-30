@@ -9,9 +9,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card"
 import { Progress } from "@/Components/ui/progress"
 import { RadioGroup, RadioGroupItem } from "@/Components/ui/radio-group"
 import { Label } from "@/Components/ui/label"
-import { ArrowLeft, Timer, CheckCircle2, AlertCircle } from "lucide-react"
+import { ArrowLeft, Timer, CheckCircle2, AlertCircle, Menu } from "lucide-react"
 import { cn, renderMath } from "@/lib/utils"
 import { usePage } from "@inertiajs/react"
+import StudentSidebar from "@/Components/StudentSidebar"
 
 interface QuizQuestion {
   id: number
@@ -66,6 +67,20 @@ const QuizPage = (props: QuizPageProps) => {
 
   // State for tracking activities
   const [quizTracked, setQuizTracked] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  const renderLayout = (content: JSX.Element) => (
+    <div className="flex min-h-screen bg-gray-50 dark:bg-blue-950/90">
+      <StudentSidebar
+        active="courses"
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+      />
+      <div className="flex-1 lg:pl-64">
+        {content}
+      </div>
+    </div>
+  );
 
   // Get courseId from multiple sources
   function getCourseId() {
@@ -493,7 +508,7 @@ const QuizPage = (props: QuizPageProps) => {
 
     // Check if this is a one submission only error
     if (error && error.includes('already taken this quiz')) {
-      return (
+      return renderLayout(
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <AlertCircle className="w-16 h-16 mx-auto text-red-500" />
@@ -524,7 +539,7 @@ const QuizPage = (props: QuizPageProps) => {
       initialQuiz,
       sessionStorageQuiz: sessionStorage.getItem('currentQuiz')
     });
-    return (
+    return renderLayout(
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <AlertCircle className="w-16 h-16 mx-auto text-red-500" />
@@ -546,7 +561,7 @@ const QuizPage = (props: QuizPageProps) => {
   }
 
   if (!quiz) {
-    return (
+    return renderLayout(
       <div className="flex items-center justify-center min-h-screen">
         <p>Loading quiz...</p>
       </div>
@@ -554,7 +569,7 @@ const QuizPage = (props: QuizPageProps) => {
   }
 
   if (isSubmitted) {
-    return (
+    return renderLayout(
       <div className="min-h-screen bg-gray-50 dark:bg-blue-950/90">
         <Head title="Quiz Results" />
         <div className="container px-4 py-8 mx-auto">
@@ -624,7 +639,7 @@ const QuizPage = (props: QuizPageProps) => {
     )
   }
 
-  return (
+  return renderLayout(
     <div className="min-h-screen bg-gray-50 dark:bg-blue-950/90">
       <Head title={`${quiz.title} - Quiz`} />
 
@@ -632,14 +647,25 @@ const QuizPage = (props: QuizPageProps) => {
       <header className="sticky top-0 z-30 bg-white border-b border-blue-100 dark:border-blue-800 dark:bg-blue-900">
         <div className="container px-4 py-4 mx-auto">
           <div className="flex items-center justify-between">
-            <Button
-              variant="ghost"
-              onClick={() => courseId ? router.visit(`/dashboard/courses/${courseId}/learn`) : router.visit('/dashboard/courses')}
-              className="flex items-center gap-2"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back to Course
-            </Button>
+            <div className="flex items-center">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="mr-2 lg:hidden"
+                onClick={() => setIsSidebarOpen(true)}
+              >
+                <Menu className="w-5 h-5" />
+                <span className="sr-only">Toggle sidebar</span>
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => courseId ? router.visit(`/dashboard/courses/${courseId}/learn`) : router.visit('/dashboard/courses')}
+                className="flex items-center gap-2"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Back to Course
+              </Button>
+            </div>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 dark:bg-blue-800/50">
                 <Timer className="w-4 h-4" />

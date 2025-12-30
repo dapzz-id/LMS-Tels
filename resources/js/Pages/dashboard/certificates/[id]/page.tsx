@@ -3,8 +3,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/Com
 import { Button } from "@/Components/ui/button";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
-import { Award, DownloadIcon, Calendar, User, Book } from "lucide-react";
+import { Award, DownloadIcon, Calendar, User, Book, Menu } from "lucide-react";
 import { router } from "@inertiajs/react";
+import { useState } from "react";
+import StudentSidebar from "@/Components/StudentSidebar";
 
 interface Certificate {
   id: number;
@@ -24,15 +26,38 @@ interface Certificate {
 }
 
 export default function CertificateDetailsPage({ certificate }: { certificate: Certificate }) {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
   const handleDownload = () => {
     router.get(route('student.certificates.download', certificate.id));
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800">
-      <Head title="Certificate Details" />
+    <div className="flex min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800">
+      <StudentSidebar
+        active="certificates"
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+      />
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="flex-1 lg:pl-64">
+        <Head title="Certificate Details" />
+
+        <header className="sticky top-0 z-40 flex h-16 items-center border-b bg-white/80 px-4 backdrop-blur-sm dark:border-gray-800 dark:bg-gray-900/80 lg:px-6">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="mr-2 lg:hidden"
+            onClick={() => setIsSidebarOpen(true)}
+          >
+            <Menu className="h-5 w-5" />
+            <span className="sr-only">Toggle sidebar</span>
+          </Button>
+          <h1 className="text-lg font-semibold text-gray-900 dark:text-white">Certificate Details</h1>
+        </header>
+
+        <main className="flex-1 overflow-auto">
+          <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <Button
             variant="outline"
@@ -141,6 +166,8 @@ export default function CertificateDetailsPage({ certificate }: { certificate: C
           </CardContent>
         </Card>
       </div>
-    </div>
+    </main>
+  </div>
+</div>
   );
 }

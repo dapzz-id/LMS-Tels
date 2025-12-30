@@ -51,6 +51,7 @@ import { Input } from "@/Components/ui/input"
 import { Textarea } from "@/Components/ui/textarea"
 import { Alert, AlertDescription, AlertTitle } from "@/Components/ui/alert"
 import {usePage} from "@inertiajs/react"
+import StudentSidebar from "@/Components/StudentSidebar"
 
 // Mock data for assignments
 const assignments = [
@@ -434,6 +435,7 @@ export default function AssignmentDetailPage() {
   const { props } = usePage();
   const assignmentId = props.id;
 
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [assignment, setAssignment] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [answers, setAnswers] = useState<Record<number, string>>({})
@@ -532,8 +534,35 @@ export default function AssignmentDetailPage() {
     return () => window.removeEventListener("keydown", handleKeyDown)
   }, [assignment, currentQuestionIndex, submitted, quizStarted])
 
+  const renderLayout = (content: React.ReactNode) => (
+    <div className="flex min-h-screen bg-blue-50/30 dark:bg-blue-950/90">
+      <StudentSidebar
+        active="courses"
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+      />
+      <div className="flex-1 lg:pl-64">
+        <header className="sticky top-0 z-30 flex items-center px-4 bg-white border-b border-blue-100 h-14 dark:border-blue-800/30 dark:bg-blue-900/90 lg:px-6">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="mr-2 lg:hidden"
+            onClick={() => setIsSidebarOpen(true)}
+          >
+            <Menu className="w-5 h-5" />
+            <span className="sr-only">Toggle sidebar</span>
+          </Button>
+          <h1 className="text-base font-semibold">Assignment</h1>
+        </header>
+        <main className="flex-1 overflow-auto p-4 lg:p-6">
+          {content}
+        </main>
+      </div>
+    </div>
+  )
+
   if (loading) {
-    return (
+    return renderLayout(
       <div className="container mx-auto flex h-[80vh] items-center justify-center p-4">
         <div className="text-center">
           <div className="w-12 h-12 mx-auto mb-4 border-4 border-blue-200 rounded-full animate-spin border-t-blue-600"></div>
@@ -544,7 +573,7 @@ export default function AssignmentDetailPage() {
   }
 
   if (!assignment) {
-    return (
+    return renderLayout(
       <div className="container p-4 mx-auto">
         <Card>
           <CardHeader>
@@ -577,7 +606,7 @@ export default function AssignmentDetailPage() {
     }
   }
 
-  return (
+  return renderLayout(
     <div className="container p-4 mx-auto lg:p-6">
       <Button variant="outline" className="mb-6" onClick={() => router.visit("/dashboard/assignments")}>
         <ArrowLeft className="w-4 h-4 mr-2" />
@@ -1189,4 +1218,3 @@ export default function AssignmentDetailPage() {
     </div>
   )
 }
-

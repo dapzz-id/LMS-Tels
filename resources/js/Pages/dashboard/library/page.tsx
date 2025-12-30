@@ -1,54 +1,35 @@
 "use client"
 
 import { useState } from "react"
-import { Link, router } from "@inertiajs/react"
 import {
-  Bell,
-  Book,
-  Calendar,
-  ChevronDown,
-  Download,
-  FileText,
-  GraduationCap,
-  LayoutDashboard,
-  LogOut,
-  Menu,
-  Search,
-  Settings,
-  Sparkles,
-  User,
-  X,
-  Grid,
-  List,
-  BookOpen,
-  Filter,
-  BookMarked,
-  Video,
-  FileQuestion,
-  Newspaper,
-  Bookmark,
-  Star,
-  Clock,
-  Eye,
-  CheckCircle2,
-  PlusCircle,
   ArrowLeft,
   ArrowRight,
+  Book,
+  BookMarked,
+  BookOpen,
+  Bookmark,
+  CheckCircle2,
+  Clock,
+  Download,
+  Eye,
+  FileQuestion,
+  FileText,
+  Filter,
+  Grid,
+  List,
+  Menu,
+  Newspaper,
+  PlusCircle,
+  Search,
+  Star,
+  Video,
 } from "lucide-react"
 
 import { Button } from "@/Components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/Components/ui/card"
-import { Avatar, AvatarFallback, AvatarImage } from "@/Components/ui/avatar"
 import { Badge } from "@/Components/ui/badge"
 import { Input } from "@/Components/ui/input"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/Components/ui/dropdown-menu"
+import StudentSidebar from "@/Components/StudentSidebar"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/Components/ui/select"
 import { Tabs, TabsList, TabsTrigger } from "@/Components/ui/tabs"
 
@@ -557,128 +538,14 @@ export default function LibraryPage() {
   // Replace the Library Content section with this updated version
   return (
     <div className="flex w-full h-screen overflow-hidden bg-blue-50/30 dark:bg-blue-950/90">
-      {/* Sidebar - Mobile version */}
-      <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-blue-100 bg-white transition-transform duration-300 ease-in-out dark:border-blue-800/30 dark:bg-blue-900/90 lg:static lg:translate-x-0 ${
-          isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
-      >
-        {/* Sidebar Header */}
-        <div className="flex items-center px-4 border-b border-blue-100 h-14 dark:border-blue-800/30">
-          <div className="flex items-center gap-2 font-semibold">
-            <div className="relative w-8 h-8 overflow-hidden rounded-full bg-gradient-to-br from-blue-600 to-blue-400">
-              <Sparkles className="absolute inset-0 w-5 h-5 m-auto text-white" />
-            </div>
-            <span>LMS Tels</span>
-          </div>
-          <Button variant="ghost" size="icon" className="ml-auto lg:hidden" onClick={() => setIsSidebarOpen(false)}>
-            <X className="w-5 h-5" />
-            <span className="sr-only">Close sidebar</span>
-          </Button>
-        </div>
-
-        {/* Sidebar Content */}
-        <div className="flex-1 py-4 overflow-auto">
-          <nav className="grid gap-1 px-2">
-            <Link
-              href="/dashboard"
-              className="flex items-center gap-3 px-3 py-2 text-gray-500 transition-all rounded-lg hover:bg-blue-100/70 hover:text-blue-600 dark:text-blue-300 dark:hover:bg-blue-800/30 dark:hover:text-blue-400"
-            >
-              <LayoutDashboard className="w-5 h-5" />
-              <span>Dashboard</span>
-            </Link>
-            <Link
-              href="/dashboard/courses"
-              className="flex items-center gap-3 px-3 py-2 text-gray-500 transition-all rounded-lg hover:bg-blue-100/70 hover:text-blue-600 dark:text-blue-300 dark:hover:bg-blue-800/30 dark:hover:text-blue-400"
-            >
-              <Book className="w-5 h-5" />
-              <span>My Courses</span>
-            </Link>
-            <Link
-              href="/dashboard/assignments"
-              className="flex items-center gap-3 px-3 py-2 text-gray-500 transition-all rounded-lg hover:bg-blue-100/70 hover:text-blue-600 dark:text-blue-300 dark:hover:bg-blue-800/30 dark:hover:text-blue-400"
-            >
-              <FileText className="w-5 h-5" />
-              <span>Assignments</span>
-            </Link>
-            <Link
-              href="/dashboard/grades"
-              className="flex items-center gap-3 px-3 py-2 text-gray-500 transition-all rounded-lg hover:bg-blue-100/70 hover:text-blue-600 dark:text-blue-300 dark:hover:bg-blue-800/30 dark:hover:text-blue-400"
-            >
-              <GraduationCap className="w-5 h-5" />
-              <span>Grades</span>
-            </Link>
-            <Link
-              href="/dashboard/calendar"
-              className="flex items-center gap-3 px-3 py-2 text-gray-500 transition-all rounded-lg hover:bg-blue-100/70 hover:text-blue-600 dark:text-blue-300 dark:hover:bg-blue-800/30 dark:hover:text-blue-400"
-            >
-              <Calendar className="w-5 h-5" />
-              <span>Calendar</span>
-            </Link>
-          </nav>
-
-          <div className="px-3 mt-6">
-            <p className="px-2 text-xs font-semibold text-gray-400 uppercase dark:text-blue-300/70">Resources</p>
-            <nav className="grid gap-1 mt-2">
-              <Link
-                href="/dashboard/library"
-                className="flex items-center gap-3 px-3 py-2 text-blue-900 transition-all rounded-lg bg-blue-100/70 hover:text-blue-600 dark:bg-blue-800/30 dark:text-blue-50 dark:hover:text-blue-400"
-              >
-                <Download className="w-5 h-5" />
-                <span>Library</span>
-              </Link>
-              <Link
-                href="/dashboard/settings"
-                className="flex items-center gap-3 px-3 py-2 text-gray-500 transition-all rounded-lg hover:bg-blue-100/70 hover:text-blue-600 dark:text-blue-300 dark:hover:bg-blue-800/30 dark:hover:text-blue-400"
-              >
-                <Settings className="w-5 h-5" />
-                <span>Settings</span>
-              </Link>
-            </nav>
-          </div>
-        </div>
-
-        {/* Sidebar Footer */}
-        <div className="p-4 border-t border-blue-100 dark:border-blue-800/30">
-          <div className="flex items-center gap-3">
-            <Avatar>
-              <AvatarImage src="/placeholder-user.jpg" alt="Student" />
-              <AvatarFallback>JD</AvatarFallback>
-            </Avatar>
-            <div className="flex-1 truncate">
-              <p className="text-sm font-medium">Jane Doe</p>
-              <p className="text-xs text-gray-500 truncate dark:text-blue-300/70">Grade 10 - Student</p>
-            </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  <ChevronDown className="w-4 h-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <User className="w-4 h-4 mr-2" />
-                  <span>Profile</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Settings className="w-4 h-4 mr-2" />
-                  <span>Settings</span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <LogOut className="w-4 h-4 mr-2" />
-                  <span>Log out</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-      </aside>
+      <StudentSidebar
+        active="courses"
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+      />
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-auto lg:pl-64">
         {/* Header */}
         <header className="sticky top-0 z-30 flex items-center px-4 bg-white border-b border-blue-100 h-14 dark:border-blue-800/30 dark:bg-blue-900/90 lg:px-6">
           <Button variant="ghost" size="icon" className="mr-2 lg:hidden" onClick={() => setIsSidebarOpen(true)}>
@@ -699,11 +566,6 @@ export default function LibraryPage() {
                 />
               </div>
             </form>
-            <Button variant="outline" size="icon" className="rounded-full">
-              <Bell className="w-5 h-5" />
-              <span className="sr-only">Notifications</span>
-              <span className="absolute flex w-2 h-2 bg-blue-600 rounded-full right-1 top-1"></span>
-            </Button>
           </div>
         </header>
 
@@ -1104,4 +966,3 @@ export default function LibraryPage() {
     </div>
   )
 }
-

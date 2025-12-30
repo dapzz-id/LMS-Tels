@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { Save, RefreshCw, Globe, Bell, Database, Upload, Download, Trash2, AlertTriangle } from "lucide-react"
+import AdminPageLayout from "../layout"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/Components/ui/card"
 import { Button } from "@/Components/ui/button"
 import { Input } from "@/Components/ui/input"
@@ -80,60 +81,61 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-transparent bg-gradient-to-r from-blue-700 to-blue-500 bg-clip-text">
-            System Settings
-          </h1>
-          <p className="text-slate-500 dark:text-slate-400">Configure system-wide settings and preferences</p>
+    <AdminPageLayout>
+      <div className="space-y-6">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-transparent bg-gradient-to-r from-blue-700 to-blue-500 bg-clip-text">
+              System Settings
+            </h1>
+            <p className="text-slate-500 dark:text-slate-400">Configure system-wide settings and preferences</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" className="gap-2" onClick={() => setIsResetDialogOpen(true)}>
+              <RefreshCw className="w-4 h-4" />
+              <span>Reset Defaults</span>
+            </Button>
+            <Button className="gap-2 bg-blue-600 hover:bg-blue-700" onClick={handleSaveSettings} disabled={isSaving}>
+              {isSaving ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white rounded-full border-t-transparent animate-spin"></div>
+                  <span>Saving...</span>
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4" />
+                  <span>Save Changes</span>
+                </>
+              )}
+            </Button>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" className="gap-2" onClick={() => setIsResetDialogOpen(true)}>
-            <RefreshCw className="w-4 h-4" />
-            <span>Reset Defaults</span>
-          </Button>
-          <Button className="gap-2 bg-blue-600 hover:bg-blue-700" onClick={handleSaveSettings} disabled={isSaving}>
-            {isSaving ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white rounded-full border-t-transparent animate-spin"></div>
-                <span>Saving...</span>
-              </>
-            ) : (
-              <>
-                <Save className="w-4 h-4" />
-                <span>Save Changes</span>
-              </>
-            )}
-          </Button>
-        </div>
-      </div>
 
-      <Card className="border-0 shadow-md rounded-xl">
-        <CardHeader className="pb-2">
-          <CardTitle>System Configuration</CardTitle>
-          <CardDescription>Manage all system settings and configurations</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid grid-cols-1 mb-6 md:grid-cols-3">
-              <TabsTrigger value="general" className="flex items-center gap-1">
-                <Globe className="w-4 h-4" />
-                <span className="hidden md:inline">General</span>
-              </TabsTrigger>
-              <TabsTrigger value="notifications" className="flex items-center gap-1">
-                <Bell className="w-4 h-4" />
-                <span className="hidden md:inline">Notifications</span>
-              </TabsTrigger>
-              <TabsTrigger value="maintenance" className="flex items-center gap-1">
-                <Database className="w-4 h-4" />
-                <span className="hidden md:inline">Maintenance</span>
-              </TabsTrigger>
-            </TabsList>
+        <Card className="border-0 shadow-md rounded-xl">
+          <CardHeader className="pb-2">
+            <CardTitle>System Configuration</CardTitle>
+            <CardDescription>Manage all system settings and configurations</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <TabsList className="grid grid-cols-1 mb-6 md:grid-cols-3">
+                <TabsTrigger value="general" className="flex items-center gap-1">
+                  <Globe className="w-4 h-4" />
+                  <span className="hidden md:inline">General</span>
+                </TabsTrigger>
+                <TabsTrigger value="notifications" className="flex items-center gap-1">
+                  <Bell className="w-4 h-4" />
+                  <span className="hidden md:inline">Notifications</span>
+                </TabsTrigger>
+                <TabsTrigger value="maintenance" className="flex items-center gap-1">
+                  <Database className="w-4 h-4" />
+                  <span className="hidden md:inline">Maintenance</span>
+                </TabsTrigger>
+              </TabsList>
 
-            <TabsContent value="general" className="space-y-6">
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                <div className="space-y-4">
+              <TabsContent value="general" className="space-y-6">
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                  <div className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="siteName">Site Name</Label>
                     <Input id="siteName" name="siteName" value={settings.siteName} onChange={handleInputChange} />
@@ -387,63 +389,66 @@ export default function SettingsPage() {
                   </div>
                 </div>
               </div>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-        <CardFooter className="flex justify-between pt-6 border-t">
-          <Button variant="outline" className="gap-1 text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700">
-            <Trash2 className="w-4 h-4" />
-            <span>Clear Cache</span>
-          </Button>
-          <Button className="gap-1 bg-blue-600 hover:bg-blue-700" onClick={handleSaveSettings} disabled={isSaving}>
-            {isSaving ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white rounded-full border-t-transparent animate-spin"></div>
-                <span>Saving...</span>
-              </>
-            ) : (
-              <>
-                <Save className="w-4 h-4" />
-                <span>Save All Changes</span>
-              </>
-            )}
-          </Button>
-        </CardFooter>
-      </Card>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+          <CardFooter className="flex justify-between pt-6 border-t">
+            <Button
+              variant="outline"
+              className="gap-1 text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>Clear Cache</span>
+            </Button>
+            <Button className="gap-1 bg-blue-600 hover:bg-blue-700" onClick={handleSaveSettings} disabled={isSaving}>
+              {isSaving ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white rounded-full border-t-transparent animate-spin"></div>
+                  <span>Saving...</span>
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4" />
+                  <span>Save All Changes</span>
+                </>
+              )}
+            </Button>
+          </CardFooter>
+        </Card>
 
-      <Dialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Reset to Default Settings</DialogTitle>
-            <DialogDescription>
-              This will reset all system settings to their default values. This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            <div className="p-4 border border-red-200 rounded-lg bg-red-50 dark:bg-red-950 dark:border-red-800">
-              <div className="flex items-start gap-3">
-                <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400 mt-0.5" />
-                <div>
-                  <h4 className="text-sm font-medium text-red-800 dark:text-red-300">Warning</h4>
-                  <p className="mt-1 text-xs text-red-700 dark:text-red-400">
-                    Resetting settings will affect all users and may disrupt active sessions. Consider backing up your
-                    current configuration first.
-                  </p>
+        <Dialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Reset to Default Settings</DialogTitle>
+              <DialogDescription>
+                This will reset all system settings to their default values. This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+              <div className="p-4 border border-red-200 rounded-lg bg-red-50 dark:bg-red-950 dark:border-red-800">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400 mt-0.5" />
+                  <div>
+                    <h4 className="text-sm font-medium text-red-800 dark:text-red-300">Warning</h4>
+                    <p className="mt-1 text-xs text-red-700 dark:text-red-400">
+                      Resetting settings will affect all users and may disrupt active sessions. Consider backing up
+                      your current configuration first.
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsResetDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button className="bg-red-600 hover:bg-red-700" onClick={() => setIsResetDialogOpen(false)}>
-              Reset All Settings
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsResetDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button className="bg-red-600 hover:bg-red-700" onClick={() => setIsResetDialogOpen(false)}>
+                Reset All Settings
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </AdminPageLayout>
   )
 }
-

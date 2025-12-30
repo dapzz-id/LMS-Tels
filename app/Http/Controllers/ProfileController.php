@@ -47,6 +47,9 @@ class ProfileController extends Controller
     {
         $request->validate([
             'password' => ['required', 'current_password'],
+        ], [
+            'password.required' => 'Password wajib diisi.',
+            'password.current_password' => 'Password yang dimasukkan tidak sesuai.',
         ]);
 
         $user = $request->user();

@@ -38,6 +38,18 @@ class NewPasswordController extends Controller
             'token' => 'required',
             'email' => 'required|email',
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
+        ], [
+            'token.required' => 'Token reset wajib diisi.',
+            'email.required' => 'Email wajib diisi.',
+            'email.email' => 'Format email tidak valid.',
+            'password.required' => 'Password baru wajib diisi.',
+            'password.confirmed' => 'Konfirmasi password baru tidak cocok.',
+            'password.min' => 'Password minimal :min karakter.',
+            'password.letters' => 'Password harus mengandung huruf.',
+            'password.mixed' => 'Password harus mengandung huruf besar dan kecil.',
+            'password.numbers' => 'Password harus mengandung angka.',
+            'password.symbols' => 'Password harus mengandung simbol.',
+            'password.uncompromised' => 'Password terlalu lemah atau pernah bocor.',
         ]);
 
         // Here we will attempt to reset the user's password. If it is successful we

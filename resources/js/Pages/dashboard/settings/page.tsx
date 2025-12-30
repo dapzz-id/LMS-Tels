@@ -3,10 +3,8 @@
 import { useState } from "react"
 import { Link, usePage, useForm } from "@inertiajs/react"
 import {
-  Bell,
   BookOpen,
   ChevronDown,
-  LayoutDashboard,
   LineChart,
   LogOut,
   Settings,
@@ -37,6 +35,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/Components/ui/card"
 import { Input } from "@/Components/ui/input"
 import { Label } from "@/Components/ui/label"
+import StudentSidebar from "@/Components/StudentSidebar"
 import {
   Dialog,
   DialogContent,
@@ -47,7 +46,6 @@ import {
   DialogTrigger,
 } from "@/Components/ui/dialog"
 import { toast } from "sonner"
-import StudentDebugPanel from "@/Components/StudentDebugPanel"
 
 export default function SettingsPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
@@ -110,99 +108,14 @@ export default function SettingsPage() {
 
   return (
     <div className="flex min-h-screen">
-      {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r bg-white dark:bg-slate-950 shadow-sm transition-transform duration-300 lg:relative lg:translate-x-0 ${
-        isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
-      }`}>
-        <div className="flex h-16 items-center justify-between border-b px-6 lg:hidden">
-          <h2 className="text-lg font-semibold bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">
-            LMS Tels
-          </h2>
-          <button
-            onClick={() => setIsSidebarOpen(false)}
-            className="rounded-lg p-2 hover:bg-slate-100 dark:hover:bg-slate-800"
-          >
-            <X className="h-5 w-5" />
-          </button>
-            </div>
-        <div className="p-6">
-          <h2 className="text-lg font-semibold bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent hidden lg:block">
-            LMS Tels
-          </h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 hidden lg:block">Learning Management System</p>
-        </div>
-          <nav className="grid gap-1 px-2">
-          <Link href="/">
-            <Button
-              variant="ghost"
-              className="w-full justify-start gap-2 h-12 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-950"
-            >
-              <LayoutDashboard className="h-5 w-5 text-blue-600 dark:text-blue-500" />
-              <span>Dashboard</span>
-            </Button>
-            </Link>
-          <Link href="/dashboard/courses">
-            <Button
-              variant="ghost"
-              className="w-full justify-start gap-2 h-12 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-950"
-            >
-              <BookOpen className="h-5 w-5 text-blue-600 dark:text-blue-500" />
-              <span>My Courses</span>
-            </Button>
-            </Link>
-
-          <Link href="/dashboard/grades">
-            <Button
-              variant="ghost"
-              className="w-full justify-start gap-2 h-12 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-950"
-            >
-              <Award className="h-5 w-5 text-blue-600 dark:text-blue-500" />
-              <span>Grades</span>
-            </Button>
-            </Link>
-
-          <Link href="/dashboard/settings">
-            <Button
-              variant="ghost"
-              className="w-full justify-start gap-2 h-12 rounded-xl bg-blue-50 dark:bg-blue-950 hover:bg-blue-50 dark:hover:bg-blue-950"
-            >
-              <Settings className="h-5 w-5 text-blue-600 dark:text-blue-500" />
-                <span>Settings</span>
-            </Button>
-              </Link>
-            </nav>
-        <div className="mt-auto p-4">
-          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 border-blue-200 dark:border-blue-800 rounded-xl shadow-sm overflow-hidden">
-            <CardContent className="p-4">
-              <div className="flex flex-col space-y-2">
-                <div className="flex items-center gap-2">
-                  <GraduationCap className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                  <p className="text-sm font-medium text-blue-700 dark:text-blue-300">Student Info</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs font-medium text-blue-700 dark:text-blue-300">
-                    {user?.nama_lengkap || 'Student Name'}
-                  </p>
-                  <p className="text-xs text-blue-600/80 dark:text-blue-400/80">
-                    Class: {user?.class || 'Not Assigned'}
-                  </p>
-                </div>
-          </div>
-            </CardContent>
-          </Card>
-        </div>
-      </aside>
-
-      {/* Mobile overlay */}
-      {isSidebarOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
-          onClick={() => setIsSidebarOpen(false)}
-        />
-      )}
+      <StudentSidebar
+        active="settings"
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+      />
 
       {/* Main content */}
-      <div className="flex-1">
+      <div className="flex-1 lg:pl-64">
         <header className="sticky top-0 z-40 flex h-16 items-center border-b bg-white px-4 dark:border-slate-800 dark:bg-slate-950 lg:px-6">
           <button
             onClick={() => setIsSidebarOpen(true)}
@@ -210,7 +123,7 @@ export default function SettingsPage() {
           >
             <Menu className="h-5 w-5" />
           </button>
-          <Link href="/" className="flex items-center gap-2 font-semibold">
+          <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
             <BookOpen className="h-6 w-6 text-blue-600 dark:text-blue-500" />
             <span className="text-lg font-bold bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">
               LMS Tels
@@ -220,16 +133,6 @@ export default function SettingsPage() {
             </span>
           </Link>
           <div className="flex items-center gap-4 ml-auto">
-            <Button
-              variant="outline"
-              size="icon"
-              className="relative rounded-full border-blue-200 dark:border-blue-800"
-            >
-              <Bell className="h-5 w-5 text-slate-600 dark:text-slate-400" />
-              <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-[10px] text-white">
-                3
-              </span>
-            </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="gap-2 rounded-full">
@@ -464,9 +367,6 @@ export default function SettingsPage() {
       </main>
       </div>
 
-      {/* Debug Panel for Students */}
-      <StudentDebugPanel />
     </div>
   )
 }
-

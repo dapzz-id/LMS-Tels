@@ -2,7 +2,6 @@ import type React from "react"
 import { useState } from "react"
 import { Link } from "@inertiajs/react"
 import {
-  Bell,
   BookOpen,
   ChevronDown,
   LayoutDashboard,
@@ -30,7 +29,7 @@ export default function TeacherLayout({
   return (
     <div className="flex min-h-screen">
       {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r bg-white dark:bg-slate-950 shadow-sm transition-transform duration-300 lg:relative lg:translate-x-0 ${
+      <aside className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r bg-white dark:bg-slate-950 shadow-sm transition-transform duration-300 lg:translate-x-0 ${
         isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
       }`}>
         <div className="flex items-center justify-between h-16 px-6 border-b lg:hidden">
@@ -120,7 +119,7 @@ export default function TeacherLayout({
       )}
 
       {/* Main content */}
-      <div className="flex-1">
+      <div className="flex-1 lg:pl-64">
         <header className="sticky top-0 z-40 flex items-center h-16 px-4 bg-white border-b dark:border-slate-800 dark:bg-slate-950 lg:px-6">
           <button
             onClick={() => setIsSidebarOpen(true)}
@@ -138,16 +137,6 @@ export default function TeacherLayout({
             </span>
           </Link>
           <div className="flex items-center gap-4 ml-auto">
-            <Button
-              variant="outline"
-              size="icon"
-              className="relative border-blue-200 rounded-full dark:border-blue-800"
-            >
-              <Bell className="w-5 h-5 text-slate-600 dark:text-slate-400" />
-              <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-[10px] text-white">
-                3
-              </span>
-            </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="gap-2 rounded-full">
@@ -181,4 +170,3 @@ export default function TeacherLayout({
     </div>
   )
 }
-

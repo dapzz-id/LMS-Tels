@@ -269,6 +269,13 @@ class QuizController extends Controller
                 'answers' => 'required|array',
                 'time_taken' => 'nullable|integer|min:0',
                 'course_id' => 'required|exists:kursus,id',
+            ], [
+                'answers.required' => 'Jawaban wajib diisi.',
+                'answers.array' => 'Jawaban harus berupa array.',
+                'time_taken.integer' => 'Waktu pengerjaan harus berupa angka.',
+                'time_taken.min' => 'Waktu pengerjaan tidak boleh kurang dari 0.',
+                'course_id.required' => 'Kursus wajib dipilih.',
+                'course_id.exists' => 'Kursus tidak ditemukan.',
             ]);
 
             // Process quiz data using helper function

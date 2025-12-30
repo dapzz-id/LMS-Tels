@@ -49,6 +49,23 @@ class KelolaDataUserAdminController extends Controller
                 'class' => 'nullable|string|max:255',
                 'email' => 'required|string|email|unique:users,email',
                 'password' => 'required|string|min:6'
+            ], [
+                'nama_lengkap.required' => 'Nama lengkap wajib diisi.',
+                'nama_lengkap.string' => 'Nama lengkap harus berupa teks.',
+                'username.required' => 'Username wajib diisi.',
+                'username.string' => 'Username harus berupa teks.',
+                'username.unique' => 'Username sudah digunakan.',
+                'tipe_user.required' => 'Tipe user wajib dipilih.',
+                'tipe_user.in' => 'Tipe user harus salah satu dari: guru, siswa, admin.',
+                'class.string' => 'Kelas harus berupa teks.',
+                'class.max' => 'Kelas maksimal 255 karakter.',
+                'email.required' => 'Email wajib diisi.',
+                'email.string' => 'Email harus berupa teks.',
+                'email.email' => 'Format email tidak valid.',
+                'email.unique' => 'Email sudah digunakan.',
+                'password.required' => 'Password wajib diisi.',
+                'password.string' => 'Password harus berupa teks.',
+                'password.min' => 'Password minimal 6 karakter.',
             ]);
 
             if($validator->fails()) {
@@ -73,6 +90,22 @@ class KelolaDataUserAdminController extends Controller
                 'class' => 'nullable|string|max:255',
                 'email' => 'required|string|email|unique:users,email,'.$user->id,
                 'password' => 'nullable|string|min:6'
+            ], [
+                'nama_lengkap.required' => 'Nama lengkap wajib diisi.',
+                'nama_lengkap.string' => 'Nama lengkap harus berupa teks.',
+                'username.required' => 'Username wajib diisi.',
+                'username.string' => 'Username harus berupa teks.',
+                'username.unique' => 'Username sudah digunakan.',
+                'tipe_user.required' => 'Tipe user wajib dipilih.',
+                'tipe_user.in' => 'Tipe user harus salah satu dari: guru, siswa, admin.',
+                'class.string' => 'Kelas harus berupa teks.',
+                'class.max' => 'Kelas maksimal 255 karakter.',
+                'email.required' => 'Email wajib diisi.',
+                'email.string' => 'Email harus berupa teks.',
+                'email.email' => 'Format email tidak valid.',
+                'email.unique' => 'Email sudah digunakan.',
+                'password.string' => 'Password harus berupa teks.',
+                'password.min' => 'Password minimal 6 karakter.',
             ]);
 
             if($validator->fails()) {
@@ -125,6 +158,10 @@ class KelolaDataUserAdminController extends Controller
     {
         $request->validate([
             'file' => 'required|mimes:xlsx,xls,csv|max:10240', // 10MB max
+        ], [
+            'file.required' => 'File wajib diunggah.',
+            'file.mimes' => 'Format file harus xlsx, xls, atau csv.',
+            'file.max' => 'Ukuran file maksimal 10240 KB.',
         ]);
 
         try {

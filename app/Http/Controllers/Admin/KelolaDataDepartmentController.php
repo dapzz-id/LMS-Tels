@@ -36,6 +36,13 @@ class KelolaDataDepartmentController extends Controller
             $validated = $request->validate([
                 'nama_mapel' => 'required|string|min:3|max:255|unique:mapel,nama_mapel',
                 'deskripsi' => 'nullable|string'
+            ], [
+                'nama_mapel.required' => 'Nama mapel wajib diisi.',
+                'nama_mapel.string' => 'Nama mapel harus berupa teks.',
+                'nama_mapel.min' => 'Nama mapel minimal 3 karakter.',
+                'nama_mapel.max' => 'Nama mapel maksimal 255 karakter.',
+                'nama_mapel.unique' => 'Nama mapel sudah digunakan.',
+                'deskripsi.string' => 'Deskripsi harus berupa teks.',
             ]);
 
             $department = Mapel::create($validated);
@@ -63,6 +70,13 @@ class KelolaDataDepartmentController extends Controller
             $validated = $request->validate([
                 'nama_mapel' => 'required|string|min:3|max:255|unique:mapel,nama_mapel,' . $department->id,
                 'deskripsi' => 'nullable|string'
+            ], [
+                'nama_mapel.required' => 'Nama mapel wajib diisi.',
+                'nama_mapel.string' => 'Nama mapel harus berupa teks.',
+                'nama_mapel.min' => 'Nama mapel minimal 3 karakter.',
+                'nama_mapel.max' => 'Nama mapel maksimal 255 karakter.',
+                'nama_mapel.unique' => 'Nama mapel sudah digunakan.',
+                'deskripsi.string' => 'Deskripsi harus berupa teks.',
             ]);
 
             $department->update($validated);

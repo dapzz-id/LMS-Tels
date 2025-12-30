@@ -137,6 +137,11 @@ class TeacherCourseController extends Controller
         try {
             $validator = Validator::make($request->all(), [
                 'file' => 'required|file|mimes:pdf|max:10240', // 10MB max
+            ], [
+                'file.required' => 'File wajib diunggah.',
+                'file.file' => 'File tidak valid.',
+                'file.mimes' => 'Format file harus PDF.',
+                'file.max' => 'Ukuran file maksimal 10240 KB.',
             ]);
 
             if ($validator->fails()) {
@@ -183,6 +188,11 @@ class TeacherCourseController extends Controller
             // Validate the request
             $validator = Validator::make($request->all(), [
                 'file' => 'required|file|mimes:jpeg,png,jpg,webp,gif|max:5120', // 5MB max
+            ], [
+                'file.required' => 'File wajib diunggah.',
+                'file.file' => 'File tidak valid.',
+                'file.mimes' => 'Format file harus jpeg, png, jpg, webp, atau gif.',
+                'file.max' => 'Ukuran file maksimal 5120 KB.',
             ]);
 
             if ($validator->fails()) {
@@ -272,7 +282,25 @@ class TeacherCourseController extends Controller
                 'pembahasan.*.contents.*.quiz_data.*.optionImages.*' => 'nullable|string', // Add this line for option images support
             ];
 
-            $validator = Validator::make($input, $rules);
+            $messages = [
+                'required' => 'Kolom :attribute wajib diisi.',
+                'required_if' => 'Kolom :attribute wajib diisi jika :other bernilai :values.',
+                'required_without' => 'Kolom :attribute wajib diisi jika :values tidak diisi.',
+                'exists' => 'Data :attribute tidak ditemukan.',
+                'string' => 'Kolom :attribute harus berupa teks.',
+                'min' => 'Kolom :attribute minimal :min.',
+                'max' => 'Kolom :attribute maksimal :max.',
+                'file' => 'File :attribute tidak valid.',
+                'mimes' => 'Format :attribute harus: :values.',
+                'url' => 'Format :attribute tidak valid.',
+                'integer' => 'Kolom :attribute harus berupa angka.',
+                'array' => 'Kolom :attribute harus berupa array.',
+                'boolean' => 'Kolom :attribute harus bernilai true atau false.',
+                'in' => 'Kolom :attribute harus salah satu dari: :values.',
+                'size' => 'Kolom :attribute harus berisi :size item.',
+            ];
+
+            $validator = Validator::make($input, $rules, $messages);
 
             if ($validator->fails()) {
                 Log::error('Validation failed:', $validator->errors()->toArray());
@@ -529,7 +557,24 @@ class TeacherCourseController extends Controller
                 'pembahasan.*.contents.*.quiz_data.*.points' => 'nullable|integer|min:0',
             ];
 
-            $validator = Validator::make($input, $rules);
+            $messages = [
+                'required' => 'Kolom :attribute wajib diisi.',
+                'required_if' => 'Kolom :attribute wajib diisi jika :other bernilai :values.',
+                'exists' => 'Data :attribute tidak ditemukan.',
+                'string' => 'Kolom :attribute harus berupa teks.',
+                'min' => 'Kolom :attribute minimal :min.',
+                'max' => 'Kolom :attribute maksimal :max.',
+                'file' => 'File :attribute tidak valid.',
+                'mimes' => 'Format :attribute harus: :values.',
+                'url' => 'Format :attribute tidak valid.',
+                'integer' => 'Kolom :attribute harus berupa angka.',
+                'array' => 'Kolom :attribute harus berupa array.',
+                'boolean' => 'Kolom :attribute harus bernilai true atau false.',
+                'in' => 'Kolom :attribute harus salah satu dari: :values.',
+                'size' => 'Kolom :attribute harus berisi :size item.',
+            ];
+
+            $validator = Validator::make($input, $rules, $messages);
 
             if ($validator->fails()) {
                 Log::error('Validation failed:', $validator->errors()->toArray());

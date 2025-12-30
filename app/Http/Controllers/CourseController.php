@@ -160,12 +160,15 @@ class CourseController extends Controller
             'status'=> 'required|in:belum dimulai,sedang berlangsung,selesai',
             'progress_per_subbab' => 'nullable|integer', // 1 (Video), 2 (PDF), 3 (Quiz)
         ], [
-            'siswa_id.required' => 'ID Siswa is required',
-            'kursus_id.required' => 'ID Kursus is required',
-            'id_sub_pembahasan.required' => 'ID Sub Pembahasan is required',
-            'status.required' => 'Status is required',
-            'status.in' => 'Status must be one of: belum dimulai, sedang berlangsung, selesai',
-            'progress_per_subbab.integer' => 'Progress per subbab must be an integer',
+            'siswa_id.required' => 'ID siswa wajib diisi.',
+            'siswa_id.exists' => 'Siswa tidak ditemukan.',
+            'kursus_id.required' => 'ID kursus wajib diisi.',
+            'kursus_id.exists' => 'Kursus tidak ditemukan.',
+            'id_sub_pembahasan.required' => 'ID sub pembahasan wajib diisi.',
+            'id_sub_pembahasan.exists' => 'Sub pembahasan tidak ditemukan.',
+            'status.required' => 'Status wajib diisi.',
+            'status.in' => 'Status harus salah satu dari: belum dimulai, sedang berlangsung, selesai.',
+            'progress_per_subbab.integer' => 'Progress per subbab harus berupa angka.',
         ]);
 
         if($validated){
@@ -302,6 +305,15 @@ class CourseController extends Controller
                 'content_id' => 'required|exists:course_contents,id',
                 'video_id' => 'required|string',
                 'duration' => 'required|integer'
+            ], [
+                'course_id.required' => 'Kursus wajib diisi.',
+                'course_id.exists' => 'Kursus tidak ditemukan.',
+                'content_id.required' => 'Konten wajib diisi.',
+                'content_id.exists' => 'Konten tidak ditemukan.',
+                'video_id.required' => 'Video ID wajib diisi.',
+                'video_id.string' => 'Video ID harus berupa teks.',
+                'duration.required' => 'Durasi wajib diisi.',
+                'duration.integer' => 'Durasi harus berupa angka.',
             ]);
 
             // Find the sub_pembahasan_id for this content
@@ -361,6 +373,13 @@ class CourseController extends Controller
                 'course_id' => 'required|exists:kursus,id',
                 'content_id' => 'required|exists:course_contents,id',
                 'pdf_filename' => 'required|string'
+            ], [
+                'course_id.required' => 'Kursus wajib diisi.',
+                'course_id.exists' => 'Kursus tidak ditemukan.',
+                'content_id.required' => 'Konten wajib diisi.',
+                'content_id.exists' => 'Konten tidak ditemukan.',
+                'pdf_filename.required' => 'Nama file PDF wajib diisi.',
+                'pdf_filename.string' => 'Nama file PDF harus berupa teks.',
             ]);
 
             // Find the sub_pembahasan_id for this content
@@ -420,6 +439,17 @@ class CourseController extends Controller
                 'content_id' => 'required|exists:course_contents,id',
                 'quiz_id' => 'required|exists:course_contents,id',
                 'score' => 'required|numeric|min:0|max:100'
+            ], [
+                'course_id.required' => 'Kursus wajib diisi.',
+                'course_id.exists' => 'Kursus tidak ditemukan.',
+                'content_id.required' => 'Konten wajib diisi.',
+                'content_id.exists' => 'Konten tidak ditemukan.',
+                'quiz_id.required' => 'Kuis wajib diisi.',
+                'quiz_id.exists' => 'Kuis tidak ditemukan.',
+                'score.required' => 'Skor wajib diisi.',
+                'score.numeric' => 'Skor harus berupa angka.',
+                'score.min' => 'Skor minimal 0.',
+                'score.max' => 'Skor maksimal 100.',
             ]);
 
             // Find the sub_pembahasan_id for this content

@@ -60,6 +60,11 @@ class KelolaSoalKuisAdminController extends Controller
                 'opsi_d' => 'required|string',
                 'opsi_e' => 'required|string',
                 'kunci_jawaban' => 'required|in:a,b,c,d,e'
+            ], [
+                'required' => 'Kolom :attribute wajib diisi.',
+                'string' => 'Kolom :attribute harus berupa teks.',
+                'url' => 'Format :attribute tidak valid.',
+                'in' => 'Kolom :attribute harus salah satu dari: :values.',
             ]);
 
             if ($validator->fails()) {
@@ -96,6 +101,11 @@ class KelolaSoalKuisAdminController extends Controller
                 'opsi_d' => 'sometimes|required|string',
                 'opsi_e' => 'sometimes|required|string',
                 'kunci_jawaban' => 'sometimes|required|in:a,b,c,d,e'
+            ], [
+                'required' => 'Kolom :attribute wajib diisi.',
+                'string' => 'Kolom :attribute harus berupa teks.',
+                'url' => 'Format :attribute tidak valid.',
+                'in' => 'Kolom :attribute harus salah satu dari: :values.',
             ]);
 
             if ($validator->fails()) {

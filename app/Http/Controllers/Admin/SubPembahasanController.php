@@ -16,6 +16,12 @@ class SubPembahasanController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'required|string',
+        ], [
+            'title.required' => 'Judul wajib diisi.',
+            'title.string' => 'Judul harus berupa teks.',
+            'title.max' => 'Judul maksimal 255 karakter.',
+            'description.required' => 'Deskripsi wajib diisi.',
+            'description.string' => 'Deskripsi harus berupa teks.',
         ]);
 
         $subPembahasan = $kursus->subPembahasan()->create([
@@ -41,6 +47,18 @@ class SubPembahasanController extends Controller
             'points' => 'integer|min:0',
             'passing_score' => 'nullable|integer|min:0',
             'metadata' => 'nullable|array'
+        ], [
+            'required' => 'Kolom :attribute wajib diisi.',
+            'required_if' => 'Kolom :attribute wajib diisi jika :other bernilai :values.',
+            'required_unless' => 'Kolom :attribute wajib diisi kecuali :other bernilai :values.',
+            'in' => 'Kolom :attribute harus salah satu dari: :values.',
+            'string' => 'Kolom :attribute harus berupa teks.',
+            'max' => 'Kolom :attribute maksimal :max karakter.',
+            'array' => 'Kolom :attribute harus berupa array.',
+            'exists' => 'Data :attribute tidak ditemukan.',
+            'boolean' => 'Kolom :attribute harus bernilai true atau false.',
+            'integer' => 'Kolom :attribute harus berupa angka.',
+            'min' => 'Kolom :attribute minimal :min.',
         ]);
 
         $content = $subPembahasan->contents()->create([
@@ -61,6 +79,12 @@ class SubPembahasanController extends Controller
             'sub_pembahasan.*.contents' => 'array',
             'sub_pembahasan.*.contents.*.id' => 'exists:course_contents,id',
             'sub_pembahasan.*.contents.*.order' => 'integer|min:0',
+        ], [
+            'required' => 'Kolom :attribute wajib diisi.',
+            'array' => 'Kolom :attribute harus berupa array.',
+            'exists' => 'Data :attribute tidak ditemukan.',
+            'integer' => 'Kolom :attribute harus berupa angka.',
+            'min' => 'Kolom :attribute minimal :min.',
         ]);
 
         foreach ($validated['sub_pembahasan'] as $pembahasan) {

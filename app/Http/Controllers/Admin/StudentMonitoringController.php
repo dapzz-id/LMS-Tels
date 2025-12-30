@@ -105,6 +105,13 @@ class StudentMonitoringController extends Controller
             'course_id' => 'nullable|string',
             'quiz_id' => 'nullable|string',
             'metadata' => 'nullable|array'
+        ], [
+            'activity_type.required' => 'Jenis aktivitas wajib diisi.',
+            'activity_type.string' => 'Jenis aktivitas harus berupa teks.',
+            'page_url.string' => 'URL halaman harus berupa teks.',
+            'course_id.string' => 'ID kursus harus berupa teks.',
+            'quiz_id.string' => 'ID kuis harus berupa teks.',
+            'metadata.array' => 'Metadata harus berupa array.',
         ]);
 
         $userId = auth()->id();

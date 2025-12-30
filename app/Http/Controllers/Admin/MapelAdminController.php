@@ -51,6 +51,11 @@ class MapelAdminController extends Controller
         try {
             $validator = Validator::make($request->all(), [
                 'nama_mapel' => 'required|string|max:255|unique:mapel,nama_mapel'
+            ], [
+                'nama_mapel.required' => 'Nama mapel wajib diisi.',
+                'nama_mapel.string' => 'Nama mapel harus berupa teks.',
+                'nama_mapel.max' => 'Nama mapel maksimal 255 karakter.',
+                'nama_mapel.unique' => 'Nama mapel sudah digunakan.',
             ]);
 
             if ($validator->fails()) {
@@ -80,6 +85,11 @@ class MapelAdminController extends Controller
         try {
             $validator = Validator::make($request->all(), [
                 'nama_mapel' => 'required|string|max:255|unique:mapel,nama_mapel,'.$mapel->id
+            ], [
+                'nama_mapel.required' => 'Nama mapel wajib diisi.',
+                'nama_mapel.string' => 'Nama mapel harus berupa teks.',
+                'nama_mapel.max' => 'Nama mapel maksimal 255 karakter.',
+                'nama_mapel.unique' => 'Nama mapel sudah digunakan.',
             ]);
 
             if ($validator->fails()) {

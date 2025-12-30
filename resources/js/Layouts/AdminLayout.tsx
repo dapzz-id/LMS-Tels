@@ -2,7 +2,6 @@ import type React from "react"
 import { useState } from "react"
 import { Link } from "@inertiajs/react"
 import {
-  Bell,
   BookOpen,
   ChevronDown,
   LayoutDashboard,
@@ -10,8 +9,6 @@ import {
   LogOut,
   Settings,
   Users,
-  FileText,
-  Shield,
   ScrollText,
   Menu,
   X,
@@ -22,7 +19,6 @@ import {
 import { Button } from "@/Components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/Components/ui/avatar"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/Components/ui/dropdown-menu"
-import { Card, CardContent } from "@/Components/ui/card"
 
 export default function AdminLayout({
   children,
@@ -34,7 +30,7 @@ export default function AdminLayout({
   return (
     <div className="flex min-h-screen">
       {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r bg-white dark:bg-slate-950 shadow-sm transition-transform duration-300 lg:relative lg:translate-x-0 ${
+      <aside className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col overflow-y-auto border-r bg-white dark:bg-slate-950 shadow-sm transition-transform duration-300 lg:translate-x-0 ${
         isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
       }`}>
         <div className="flex h-16 items-center justify-between border-b px-6 lg:hidden">
@@ -128,24 +124,6 @@ export default function AdminLayout({
             </Button>
           </Link>
         </nav>
-        <div className="mt-auto p-4">
-          <Card className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950 dark:to-red-900 border-red-200 dark:border-red-800 rounded-xl shadow-sm overflow-hidden">
-            <CardContent className="p-4">
-              <div className="flex flex-col space-y-2">
-                <div className="flex items-center gap-2">
-                  <Shield className="h-5 w-5 text-red-600 dark:text-red-400" />
-                  <p className="text-sm font-medium text-red-700 dark:text-red-300">Admin Access</p>
-                </div>
-                <p className="text-xs text-red-600/80 dark:text-red-400/80">
-                  You have full system privileges. Use with caution.
-                </p>
-                <Button size="sm" className="mt-2 bg-red-600 hover:bg-red-700 text-white rounded-lg">
-                  Security Logs
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
       </aside>
 
       {/* Mobile overlay */}
@@ -157,7 +135,7 @@ export default function AdminLayout({
       )}
 
       {/* Main content */}
-      <div className="flex-1">
+      <div className="flex-1 lg:pl-64">
         <header className="sticky top-0 z-40 flex h-16 items-center border-b bg-white px-4 dark:border-slate-800 dark:bg-slate-950 lg:px-6">
           <button
             onClick={() => setIsSidebarOpen(true)}
@@ -175,16 +153,6 @@ export default function AdminLayout({
             </span>
           </Link>
           <div className="flex items-center gap-4 ml-auto">
-            <Button
-              variant="outline"
-              size="icon"
-              className="relative rounded-full border-red-200 dark:border-red-800"
-            >
-              <Bell className="h-5 w-5 text-slate-600 dark:text-slate-400" />
-              <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-[10px] text-white">
-                5
-              </span>
-            </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="gap-2 rounded-full">

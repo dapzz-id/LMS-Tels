@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from "react"
 import { Link, router, usePage } from "@inertiajs/react"
-import { ArrowLeft, BookOpen, Clock, FileText, Layers } from "lucide-react"
+import { ArrowLeft, BookOpen, Clock, FileText, Layers, Menu } from "lucide-react"
 
 import { Button } from "@/Components/ui/button"
 import { Badge } from "@/Components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/Components/ui/card"
 import { Progress } from "@/Components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/Components/ui/tabs"
+import StudentSidebar from "@/Components/StudentSidebar"
 
 // Simplified course data
 const courseData: Record<number, {
@@ -96,6 +97,20 @@ export default function StaticCoursePage() {
 
   // State for loading
   const [isLoading, setIsLoading] = useState(true)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+
+  const renderLayout = (content: JSX.Element) => (
+    <div className="flex min-h-screen bg-gray-50 dark:bg-blue-950/90">
+      <StudentSidebar
+        active="courses"
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+      />
+      <div className="flex-1 lg:pl-64">
+        {content}
+      </div>
+    </div>
+  )
 
   useEffect(() => {
     // Simulate loading
@@ -107,17 +122,26 @@ export default function StaticCoursePage() {
   }, [])
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
+    return renderLayout(
+      <div className="flex items-center justify-center min-h-[70vh]">
         <div className="w-8 h-8 border-4 border-blue-600 rounded-full animate-spin border-t-transparent"></div>
       </div>
     )
   }
 
-  return (
+  return renderLayout(
     <div className="min-h-screen bg-gray-50 dark:bg-blue-950/90">
       {/* Header */}
       <header className="sticky top-0 z-30 flex items-center px-4 bg-white border-b border-blue-100 h-14 dark:border-blue-800/30 dark:bg-blue-900/90 lg:px-6">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="mr-2 lg:hidden"
+          onClick={() => setIsSidebarOpen(true)}
+        >
+          <Menu className="w-5 h-5" />
+          <span className="sr-only">Toggle sidebar</span>
+        </Button>
         <Button variant="ghost" size="icon" className="mr-2" asChild>
           <Link href={`/dashboard/courses/${courseId}`}>
             <ArrowLeft className="w-5 h-5" />
@@ -239,4 +263,3 @@ export default function StaticCoursePage() {
     </div>
   )
 }
-
