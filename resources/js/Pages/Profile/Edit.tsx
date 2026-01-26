@@ -1,7 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { PageProps } from '@/types';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/Components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
 import { Input } from '@/Components/ui/input';
@@ -16,6 +16,7 @@ import {
     DialogTrigger,
 } from '@/Components/ui/dialog';
 import { toast } from 'sonner';
+import { getFirstMessage } from '@/lib/api-messages';
 import { BookOpen, Lock, Menu } from 'lucide-react';
 import StudentSidebar from '@/Components/StudentSidebar';
 import DeleteUserForm from './Partials/DeleteUserForm';
@@ -25,7 +26,7 @@ export default function Edit({
     mustVerifyEmail,
     status,
 }: PageProps<{ mustVerifyEmail: boolean; status?: string }>) {
-    const { auth } = usePage().props as any;
+    const { auth, flash } = usePage().props as any;
     const isStudent = auth?.user?.tipe_user === 'siswa';
     const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -36,23 +37,25 @@ export default function Edit({
         password_confirmation: '',
     });
 
+    useEffect(() => {
+        if (flash?.success) {
+            toast.success(flash.success);
+        }
+        if (flash?.error) {
+            toast.error(flash.error);
+        }
+    }, [flash?.success, flash?.error]);
+
     const updatePassword = (e: React.FormEvent) => {
         e.preventDefault();
 
         passwordForm.put(route('password.update'), {
             onSuccess: () => {
-                toast.success('Password updated successfully!');
                 setIsPasswordModalOpen(false);
                 passwordForm.reset();
             },
             onError: (errors) => {
-                if (errors.current_password) {
-                    toast.error('Current password is incorrect');
-                } else if (errors.password) {
-                    toast.error('New password validation failed');
-                } else {
-                    toast.error('Failed to update password');
-                }
+                toast.error(getFirstMessage({ errors }, 'Failed to update password'));
             },
         });
     };

@@ -18,6 +18,7 @@ import * as z from "zod"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/Components/ui/tabs"
 import { RadioGroup, RadioGroupItem } from "@/Components/ui/radio-group"
 import axios, { AxiosProgressEvent } from "axios"
+import { extractMessages, getFirstMessage } from "@/lib/api-messages"
 
 interface Mapel {
   id: number
@@ -39,7 +40,7 @@ interface QuizData {
 
 const courseFormSchema = z.object({
   id_mapel: z.string({
-    required_error: "Please select a department.",
+    required_error: "Please select a subject.",
   }),
   judul_kursus: z.string().min(3, {
     message: "Course title must be at least 3 characters.",
@@ -236,13 +237,13 @@ export default function CreateCoursePage({ mapel, availableClasses = [] }: Props
       if (response.data.status === 'success') {
         // Use the storage path directly since it's already absolute
         form.setValue(`pembahasan.${pembahasanIndex}.contents.${contentIndex}.url`, response.data.url);
-        toast.success('PDF uploaded successfully');
+        toast.success(getFirstMessage(response.data, 'PDF uploaded successfully'));
       } else {
-        toast.error(response.data.message || 'Failed to upload PDF');
+        toast.error(getFirstMessage(response.data, 'Failed to upload PDF'));
       }
     } catch (error: any) {
       console.error('Error uploading PDF:', error);
-      toast.error(error.response?.data?.message || 'Failed to upload PDF');
+      toast.error(getFirstMessage(error.response?.data, 'Failed to upload PDF'));
     } finally {
       setUploadProgress(prev => ({
         ...prev,
@@ -347,23 +348,37 @@ export default function CreateCoursePage({ mapel, availableClasses = [] }: Props
       });
 
       if (response.data.status === 'success') {
-        toast.success(`Course created successfully`, {
+        toast.success(getFirstMessage(response.data, 'Course created successfully'), {
           position: 'bottom-right',
         });
         router.visit('/teacher/courses');
       } else {
         console.error('Failed to create course:', response.data.errors);
-        toast.error('Failed to create course. Please check the console for details.', {
-          position: 'bottom-right',
-        });
+        const messages = extractMessages(response.data);
+        if (messages.length > 0) {
+          messages.slice(0, 5).forEach((message) => {
+            toast.error(message, { position: 'bottom-right' });
+          });
+        } else {
+          toast.error('Failed to create course. Please check the console for details.', {
+            position: 'bottom-right',
+          });
+        }
       }
     } catch (error) {
       console.error('Submission error:', error);
       if (axios.isAxiosError(error)) {
         console.error('Validation errors:', error.response?.data);
-        toast.error(`Error: ${error.response?.data?.message || 'Failed to create course'}`, {
-          position: 'bottom-right',
-        });
+        const messages = extractMessages(error.response?.data);
+        if (messages.length > 0) {
+          messages.slice(0, 5).forEach((message) => {
+            toast.error(message, { position: 'bottom-right' });
+          });
+        } else {
+          toast.error(`Error: ${getFirstMessage(error.response?.data, 'Failed to create course')}`, {
+            position: 'bottom-right',
+          });
+        }
       } else {
         console.error('Unexpected error:', error);
         toast.error('An unexpected error occurred', {
@@ -671,11 +686,11 @@ export default function CreateCoursePage({ mapel, availableClasses = [] }: Props
                           name="id_mapel"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Department</FormLabel>
+                              <FormLabel>Subject</FormLabel>
                               <Select onValueChange={field.onChange} defaultValue={field.value}>
                                 <FormControl>
                                   <SelectTrigger>
-                                    <SelectValue placeholder="Select a department" />
+                                    <SelectValue placeholder="Select a subject" />
                     </SelectTrigger>
                                 </FormControl>
                     <SelectContent>
@@ -686,7 +701,7 @@ export default function CreateCoursePage({ mapel, availableClasses = [] }: Props
                       ))}
                     </SelectContent>
                   </Select>
-                              <FormDescription>Select the department this course belongs to.</FormDescription>
+                              <FormDescription>Select the subject this course belongs to.</FormDescription>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -1156,13 +1171,13 @@ export default function CreateCoursePage({ mapel, availableClasses = [] }: Props
                                                                 questions: updatedQuestions
                                                               });
                                                             }
-                                                            toast.success('Image uploaded successfully');
+                                                            toast.success(getFirstMessage(response.data, 'Image uploaded successfully'));
                                                           } else {
-                                                            toast.error(response.data.message || 'Failed to upload image');
+                                                            toast.error(getFirstMessage(response.data, 'Failed to upload image'));
                                                           }
                                                         } catch (error: any) {
                                                           console.error('Error uploading image:', error);
-                                                          toast.error(error.response?.data?.message || 'Failed to upload image');
+                                                          toast.error(getFirstMessage(error.response?.data, 'Failed to upload image'));
                                                         }
                                                       }}
                                                     />
@@ -1318,13 +1333,13 @@ export default function CreateCoursePage({ mapel, availableClasses = [] }: Props
                                                                       questions: updatedQuestions
                                                                     });
                                                                   }
-                                                                  toast.success('Image uploaded successfully');
+                                                                  toast.success(getFirstMessage(response.data, 'Image uploaded successfully'));
                                                                 } else {
-                                                                  toast.error(response.data.message || 'Failed to upload image');
+                                                                  toast.error(getFirstMessage(response.data, 'Failed to upload image'));
                                                                 }
                                                               } catch (error: any) {
                                                                 console.error('Error uploading image:', error);
-                                                                toast.error(error.response?.data?.message || 'Failed to upload image');
+                                                                toast.error(getFirstMessage(error.response?.data, 'Failed to upload image'));
                                                               }
                                                             }}
                                                           />
@@ -1452,7 +1467,7 @@ export default function CreateCoursePage({ mapel, availableClasses = [] }: Props
                         <h3 className="mb-2 text-lg font-semibold">Basic Information</h3>
                         <div className="space-y-4">
                           <div>
-                            <Label>Department</Label>
+                            <Label>Subject</Label>
                             <p className="text-slate-600 dark:text-slate-300">
                               {mapel.find(m => m.id.toString() === form.getValues('id_mapel'))?.nama_mapel}
                             </p>

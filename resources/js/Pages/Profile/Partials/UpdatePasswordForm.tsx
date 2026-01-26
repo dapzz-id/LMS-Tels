@@ -3,7 +3,7 @@ import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import { Transition } from '@headlessui/react';
-import { useForm } from '@inertiajs/react';
+import { useForm, usePage } from '@inertiajs/react';
 import { FormEventHandler, useRef } from 'react';
 
 export default function UpdatePasswordForm({
@@ -14,6 +14,7 @@ export default function UpdatePasswordForm({
     const passwordInput = useRef<HTMLInputElement>(null);
     const currentPasswordInput = useRef<HTMLInputElement>(null);
 
+    const { flash } = usePage().props as any;
     const {
         data,
         setData,
@@ -129,14 +130,14 @@ export default function UpdatePasswordForm({
                     <PrimaryButton disabled={processing}>Save</PrimaryButton>
 
                     <Transition
-                        show={recentlySuccessful}
+                        show={recentlySuccessful && !!flash?.success}
                         enter="transition ease-in-out"
                         enterFrom="opacity-0"
                         leave="transition ease-in-out"
                         leaveTo="opacity-0"
                     >
                         <p className="text-sm text-gray-600">
-                            Saved.
+                            {flash?.success}
                         </p>
                     </Transition>
                 </div>

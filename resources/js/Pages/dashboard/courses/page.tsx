@@ -153,7 +153,7 @@ const StudentCoursesPage = () => {
 
     courses.forEach(course => {
       const departmentId = course.mapel?.id || 0
-      const departmentName = course.mapel?.nama_mapel || 'No Department'
+      const departmentName = course.mapel?.nama_mapel || 'No Subject'
 
       if (!departmentMap[departmentId]) {
         departmentMap[departmentId] = {
@@ -241,7 +241,7 @@ const StudentCoursesPage = () => {
                 <h1 className="text-3xl font-bold tracking-tight text-transparent bg-gradient-to-r from-blue-700 to-blue-500 bg-clip-text">
                   My Courses
                 </h1>
-                <p className="text-slate-500 dark:text-slate-400">Browse courses organized by department</p>
+                <p className="text-slate-500 dark:text-slate-400">Browse courses organized by subject</p>
               </div>
               <div className="flex gap-2">
                 <Button

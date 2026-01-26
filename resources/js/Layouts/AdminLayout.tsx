@@ -84,7 +84,7 @@ export default function AdminLayout({
               className="w-full justify-start gap-2 h-12 rounded-xl hover:bg-red-50 dark:hover:bg-red-950"
             >
               <Building2 className="h-5 w-5 text-red-600 dark:text-red-500" />
-              <span>Department Management</span>
+              <span>Subject Management</span>
             </Button>
           </Link>
           <Link href="/admin/analytics">

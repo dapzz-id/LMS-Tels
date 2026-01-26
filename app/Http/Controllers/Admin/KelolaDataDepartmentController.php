@@ -54,7 +54,8 @@ class KelolaDataDepartmentController extends Controller
         } catch (ValidationException $e) {
             return response()->json([
                 'status' => 'failed',
-                'message' => $e->errors()
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
             ], 422);
         } catch (Exception $e) {
             return response()->json([
@@ -88,7 +89,8 @@ class KelolaDataDepartmentController extends Controller
         } catch (ValidationException $e) {
             return response()->json([
                 'status' => 'failed',
-                'message' => $e->errors()
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
             ], 422);
         } catch (Exception $e) {
             return response()->json([

@@ -37,7 +37,9 @@ class ProfileController extends Controller
 
         $request->user()->save();
 
-        return back()->with('status', 'profile-updated');
+        return back()
+            ->with('status', 'profile-updated')
+            ->with('success', 'Profil berhasil diperbarui.');
     }
 
     /**

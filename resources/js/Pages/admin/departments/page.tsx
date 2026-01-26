@@ -10,6 +10,7 @@ import { Textarea } from "@/Components/ui/textarea"
 import { Plus, Search, MoreHorizontal, Edit, Trash2 } from "lucide-react"
 import AdminPageLayout from "../layout"
 import { toast } from "sonner"
+import { getFirstMessage } from "@/lib/api-messages"
 import {
   Dialog,
   DialogContent,
@@ -32,7 +33,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 
 const departmentFormSchema = z.object({
   nama_mapel: z.string().min(3, {
-    message: "Department name must be at least 3 characters.",
+    message: "Subject name must be at least 3 characters.",
   }),
   deskripsi: z.string().optional(),
 })
@@ -94,21 +95,26 @@ export default function DepartmentsPage({ departments }: Props) {
       const result = await response.json()
 
       if (result.status === 'success') {
-        toast.success('Department created successfully')
+        toast.success(getFirstMessage(result, 'Subject created successfully'))
         form.reset()
         setIsDialogOpen(false)
         router.reload()
       } else {
-        if (result.message && typeof result.message === 'object') {
-          Object.entries(result.message).forEach(([key, value]) => {
-            form.setError(key as any, { message: value as string })
+        const errorBag = (result.errors && typeof result.errors === 'object')
+          ? result.errors
+          : (result.message && typeof result.message === 'object' ? result.message : null)
+
+        if (errorBag) {
+          Object.entries(errorBag).forEach(([key, value]) => {
+            const message = Array.isArray(value) ? value[0] : String(value)
+            form.setError(key as any, { message })
           })
         } else {
-          toast.error(result.message || 'Failed to create department')
+          toast.error(getFirstMessage(result, 'Failed to create subject'))
         }
       }
     } catch (error) {
-      toast.error('Error creating department')
+      toast.error('Error creating subject')
       console.error(error)
     } finally {
       setIsSubmitting(false)
@@ -133,22 +139,27 @@ export default function DepartmentsPage({ departments }: Props) {
       const result = await response.json()
 
       if (result.status === 'success') {
-        toast.success('Department updated successfully')
+        toast.success(getFirstMessage(result, 'Subject updated successfully'))
         editForm.reset()
         setIsEditDialogOpen(false)
         setEditingDepartment(null)
         router.reload()
       } else {
-        if (result.message && typeof result.message === 'object') {
-          Object.entries(result.message).forEach(([key, value]) => {
-            editForm.setError(key as any, { message: value as string })
+        const errorBag = (result.errors && typeof result.errors === 'object')
+          ? result.errors
+          : (result.message && typeof result.message === 'object' ? result.message : null)
+
+        if (errorBag) {
+          Object.entries(errorBag).forEach(([key, value]) => {
+            const message = Array.isArray(value) ? value[0] : String(value)
+            editForm.setError(key as any, { message })
           })
         } else {
-          toast.error(result.message || 'Failed to update department')
+          toast.error(getFirstMessage(result, 'Failed to update subject'))
         }
       }
     } catch (error) {
-      toast.error('Error updating department')
+      toast.error('Error updating subject')
       console.error(error)
     } finally {
       setIsSubmitting(false)
@@ -219,14 +230,14 @@ export default function DepartmentsPage({ departments }: Props) {
       const result = await response.json()
 
       if (result.status === 'success') {
-        toast.success('Department deleted successfully')
+        toast.success(getFirstMessage(result, 'Subject deleted successfully'))
         closeDeleteModal()
         router.reload()
       } else {
-        toast.error(result.message || 'Failed to delete department')
+        toast.error(getFirstMessage(result, 'Failed to delete subject'))
       }
     } catch (error) {
-      toast.error('Error deleting department')
+      toast.error('Error deleting subject')
       console.error(error)
     } finally {
       setIsDeleteSubmitting(false)
@@ -239,27 +250,27 @@ export default function DepartmentsPage({ departments }: Props) {
 
   return (
     <AdminPageLayout>
-      <Head title="Department Management" />
+      <Head title="Subject Management" />
       <div className="space-y-6">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-transparent bg-gradient-to-r from-red-700 to-red-500 bg-clip-text">
-              Department Management
+              Subject Management
             </h1>
-            <p className="text-slate-500 dark:text-slate-400">Manage your departments and their courses</p>
+            <p className="text-slate-500 dark:text-slate-400">Manage your subjects and their courses</p>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button className="bg-red-600 hover:bg-red-700">
                 <Plus className="w-4 h-4 mr-2" />
-                Add Department
+                Add Subject
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Add New Department</DialogTitle>
+                <DialogTitle>Add New Subject</DialogTitle>
                 <DialogDescription>
-                  Create a new department to organize your courses.
+                  Create a new subject to organize your courses.
                 </DialogDescription>
               </DialogHeader>
               <Form {...form}>
@@ -269,9 +280,9 @@ export default function DepartmentsPage({ departments }: Props) {
                     name="nama_mapel"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Department Name</FormLabel>
+                        <FormLabel>Subject Name</FormLabel>
                         <FormControl>
-                          <Input placeholder="Enter department name" {...field} />
+                          <Input placeholder="Enter subject name" {...field} />
                         </FormControl>
                         <FormDescription>
                           This is the name that will be displayed to users.
@@ -288,13 +299,13 @@ export default function DepartmentsPage({ departments }: Props) {
                         <FormLabel>Description</FormLabel>
                         <FormControl>
                           <Textarea
-                            placeholder="Enter department description"
+                            placeholder="Enter subject description"
                             className="min-h-32"
                             {...field}
                           />
                         </FormControl>
                         <FormDescription>
-                          Describe what this department is about.
+                          Describe what this subject is about.
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -302,7 +313,7 @@ export default function DepartmentsPage({ departments }: Props) {
                   />
                   <DialogFooter>
                     <Button type="submit" className="bg-red-600 hover:bg-red-700" disabled={isSubmitting}>
-                      {isSubmitting ? "Creating..." : "Create Department"}
+                      {isSubmitting ? "Creating..." : "Create Subject"}
                     </Button>
                   </DialogFooter>
                 </form>
@@ -314,9 +325,9 @@ export default function DepartmentsPage({ departments }: Props) {
           <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Edit Department</DialogTitle>
+                <DialogTitle>Edit Subject</DialogTitle>
                 <DialogDescription>
-                  Update the department information.
+                  Update the subject information.
                 </DialogDescription>
               </DialogHeader>
               <Form {...editForm}>
@@ -326,9 +337,9 @@ export default function DepartmentsPage({ departments }: Props) {
                     name="nama_mapel"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Department Name</FormLabel>
+                        <FormLabel>Subject Name</FormLabel>
                         <FormControl>
-                          <Input placeholder="Enter department name" {...field} />
+                          <Input placeholder="Enter subject name" {...field} />
                         </FormControl>
                         <FormDescription>
                           This is the name that will be displayed to users.
@@ -345,13 +356,13 @@ export default function DepartmentsPage({ departments }: Props) {
                         <FormLabel>Description</FormLabel>
                         <FormControl>
                           <Textarea
-                            placeholder="Enter department description"
+                            placeholder="Enter subject description"
                             className="min-h-32"
                             {...field}
                           />
                         </FormControl>
                         <FormDescription>
-                          Describe what this department is about.
+                          Describe what this subject is about.
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -362,7 +373,7 @@ export default function DepartmentsPage({ departments }: Props) {
                       Cancel
                     </Button>
                     <Button type="submit" className="bg-red-600 hover:bg-red-700" disabled={isSubmitting}>
-                      {isSubmitting ? "Updating..." : "Update Department"}
+                      {isSubmitting ? "Updating..." : "Update Subject"}
                     </Button>
                   </DialogFooter>
                 </form>
@@ -374,7 +385,7 @@ export default function DepartmentsPage({ departments }: Props) {
           <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Delete Department</DialogTitle>
+                <DialogTitle>Delete Subject</DialogTitle>
                 <DialogDescription>
                   Are you sure you want to delete "{deletingDepartment?.nama_mapel}"? This action cannot be undone.
                 </DialogDescription>
@@ -389,7 +400,7 @@ export default function DepartmentsPage({ departments }: Props) {
                   onClick={handleDelete}
                   disabled={isDeleteSubmitting}
                 >
-                  {isDeleteSubmitting ? "Deleting..." : "Delete Department"}
+                  {isDeleteSubmitting ? "Deleting..." : "Delete Subject"}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -400,14 +411,14 @@ export default function DepartmentsPage({ departments }: Props) {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle>Departments</CardTitle>
-                <CardDescription>A list of all departments in your system.</CardDescription>
+                <CardTitle>Subjects</CardTitle>
+                <CardDescription>A list of all subjects in your system.</CardDescription>
               </div>
               <div className="flex items-center gap-2">
                 <div className="relative">
                   <Search className="absolute left-2 top-2.5 h-4 w-4 text-slate-500" />
                   <Input
-                    placeholder="Search departments..."
+                    placeholder="Search subjects..."
                     className="pl-8"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -461,7 +472,7 @@ export default function DepartmentsPage({ departments }: Props) {
               ))}
               {filteredDepartments.length === 0 && (
                 <div className="py-6 text-center">
-                  <p className="text-slate-500 dark:text-slate-400">No departments found.</p>
+                  <p className="text-slate-500 dark:text-slate-400">No subjects found.</p>
                 </div>
               )}
             </div>

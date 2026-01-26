@@ -14,7 +14,8 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class KelolaDataUserAdminController extends Controller
 {
-    public function index() {
+    public function index()
+    {
         try {
             $data = User::latest()->get();
 
@@ -26,9 +27,10 @@ class KelolaDataUserAdminController extends Controller
         }
     }
 
-    public function show(User $user) {
+    public function show(User $user)
+    {
         try {
-            if(!$user) {
+            if (!$user) {
                 return back()->with('error', 'Data user tidak ditemukan');
             }
 
@@ -40,7 +42,8 @@ class KelolaDataUserAdminController extends Controller
         }
     }
 
-    public function store(Request $request) {
+    public function store(Request $request)
+    {
         try {
             $validator = Validator::make($request->all(), [
                 'nama_lengkap' => 'required|string',
@@ -68,7 +71,7 @@ class KelolaDataUserAdminController extends Controller
                 'password.min' => 'Password minimal 6 karakter.',
             ]);
 
-            if($validator->fails()) {
+            if ($validator->fails()) {
                 return back()->withErrors($validator->errors());
             }
 
@@ -76,19 +79,20 @@ class KelolaDataUserAdminController extends Controller
             $user = User::create($validated);
 
             return redirect()->route('admin.users.index')->with('success', 'User berhasil dibuat');
-        } catch(Exception $e) {
+        } catch (Exception $e) {
             return back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
     }
 
-    public function update(Request $request, User $user) {
+    public function update(Request $request, User $user)
+    {
         try {
             $validator = Validator::make($request->all(), [
                 'nama_lengkap' => 'required|string',
-                'username' => 'required|string|unique:users,username,'.$user->id,
+                'username' => 'required|string|unique:users,username,' . $user->id,
                 'tipe_user' => 'required|in:guru,siswa,admin',
                 'class' => 'nullable|string|max:255',
-                'email' => 'required|string|email|unique:users,email,'.$user->id,
+                'email' => 'required|string|email|unique:users,email,' . $user->id,
                 'password' => 'nullable|string|min:6'
             ], [
                 'nama_lengkap.required' => 'Nama lengkap wajib diisi.',
@@ -108,7 +112,7 @@ class KelolaDataUserAdminController extends Controller
                 'password.min' => 'Password minimal 6 karakter.',
             ]);
 
-            if($validator->fails()) {
+            if ($validator->fails()) {
                 return back()->withErrors($validator->errors());
             }
 
@@ -122,21 +126,22 @@ class KelolaDataUserAdminController extends Controller
             $user->update($validated);
 
             return redirect()->route('admin.users.index')->with('success', 'User berhasil diupdate');
-        } catch(Exception $e) {
+        } catch (Exception $e) {
             return back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
     }
 
-    public function destroy(User $user) {
+    public function destroy(User $user)
+    {
         try {
-            if(!$user) {
+            if (!$user) {
                 return back()->with('error', 'Data user tidak ditemukan');
             }
 
             $user->delete();
 
             return redirect()->route('admin.users.index')->with('success', 'User berhasil dihapus');
-        } catch(Exception $e) {
+        } catch (Exception $e) {
             return back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
     }
@@ -157,42 +162,51 @@ class KelolaDataUserAdminController extends Controller
     public function import(Request $request)
     {
         $request->validate([
-            'file' => 'required|mimes:xlsx,xls,csv|max:10240', // 10MB max
-        ], [
-            'file.required' => 'File wajib diunggah.',
-            'file.mimes' => 'Format file harus xlsx, xls, atau csv.',
-            'file.max' => 'Ukuran file maksimal 10240 KB.',
+            'file' => 'required|mimes:xlsx,xls,csv|max:10240',
         ]);
 
         try {
             $import = new UsersImport();
             Excel::import($import, $request->file('file'));
 
-            $importedCount = $import->getRowCount();
-            $skippedCount = $import->getSkippedCount();
+            $raw = $import->getRawRowCount();
+            $imported = $import->getRowCount();
+            $skipped = $import->getSkippedCount();
 
-            $message = "Import completed successfully!";
-            if ($importedCount > 0) {
-                $message .= " {$importedCount} users imported.";
-            }
-            if ($skippedCount > 0) {
-                $message .= " {$skippedCount} rows skipped due to errors.";
+            if ($raw === 0 || $imported === 0) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Excel tidak berisi data (semua baris kosong).'
+                ], 422);
             }
 
-            return back()->with('success', $message);
+            return response()->json([
+                'status' => 'success',
+                'message' => "Import completed: {$imported} imported, {$skipped} skipped."
+            ]);
+
         } catch (\Maatwebsite\Excel\Validators\ValidationException $e) {
             $failures = $e->failures();
-            $errorMessages = [];
+            $errors = [];
 
-            foreach ($failures as $failure) {
-                $errorMessages[] = "Row {$failure->row()}: " . implode(', ', $failure->errors());
+            foreach ($failures as $f) {
+                $errors[] = "Baris {$f->row()}: " . implode(', ', $f->errors());
             }
 
-            return back()->with('error', 'Validation failed: ' . implode('; ', $errorMessages));
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Import gagal. Periksa detail kesalahan.',
+                'errors' => $errors
+            ], 422);
+
         } catch (\Exception $e) {
-            return back()->with('error', 'Import failed: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Import failed: ' . $e->getMessage()
+            ], 500);
         }
     }
+
 
     public function downloadTemplate()
     {
@@ -266,18 +280,21 @@ class KelolaDataUserAdminController extends Controller
             //     ];
             // }
 
-            return Excel::download(new class($sampleData) implements \Maatwebsite\Excel\Concerns\FromArray, \Maatwebsite\Excel\Concerns\WithHeadings {
+            return Excel::download(new class ($sampleData) implements \Maatwebsite\Excel\Concerns\FromArray, \Maatwebsite\Excel\Concerns\WithHeadings {
                 private $data;
 
-                public function __construct($data) {
+                public function __construct($data)
+                {
                     $this->data = $data;
                 }
 
-                public function array(): array {
+                public function array(): array
+                {
                     return $this->data;
                 }
 
-                public function headings(): array {
+                public function headings(): array
+                {
                     return ['nama_lengkap', 'username', 'email', 'tipe_user', 'class', 'password'];
                 }
             }, 'users_template.xlsx');

@@ -122,15 +122,15 @@ export default function AdminDashboard() {
 
           <Card className="border-0 shadow-sm rounded-xl bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950 dark:to-red-900">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-red-700 dark:text-red-300">Departments</CardTitle>
-              <CardDescription className="text-red-600/80 dark:text-red-400/80">Total departments</CardDescription>
+              <CardTitle className="text-sm font-medium text-red-700 dark:text-red-300">Subjects</CardTitle>
+              <CardDescription className="text-red-600/80 dark:text-red-400/80">Total subjects</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-between">
                 <div className="text-2xl font-bold text-red-700 dark:text-red-300">{stats?.total_departments || 0}</div>
                 <Building2 className="w-4 h-4 text-red-600 dark:text-red-400" />
               </div>
-              <p className="mt-2 text-xs text-red-600/80 dark:text-red-400/80">Active departments</p>
+              <p className="mt-2 text-xs text-red-600/80 dark:text-red-400/80">Active subjects</p>
             </CardContent>
           </Card>
 
@@ -264,4 +264,3 @@ export default function AdminDashboard() {
     </AdminPageLayout>
   )
 }
-

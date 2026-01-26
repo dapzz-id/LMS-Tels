@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Head, router, usePage } from "@inertiajs/react"
 import axios from "axios"
 import { toast } from "sonner"
+import { getFirstMessage } from "@/lib/api-messages"
 import { Button } from "@/Components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/Components/ui/card"
 import { Badge } from "@/Components/ui/badge"
@@ -140,13 +141,16 @@ const CourseLearnPage = ({ id }: { id: string }) => {
 
         // Also update progress in the main progress table
         await updateMainProgress(courseId, contentId, 1); // 1 for video completion
-
-        return true;
       }
+
+      return response.data;
     } catch (error) {
       console.error('Error saving video completion:', error);
+      if (axios.isAxiosError(error)) {
+        return error.response?.data;
+      }
     }
-    return false;
+    return null;
   };
 
   // Save PDF download to database
@@ -163,13 +167,16 @@ const CourseLearnPage = ({ id }: { id: string }) => {
 
         // Also update progress in the main progress table
         await updateMainProgress(courseId, contentId, 2); // 2 for PDF download
-
-        return true;
       }
+
+      return response.data;
     } catch (error) {
       console.error('Error saving PDF download:', error);
+      if (axios.isAxiosError(error)) {
+        return error.response?.data;
+      }
     }
-    return false;
+    return null;
   };
 
   // Save quiz completion to database
@@ -187,13 +194,16 @@ const CourseLearnPage = ({ id }: { id: string }) => {
 
         // Also update progress in the main progress table
         await updateMainProgress(courseId, contentId, 3); // 3 for quiz completion
-
-        return true;
       }
+
+      return response.data;
     } catch (error) {
       console.error('Error saving quiz completion:', error);
+      if (axios.isAxiosError(error)) {
+        return error.response?.data;
+      }
     }
-    return false;
+    return null;
   };
 
   // Update main progress table
@@ -484,7 +494,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
     try {
       const response = await axios.post(`/api/certificates/issue/${course.id}`);
       if (response.data.success) {
-        toast.success('Certificate claimed successfully!', {
+        toast.success(getFirstMessage(response.data, 'Certificate claimed successfully!'), {
           action: {
             label: 'View Certificate',
             onClick: () => router.visit(route('student.certificates'))
@@ -497,11 +507,15 @@ const CourseLearnPage = ({ id }: { id: string }) => {
         localStorage.removeItem(`completed-videos-${course.id}`);
         localStorage.removeItem(`downloaded-pdfs-${course.id}`);
       } else {
-        toast.error(response.data.message || 'Failed to claim certificate');
+        toast.error(getFirstMessage(response.data, 'Failed to claim certificate'));
       }
     } catch (error) {
       console.error('Error claiming certificate:', error);
-      toast.error('Failed to claim certificate');
+      if (axios.isAxiosError(error)) {
+        toast.error(getFirstMessage(error.response?.data, 'Failed to claim certificate'));
+      } else {
+        toast.error('Failed to claim certificate');
+      }
     }
   }
 
@@ -569,7 +583,12 @@ const CourseLearnPage = ({ id }: { id: string }) => {
 
       // Save quiz completion to database
       if (event.detail && event.detail.quizId && storedCourseId && activeContent) {
-        saveQuizCompletion(storedCourseId, activeContent.id, event.detail.quizId, event.detail.score || 0);
+        saveQuizCompletion(storedCourseId, activeContent.id, event.detail.quizId, event.detail.score || 0)
+          .then((data) => {
+            if (!data || data.status !== 'success') {
+              toast.error(getFirstMessage(data, 'Failed to save quiz completion.'));
+            }
+          });
       }
 
       if (storedCourseId) {
@@ -755,13 +774,19 @@ const CourseLearnPage = ({ id }: { id: string }) => {
         window.studentActivityTracker.trackVideoPlay(videoId, activeContent?.url || '');
       }
 
-      // Save video completion to database
+      // Save video completion to database and show feedback based on backend response
       if (activeContent && course) {
-        saveVideoCompletion(course.id.toString(), activeContent.id, videoId, activeContent.duration || 0);
+        saveVideoCompletion(course.id.toString(), activeContent.id, videoId, activeContent.duration || 0)
+          .then((data) => {
+            if (data?.status === 'success') {
+              toast.success(getFirstMessage(data, 'Video completed! You can now navigate to the next content.'));
+            } else {
+              toast.error(getFirstMessage(data, 'Failed to save video completion. Please try again.'));
+            }
+          });
+      } else {
+        toast.error('Failed to save video completion. Please try again.');
       }
-
-      // Show toast notification
-      toast.success('Video completed! You can now navigate to the next content.');
 
       console.log('Video completed:', videoId);
     }
@@ -904,13 +929,19 @@ const CourseLearnPage = ({ id }: { id: string }) => {
                 window.studentActivityTracker.trackVideoPlay(videoId, activeContent.url || '');
               }
 
-              // Save video completion to database
+              // Save video completion to database and show feedback based on backend response
               if (activeContent && course) {
-                saveVideoCompletion(course.id.toString(), activeContent.id, videoId, activeContent.duration || 0);
+                saveVideoCompletion(course.id.toString(), activeContent.id, videoId, activeContent.duration || 0)
+                  .then((data) => {
+                    if (data?.status === 'success') {
+                      toast.success(getFirstMessage(data, 'Video completed! You can now navigate to the next content.'));
+                    } else {
+                      toast.error(getFirstMessage(data, 'Failed to save video completion. Please try again.'));
+                    }
+                  });
+              } else {
+                toast.error('Failed to save video completion. Please try again.');
               }
-
-              // Show toast notification
-              toast.success('Video completed! You can now navigate to the next content.');
 
               console.log('Video automatically marked as completed:', videoId);
 
@@ -1132,13 +1163,19 @@ const CourseLearnPage = ({ id }: { id: string }) => {
               localStorage.setItem(`downloaded-pdfs-${course.id}`, JSON.stringify(Array.from(newDownloadedPDFs)));
             }
 
-            // Save PDF download to database
+            // Save PDF download to database and show feedback based on backend response
             if (course && content) {
-              savePDFDownload(course.id.toString(), content.id, pdfFilename);
+              savePDFDownload(course.id.toString(), content.id, pdfFilename)
+                .then((data) => {
+                  if (data?.status === 'success') {
+                    toast.success(getFirstMessage(data, 'PDF downloaded! You can now navigate to the next content.'));
+                  } else {
+                    toast.error(getFirstMessage(data, 'Failed to save PDF download. Please try again.'));
+                  }
+                });
+            } else {
+              toast.error('Failed to save PDF download. Please try again.');
             }
-
-            // Show toast notification
-            toast.success('PDF downloaded! You can now navigate to the next content.');
           }
 
           // Actually download the file

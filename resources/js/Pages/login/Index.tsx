@@ -18,7 +18,7 @@ export default function LoginPage() {
   const [mounted, setMounted] = useState(false)
 
   // Prevent hydration errors with useEffect
-  useEffect(() => {Swal
+  useEffect(() => {
     setMounted(true)
   }, [])
 
@@ -34,18 +34,19 @@ export default function LoginPage() {
         password,
       })
 
-      // Show success message
-      Swal.fire({
-        title: "Login Berhasil",
-        text: "Selamat datang kembali!",
-        icon: "success",
-        timer: 1500,
-        showConfirmButton: false,
-      })
+      if (response.data?.status === 'success') {
+        // Show success message from backend
+        Swal.fire({
+          title: "Login Berhasil",
+          text: response.data?.message || "Selamat datang kembali!",
+          icon: "success",
+          timer: 1500,
+          showConfirmButton: false,
+        })
 
-      // Redirect to dashboard or handle the successful login
-      if(response.data.status == 'success') {
+        // Redirect to dashboard or handle the successful login
         console.log(response.data)
+        setIsLoading(false)
         switch (response.data.data.tipe_user) {
           case 'admin':
             window.location.href = "/admin/"
@@ -59,7 +60,18 @@ export default function LoginPage() {
           default:
             window.location.href = "/"
             break
-      }}
+        }
+      } else {
+        const message = response.data?.message || "Login gagal. Silakan coba lagi."
+        setError(message)
+        Swal.fire({
+          title: "Login Gagal",
+          text: message,
+          icon: "error",
+          confirmButtonColor: "#3b82f6",
+        })
+        setIsLoading(false)
+      }
     } catch (err) {
       setIsLoading(false)
 
@@ -76,10 +88,11 @@ export default function LoginPage() {
           })
         } else if (err.response.status === 401) {
           // Authentication error
-          setError(err.response.data.error || "Email atau password salah")
+          const message = err.response.data.message || err.response.data.error || "Email atau password salah"
+          setError(message)
           Swal.fire({
             title: "Login Gagal",
-            text: err.response.data.error || "Email atau password salah",
+            text: message,
             icon: "error",
             confirmButtonColor: "#3b82f6",
           })
@@ -342,4 +355,3 @@ export default function LoginPage() {
     </div>
   )
 }
-

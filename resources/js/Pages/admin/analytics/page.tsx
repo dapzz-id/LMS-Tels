@@ -192,7 +192,7 @@ export default function AdminAnalyticsPage() {
           <Card className="overflow-hidden transition-shadow border-0 shadow-md rounded-xl hover:shadow-lg">
             <div className="p-1 bg-gradient-to-r from-green-600 to-green-500"></div>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Departments</CardTitle>
+              <CardTitle className="text-sm font-medium">Subjects</CardTitle>
               <div className="flex items-center justify-center bg-green-100 rounded-full h-9 w-9 dark:bg-green-900">
                 <Building2 className="w-5 h-5 text-green-600 dark:text-green-400" />
               </div>
@@ -200,7 +200,7 @@ export default function AdminAnalyticsPage() {
             <CardContent>
               <div className="text-3xl font-bold">{data?.total_departments || 0}</div>
               <p className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
-                Active departments
+                Active subjects
               </p>
               <div className="mt-4">
                 <Progress value={90} className="h-1.5 bg-green-100 dark:bg-green-900" />

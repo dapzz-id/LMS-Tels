@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Link, usePage, useForm } from "@inertiajs/react"
 import {
   BookOpen,
@@ -46,12 +46,22 @@ import {
   DialogTrigger,
 } from "@/Components/ui/dialog"
 import { toast } from "sonner"
+import { getFirstMessage } from "@/lib/api-messages"
 
 export default function SettingsPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false)
-  const { auth } = usePage().props as any
+  const { auth, flash } = usePage().props as any
   const user = auth.user
+
+  useEffect(() => {
+    if (flash?.success) {
+      toast.success(flash.success)
+    }
+    if (flash?.error) {
+      toast.error(flash.error)
+    }
+  }, [flash?.success, flash?.error])
 
   const { data, setData, patch, errors, processing, recentlySuccessful } = useForm({
     nama_lengkap: user?.nama_lengkap || '',
@@ -68,19 +78,8 @@ export default function SettingsPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     patch(route('profile.update'), {
-      onSuccess: () => {
-        toast.success('Profile updated successfully!')
-      },
       onError: (errors) => {
-        if (errors.nama_lengkap) {
-          toast.error('Full name is required')
-        } else if (errors.username) {
-          toast.error('Username is already taken or invalid')
-        } else if (errors.email) {
-          toast.error('Email is already taken or invalid')
-        } else {
-          toast.error('Failed to update profile. Please try again.')
-        }
+        toast.error(getFirstMessage({ errors }, 'Failed to update profile. Please try again.'))
       }
     })
   }
@@ -90,18 +89,11 @@ export default function SettingsPage() {
 
     passwordForm.put(route('password.update'), {
       onSuccess: () => {
-        toast.success('Password updated successfully!')
         setIsPasswordModalOpen(false)
         passwordForm.reset()
       },
       onError: (errors) => {
-        if (errors.current_password) {
-          toast.error('Current password is incorrect')
-        } else if (errors.password) {
-          toast.error('New password validation failed')
-        } else {
-          toast.error('Failed to update password')
-        }
+        toast.error(getFirstMessage({ errors }, 'Failed to update password'))
       },
     })
   }
@@ -233,8 +225,8 @@ export default function SettingsPage() {
                       {processing ? 'Saving...' : 'Save Changes'}
                     </Button>
 
-                    {recentlySuccessful && (
-                      <p className="text-sm text-green-600 text-center">Profile updated successfully!</p>
+                    {recentlySuccessful && flash?.success && (
+                      <p className="text-sm text-green-600 text-center">{flash.success}</p>
                     )}
                   </form>
                 </CardContent>

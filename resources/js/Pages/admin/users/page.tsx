@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useRef, useState } from "react"
 import {
   Users,
   Search,
@@ -8,11 +8,8 @@ import {
   Download,
   Trash2,
   Edit,
-  UserPlus,
-  Filter,
   ArrowUpDown,
   CheckCircle2,
-  XCircle,
   AlertCircle,
   GraduationCap,
   BookOpen,
@@ -21,8 +18,9 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/Components/ui/card"
 import { Button } from "@/Components/ui/button"
 import { Input } from "@/Components/ui/input"
-import { Avatar, AvatarFallback, AvatarImage } from "@/Components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/Components/ui/avatar"
 import { Badge } from "@/Components/ui/badge"
+import { Alert, AlertDescription, AlertTitle } from "@/Components/ui/alert"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,8 +34,7 @@ import AdminPageLayout from "../layout"
 import { Link, router } from "@inertiajs/react"
 import { Label } from "@/Components/ui/label"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/Components/ui/dialog"
-import { useRef } from "react"
-import { useForm } from '@inertiajs/react';
+import { getFieldErrorMessage } from "@/lib/api-messages"
 
 interface User {
   id: number
@@ -51,6 +48,13 @@ interface User {
 
 interface Props {
   users?: User[]
+}
+
+interface ImportFeedback {
+  variant: "success" | "error"
+  title: string
+  message?: string
+  details?: string[]
 }
 
 // Helper function to get role badge
@@ -67,6 +71,69 @@ const getRoleBadge = (role: string) => {
   )
 }
 
+const fallbackImportErrorMessage = "Import gagal. Periksa detail kesalahan di bawah."
+
+const normalizeRowLabel = (message: string) => message.replace(/\brow\b/gi, "Baris")
+
+const normalizeImportError = (payload: any) => {
+  let message = typeof payload?.message === "string" ? payload.message : ""
+  if (message === "The given data was invalid.") {
+    message = "Data tidak valid."
+  }
+
+  let details: string[] = []
+  let fileError: string | undefined
+
+  if (payload?.errors) {
+    if (Array.isArray(payload.errors)) {
+      details = payload.errors
+        .filter((item: unknown) => typeof item === "string")
+        .map((item: string) => item.trim())
+        .filter((item: string) => item.length > 0)
+    } else if (typeof payload.errors === "object") {
+      for (const [key, value] of Object.entries(payload.errors)) {
+        if (Array.isArray(value)) {
+          const messages = value
+            .filter((item: unknown) => typeof item === "string")
+            .map((item: string) => item.trim())
+            .filter((item: string) => item.length > 0)
+          details.push(...messages)
+          if (key === "file" && messages.length > 0) {
+            fileError = messages[0]
+          }
+        }
+      }
+    }
+  }
+
+  if (details.length === 0 && message) {
+    const splitMessages = message
+      .split(";")
+      .map((item : any) => item.trim())
+      .filter((item : any) => item.length > 0)
+    if (splitMessages.length > 1) {
+      details = splitMessages
+      message = fallbackImportErrorMessage
+    }
+  }
+
+  if (!message) {
+    message = fallbackImportErrorMessage
+  }
+
+  message = normalizeRowLabel(message)
+  details = details.map((detail) => normalizeRowLabel(detail))
+  if (fileError) {
+    fileError = normalizeRowLabel(fileError)
+  }
+
+  return {
+    message,
+    details: details.length > 0 ? details : undefined,
+    fileError,
+  }
+}
+
 export default function UsersPage({ users = [] }: Props) {
   const [searchQuery, setSearchQuery] = useState("")
   const [roleFilter, setRoleFilter] = useState<string>("all")
@@ -74,6 +141,7 @@ export default function UsersPage({ users = [] }: Props) {
   // Edit user modal state
   const [editUser, setEditUser] = useState<User | null>(null)
   const threeDotsRef = useRef<HTMLButtonElement | null>(null)
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
   const [openDropdownUserId, setOpenDropdownUserId] = useState<number | null>(null)
   const [deleteUser, setDeleteUser] = useState<User | null>(null)
   const [isDeleteSubmitting, setIsDeleteSubmitting] = useState(false)
@@ -87,10 +155,17 @@ export default function UsersPage({ users = [] }: Props) {
   })
   const [editErrors, setEditErrors] = useState<any>({})
   const [isEditSubmitting, setIsEditSubmitting] = useState(false)
+  const [importFeedback, setImportFeedback] = useState<ImportFeedback | null>(null)
+  const [fileError, setFileError] = useState<string | null>(null)
+  const [isImporting, setIsImporting] = useState(false)
+  const [importFile, setImportFile] = useState<File | null>(null)
 
-  // Add after state declarations
-  const { data, setData, post, processing, errors, reset } = useForm<{ file: File | null }>({ file: null });
-  const [importMessage, setImportMessage] = useState<string | null>(null);
+  const editNamaLengkapError = getFieldErrorMessage(editErrors.nama_lengkap)
+  const editUsernameError = getFieldErrorMessage(editErrors.username)
+  const editEmailError = getFieldErrorMessage(editErrors.email)
+  const editPasswordError = getFieldErrorMessage(editErrors.password)
+  const editTipeUserError = getFieldErrorMessage(editErrors.tipe_user)
+  const editClassError = getFieldErrorMessage(editErrors.class)
 
   // Filter users based on search query and filters
   const filteredUsers = users.filter((user) => {
@@ -201,42 +276,115 @@ export default function UsersPage({ users = [] }: Props) {
     })
   }
 
+  const handleImportFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files && e.target.files[0] ? e.target.files[0] : null
+    setImportFile(file)
+    setFileError(null)
+    if (importFeedback) {
+      setImportFeedback(null)
+    }
+  }
+
   // Handle import form submit
-  const handleImportSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setImportMessage(null);
-    post('/admin/users/import', {
-      onSuccess: () => {
-        setImportMessage('Users imported successfully.');
-        reset();
-        router.reload({ only: ['users'] });
-      },
-      onError: (err: any) => {
-        setImportMessage(err.file || 'Import failed.');
-      },
-    });
-  };
+  const handleImportSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setImportFeedback(null)
+    setFileError(null)
+
+    // Guard: file harus ada
+    if (!importFile) {
+      const message = "Silakan pilih file terlebih dahulu."
+      setFileError(message)
+      setImportFeedback({
+        variant: "error",
+        title: "File belum dipilih",
+        message,
+      })
+      return
+    }
+
+    // Build FormData untuk upload
+    const formData = new FormData()
+    formData.append("file", importFile)
+
+    try {
+      setIsImporting(true)
+      const token =
+        document.querySelector('meta[name="csrf-token"]')?.getAttribute("content") || ""
+
+      const res = await fetch("/admin/users/import", {
+        method: "POST",
+        body: formData,
+        headers: {
+          "X-CSRF-TOKEN": token,
+          "X-Requested-With": "XMLHttpRequest",
+        },
+      })
+
+      let json: any = null
+      try {
+        json = await res.json()
+      } catch {
+        json = null
+      }
+
+      if (res.ok && json?.status === "success") {
+        setImportFeedback({
+          variant: "success",
+          title: "Import berhasil",
+          message: json?.message || "Import selesai.",
+        })
+        setImportFile(null)
+        if (fileInputRef.current) {
+          fileInputRef.current.value = ""
+        }
+        router.reload({ only: ["users"] }) // refresh tabel user
+      } else {
+        const { message, details, fileError: apiFileError } =
+          normalizeImportError(json)
+        setImportFeedback({
+          variant: "error",
+          title: "Import gagal",
+          message,
+          details,
+        })
+        if (apiFileError) {
+          setFileError(apiFileError)
+        }
+      }
+    } catch (error: any) {
+      setImportFeedback({
+        variant: "error",
+        title: "Import gagal",
+        message: error?.message
+          ? `Terjadi kesalahan jaringan: ${error.message}`
+          : "Terjadi kesalahan jaringan.",
+      })
+    } finally {
+      setIsImporting(false)
+    }
+  }
 
   return (
     <AdminPageLayout>
       <div className="space-y-6">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-red-700 to-red-500 bg-clip-text text-transparent">
+            <h1 className="text-3xl font-bold tracking-tight text-transparent bg-gradient-to-r from-red-700 to-red-500 bg-clip-text">
               User Management
             </h1>
             <p className="text-slate-500 dark:text-slate-400">Manage user accounts and permissions</p>
           </div>
           <Link href="/admin/users/new">
             <Button className="bg-red-600 hover:bg-red-700">
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="w-4 h-4 mr-2" />
               Add User
             </Button>
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="rounded-xl shadow-sm border-0">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <Card className="border-0 shadow-sm rounded-xl">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium">Total Users</CardTitle>
               <CardDescription>All registered users</CardDescription>
@@ -244,12 +392,12 @@ export default function UsersPage({ users = [] }: Props) {
             <CardContent>
               <div className="flex items-center justify-between">
                 <div className="text-2xl font-bold">{users.length}</div>
-                <Users className="h-4 w-4 text-red-600" />
+                <Users className="w-4 h-4 text-red-600" />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="rounded-xl shadow-sm border-0">
+          <Card className="border-0 shadow-sm rounded-xl">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium">Students</CardTitle>
               <CardDescription>Active learning accounts</CardDescription>
@@ -259,12 +407,12 @@ export default function UsersPage({ users = [] }: Props) {
                 <div className="text-2xl font-bold">
                   {users.filter(user => user.tipe_user === 'siswa').length}
                 </div>
-                <GraduationCap className="h-4 w-4 text-red-600" />
+                <GraduationCap className="w-4 h-4 text-red-600" />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="rounded-xl shadow-sm border-0">
+          <Card className="border-0 shadow-sm rounded-xl">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium">Teachers</CardTitle>
               <CardDescription>Course instructors</CardDescription>
@@ -274,53 +422,74 @@ export default function UsersPage({ users = [] }: Props) {
                 <div className="text-2xl font-bold">
                   {users.filter(user => user.tipe_user === 'guru').length}
                 </div>
-                <BookOpen className="h-4 w-4 text-red-600" />
+                <BookOpen className="w-4 h-4 text-red-600" />
               </div>
             </CardContent>
           </Card>
         </div>
 
         {/* Import Users Form */}
-        <Card className="rounded-xl shadow-sm border-0 mb-6">
+        <Card className="mb-6 border-0 shadow-sm rounded-xl">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Import Users</CardTitle>
             <CardDescription>Upload an Excel or CSV file to add users in bulk.</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleImportSubmit} className="space-y-4">
-              <div className="flex flex-col md:flex-row md:items-end gap-4">
+              <div className="flex flex-col gap-4 md:flex-row md:items-end">
                 <div className="flex-1">
                   <Label htmlFor="import-file">Select File</Label>
                   <Input
                     id="import-file"
                     type="file"
                     accept=".xlsx,.xls,.csv"
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setData('file', e.target.files && e.target.files[0] ? e.target.files[0] : null)
-                    }
+                    ref={fileInputRef}
+                    onChange={handleImportFileChange}
                     required
-                    className="mt-1"
+                    className={`mt-1 ${fileError ? "border-red-500" : ""}`}
                   />
-                  <p className="text-xs text-gray-500 mt-1">Supported formats: .xlsx, .xls, .csv (Max 10MB)</p>
+                  <p className="mt-1 text-xs text-gray-500">Supported formats: .xlsx, .xls, .csv (Max 10MB)</p>
+                  {fileError && <p className="mt-1 text-sm text-red-500">{fileError}</p>}
                 </div>
-                <Button type="submit" className="bg-red-600 hover:bg-red-700" disabled={processing}>
-                  {processing ? (
+                <Button type="submit" className="bg-red-600 hover:bg-red-700" disabled={isImporting}>
+                  {isImporting ? (
                     <>
-                      <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                      <div className="w-4 h-4 mr-2 border-2 border-current rounded-full animate-spin border-t-transparent"></div>
                       Importing...
                     </>
                   ) : 'Import Users'}
                 </Button>
               </div>
-              {errors.file && <span className="text-red-500 text-sm">{errors.file}</span>}
-              {importMessage && (
-                <div className={`text-sm ${importMessage.includes('successfully') ? 'text-green-600' : 'text-red-500'}`}>
-                  {importMessage}
-                </div>
+              {importFeedback && (
+                <Alert
+                  variant={importFeedback.variant === "error" ? "destructive" : "default"}
+                  className={
+                    importFeedback.variant === "success"
+                      ? "border-green-200 bg-green-50 text-green-800 dark:border-green-900/40 dark:bg-green-900/20 dark:text-green-200"
+                      : ""
+                  }
+                >
+                  {importFeedback.variant === "success" ? (
+                    <CheckCircle2 className="w-4 h-4" />
+                  ) : (
+                    <AlertCircle className="w-4 h-4" />
+                  )}
+                  <AlertTitle>{importFeedback.title}</AlertTitle>
+                  <AlertDescription>
+                    {importFeedback.message && <p>{importFeedback.message}</p>}
+                    {importFeedback.details && importFeedback.details.length > 0 && (
+                      <ul className="pl-5 mt-2 space-y-1 list-disc">
+                        {importFeedback.details.map((detail, index) => (
+                          <li key={`${detail}-${index}`}>{detail}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </AlertDescription>
+                </Alert>
               )}
-              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                <h4 className="font-medium text-blue-800 dark:text-blue-200 mb-2">Import Instructions</h4>
-                <ul className="text-xs text-blue-700 dark:text-blue-300 space-y-1">
+              <div className="p-4 border border-blue-200 rounded-lg bg-blue-50 dark:bg-blue-900/20 dark:border-blue-800">
+                <h4 className="mb-2 font-medium text-blue-800 dark:text-blue-200">Import Instructions</h4>
+                <ul className="space-y-1 text-xs text-blue-700 dark:text-blue-300">
                   <li>• Download and use the template for best results</li>
                   <li>• Required columns: nama_lengkap, username, email, tipe_user, password</li>
                   <li>• User types: admin, siswa, guru</li>
@@ -331,10 +500,10 @@ export default function UsersPage({ users = [] }: Props) {
                   type="button"
                   variant="outline"
                   size="sm"
-                  className="mt-3 bg-white dark:bg-gray-800 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/30"
+                  className="mt-3 text-blue-700 bg-white border-blue-300 dark:bg-gray-800 dark:border-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/30"
                   onClick={() => window.location.href = '/admin/users/template'}
                 >
-                  <Download className="mr-2 h-4 w-4" />
+                  <Download className="w-4 h-4 mr-2" />
                   Download Template
                 </Button>
               </div>
@@ -342,13 +511,13 @@ export default function UsersPage({ users = [] }: Props) {
           </CardContent>
         </Card>
 
-        <Card className="rounded-xl shadow-md border-0">
+        <Card className="border-0 shadow-md rounded-xl">
           <CardHeader className="pb-2">
             <CardTitle>Users</CardTitle>
             <CardDescription>Manage user accounts and permissions</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col gap-4 md:flex-row md:items-center mb-6">
+            <div className="flex flex-col gap-4 mb-6 md:flex-row md:items-center">
               <div className="relative flex-1">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500 dark:text-blue-300/70" />
                 <Input
@@ -379,25 +548,25 @@ export default function UsersPage({ users = [] }: Props) {
                     window.location.href = '/admin/users/export';
                   }}
                 >
-                  <Download className="h-4 w-4" />
+                  <Download className="w-4 h-4" />
                 </Button>
               </div>
             </div>
 
-            <div className="rounded-lg border">
+            <div className="border rounded-lg">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-[250px]">
                       <div className="flex items-center gap-1">
                         User
-                        <ArrowUpDown className="h-3 w-3" />
+                        <ArrowUpDown className="w-3 h-3" />
                       </div>
                     </TableHead>
                     <TableHead>
                       <div className="flex items-center gap-1">
                         Role
-                        <ArrowUpDown className="h-3 w-3" />
+                        <ArrowUpDown className="w-3 h-3" />
                       </div>
                     </TableHead>
                     <TableHead>Username</TableHead>
@@ -410,7 +579,7 @@ export default function UsersPage({ users = [] }: Props) {
                 <TableBody>
                   {filteredUsers.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={7} className="py-8 text-center text-muted-foreground">
                         No users found matching your criteria
                       </TableCell>
                     </TableRow>
@@ -419,7 +588,7 @@ export default function UsersPage({ users = [] }: Props) {
                       <TableRow key={user.id}>
                         <TableCell>
                           <div className="flex items-center gap-3">
-                            <Avatar className="h-8 w-8 border border-slate-200 dark:border-slate-800">
+                            <Avatar className="w-8 h-8 border border-slate-200 dark:border-slate-800">
                               <AvatarFallback>
                                 {user.nama_lengkap
                                   .split(" ")
@@ -445,7 +614,7 @@ export default function UsersPage({ users = [] }: Props) {
                           >
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="icon" className="rounded-full">
-                                <MoreHorizontal className="h-4 w-4" />
+                                <MoreHorizontal className="w-4 h-4" />
                                 <span className="sr-only">Actions</span>
                               </Button>
                             </DropdownMenuTrigger>
@@ -457,15 +626,15 @@ export default function UsersPage({ users = [] }: Props) {
                                   openEditModal(user, e);
                                 }}
                               >
-                                <Edit className="mr-2 h-4 w-4" />
+                                <Edit className="w-4 h-4 mr-2" />
                                 Edit User
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
-                                className="cursor-pointer text-red-600 dark:text-red-400"
+                                className="text-red-600 cursor-pointer dark:text-red-400"
                                 onClick={(e) => openDeleteModal(user, e)}
                               >
-                                <Trash2 className="mr-2 h-4 w-4" />
+                                <Trash2 className="w-4 h-4 mr-2" />
                                 Delete User
                               </DropdownMenuItem>
                             </DropdownMenuContent>
@@ -500,8 +669,8 @@ export default function UsersPage({ users = [] }: Props) {
                   className={editErrors.nama_lengkap ? "border-red-500" : ""}
                   required
                 />
-                {editErrors.nama_lengkap && (
-                  <p className="text-sm text-red-500">{editErrors.nama_lengkap[0]}</p>
+                {editNamaLengkapError && (
+                  <p className="text-sm text-red-500">{editNamaLengkapError}</p>
                 )}
               </div>
               <div className="space-y-2">
@@ -514,8 +683,8 @@ export default function UsersPage({ users = [] }: Props) {
                   className={editErrors.username ? "border-red-500" : ""}
                   required
                 />
-                {editErrors.username && (
-                  <p className="text-sm text-red-500">{editErrors.username[0]}</p>
+                {editUsernameError && (
+                  <p className="text-sm text-red-500">{editUsernameError}</p>
                 )}
               </div>
               <div className="space-y-2">
@@ -529,8 +698,8 @@ export default function UsersPage({ users = [] }: Props) {
                   className={editErrors.email ? "border-red-500" : ""}
                   required
                 />
-                {editErrors.email && (
-                  <p className="text-sm text-red-500">{editErrors.email[0]}</p>
+                {editEmailError && (
+                  <p className="text-sm text-red-500">{editEmailError}</p>
                 )}
               </div>
               <div className="space-y-2">
@@ -544,8 +713,8 @@ export default function UsersPage({ users = [] }: Props) {
                   className={editErrors.password ? "border-red-500" : ""}
                   placeholder="Leave blank to keep current password"
                 />
-                {editErrors.password && (
-                  <p className="text-sm text-red-500">{editErrors.password[0]}</p>
+                {editPasswordError && (
+                  <p className="text-sm text-red-500">{editPasswordError}</p>
                 )}
               </div>
               <div className="space-y-2">
@@ -563,8 +732,8 @@ export default function UsersPage({ users = [] }: Props) {
                     <SelectItem value="admin">Administrator</SelectItem>
                   </SelectContent>
                 </Select>
-                {editErrors.tipe_user && (
-                  <p className="text-sm text-red-500">{editErrors.tipe_user[0]}</p>
+                {editTipeUserError && (
+                  <p className="text-sm text-red-500">{editTipeUserError}</p>
                 )}
               </div>
               <div className="space-y-2">
@@ -577,8 +746,8 @@ export default function UsersPage({ users = [] }: Props) {
                   className={editErrors.class ? "border-red-500" : ""}
                   placeholder="e.g., XII TKJ 1"
                 />
-                {editErrors.class && (
-                  <p className="text-sm text-red-500">{editErrors.class[0]}</p>
+                {editClassError && (
+                  <p className="text-sm text-red-500">{editClassError}</p>
                 )}
               </div>
             </div>
@@ -615,4 +784,3 @@ export default function UsersPage({ users = [] }: Props) {
     </AdminPageLayout>
   )
 }
-

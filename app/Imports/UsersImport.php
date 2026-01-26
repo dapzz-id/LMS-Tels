@@ -16,6 +16,7 @@ class UsersImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnErr
 
     private $rowCount = 0;
     private $skippedCount = 0;
+    private $rawRowCount = 0;
 
     /**
      * @param array $row
@@ -42,6 +43,20 @@ class UsersImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnErr
         }
 
         if (User::where('email', $email)->exists()) {
+            $this->skippedCount++;
+            return null;
+        }
+
+        $this->rawRowCount++;
+
+        // Deteksi row kosong
+        if (
+            empty($row['nama_lengkap']) &&
+            empty($row['username']) &&
+            empty($row['email']) &&
+            empty($row['tipe_user']) &&
+            empty($row['class'])
+        ) {
             $this->skippedCount++;
             return null;
         }
@@ -103,5 +118,10 @@ class UsersImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnErr
             'tipe_user.required' => 'User type is required.',
             'tipe_user.in' => 'User type must be admin, siswa, or guru.',
         ];
+    }
+
+    public function getRawRowCount(): int
+    {
+        return $this->rawRowCount;
     }
 }

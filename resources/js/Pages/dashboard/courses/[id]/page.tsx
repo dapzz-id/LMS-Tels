@@ -20,6 +20,7 @@ import { Button } from "@/Components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/Components/ui/card"
 import { Progress } from "@/Components/ui/progress"
 import { toast } from "sonner"
+import { getFirstMessage } from "@/lib/api-messages"
 import axios from "axios"
 import { Badge } from "@/Components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/Components/ui/tabs"
@@ -99,14 +100,18 @@ const CourseDetailsPage = ({ params }: { params: { id: string } }) => {
               setProgress((completedContent / courseData.contents.length) * 100)
             }
           } else {
-            toast.error('Course not found')
+            toast.error(getFirstMessage(response.data, 'Course not found'))
           }
         } else {
-          toast.error('Invalid course data received')
+          toast.error(getFirstMessage(response.data, 'Invalid course data received'))
         }
       } catch (error) {
         console.error('Error fetching course details:', error)
-        toast.error('Failed to load course details')
+        if (axios.isAxiosError(error)) {
+          toast.error(getFirstMessage(error.response?.data, 'Failed to load course details'))
+        } else {
+          toast.error('Failed to load course details')
+        }
       } finally {
         setLoading(false)
       }

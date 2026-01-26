@@ -9,9 +9,10 @@ use App\Models\Kursus;
 use App\Models\CourseContent;
 use Exception;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\FacadesLog;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class GradesAdminController extends Controller
 {
@@ -67,10 +68,10 @@ class GradesAdminController extends Controller
             $submissions = $query->paginate(20);
 
             // Debug: Log the first submission to see what data we're getting
-            \Log::info('Total submissions found: ' . $submissions->count());
+            Log::info('Total submissions found: ' . $submissions->count());
             if ($submissions->count() > 0) {
                 $firstSubmission = $submissions->first();
-                \Log::info('First submission data:', [
+                Log::info('First submission data:', [
                     'id' => $firstSubmission->id,
                     'score' => $firstSubmission->score,
                     'student_name' => $firstSubmission->student_name,
@@ -82,7 +83,7 @@ class GradesAdminController extends Controller
                 // Test parsing quiz_data
                 if ($firstSubmission->quiz_data) {
                     $quizData = json_decode($firstSubmission->quiz_data, true);
-                    \Log::info('Parsed quiz data:', [
+                    Log::info('Parsed quiz data:', [
                         'is_array' => is_array($quizData),
                         'count' => is_array($quizData) ? count($quizData) : 0,
                         'data' => $quizData
@@ -91,17 +92,17 @@ class GradesAdminController extends Controller
 
                 // Test relationship
                 if ($firstSubmission->quizContent) {
-                    \Log::info('QuizContent relationship data:', [
+                    Log::info('QuizContent relationship data:', [
                         'id' => $firstSubmission->quizContent->id,
                         'title' => $firstSubmission->quizContent->title,
                         'quiz_data' => $firstSubmission->quizContent->quiz_data,
                         'type' => $firstSubmission->quizContent->type,
                     ]);
                 } else {
-                    \Log::info('No quizContent relationship found');
+                    Log::info('No quizContent relationship found');
                 }
             } else {
-                \Log::info('No submissions found in database');
+                Log::info('No submissions found in database');
             }
 
                         // Calculate statistics
@@ -160,7 +161,7 @@ class GradesAdminController extends Controller
 
 
             // Debug: Log what we're sending to frontend
-            \Log::info('Sending to frontend:', [
+            Log::info('Sending to frontend:', [
                 'submissions_count' => $submissions->count(),
                 'first_submission_keys' => $submissions->count() > 0 ? array_keys($submissions->first()->toArray()) : [],
                 'first_submission_quiz_data' => $submissions->count() > 0 ? $submissions->first()->quiz_data : null,
@@ -169,12 +170,12 @@ class GradesAdminController extends Controller
             // Debug: Check raw data from database
             if ($submissions->count() > 0) {
                 $firstSubmissionId = $submissions->first()->id;
-                $rawData = \DB::table('quiz_submissions')
+                $rawData = DB::table('quiz_submissions')
                     ->join('course_contents', 'quiz_submissions.quiz_content_id', '=', 'course_contents.id')
                     ->where('quiz_submissions.id', $firstSubmissionId)
                     ->select('quiz_submissions.*', 'course_contents.quiz_data', 'course_contents.type')
                     ->first();
-                \Log::info('Raw database data:', [
+                Log::info('Raw database data:', [
                     'submission_id' => $firstSubmissionId,
                     'quiz_data' => $rawData->quiz_data ?? null,
                     'type' => $rawData->type ?? null,
@@ -214,7 +215,7 @@ class GradesAdminController extends Controller
                 ->findOrFail($id);
 
             // Debug: Log the submission data
-            \Log::info('Show submission data:', [
+            Log::info('Show submission data:', [
                 'id' => $submission->id,
                 'user' => $submission->user ? $submission->user->nama_lengkap : 'No user',
                 'course' => $submission->course ? $submission->course->judul_kursus : 'No course',

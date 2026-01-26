@@ -112,12 +112,12 @@ export default function TeacherCourseDetailPage({ course }: Props) {
           </Card>
           <Card className="border-0 shadow-sm rounded-xl">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Department</CardTitle>
+              <CardTitle className="text-sm font-medium">Subject</CardTitle>
               <FileText className="w-4 h-4 text-blue-600" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{course.mapel?.nama_mapel || "Not assigned"}</div>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Course department</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Course subject</p>
             </CardContent>
           </Card>
           <Card className="border-0 shadow-sm rounded-xl">
@@ -385,4 +385,3 @@ const courseAssignments = [
     totalStudents: 42,
   },
 ]
-

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { Head, router } from "@inertiajs/react"
 import axios from "axios"
 import { toast } from "sonner"
+import { getFirstMessage } from "@/lib/api-messages"
 import { Button } from "@/Components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card"
 import { Progress } from "@/Components/ui/progress"
@@ -437,10 +438,14 @@ const QuizPage = (props: QuizPageProps) => {
       });
       window.dispatchEvent(quizCompleteEvent);
 
-      toast.success("Quiz submitted successfully!")
+      toast.success(getFirstMessage(response.data, "Quiz submitted successfully!"))
     } catch (error) {
       console.error("Error submitting quiz:", error)
-      toast.error("Failed to submit quiz")
+      if (axios.isAxiosError(error)) {
+        toast.error(getFirstMessage(error.response?.data, "Failed to submit quiz"))
+      } else {
+        toast.error("Failed to submit quiz")
+      }
     }
   }
 

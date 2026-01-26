@@ -61,7 +61,8 @@ class MapelAdminController extends Controller
             if ($validator->fails()) {
                 return response()->json([
                     'status' => 'failed',
-                    'message' => $validator->errors()
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
                 ], 422);
             }
 
@@ -95,7 +96,8 @@ class MapelAdminController extends Controller
             if ($validator->fails()) {
                 return response()->json([
                     'status' => 'failed',
-                    'message' => $validator->errors()
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
                 ], 422);
             }
 

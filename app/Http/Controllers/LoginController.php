@@ -42,11 +42,17 @@ class LoginController extends Controller
         $user = User::where('email', $credentials['email'])->first();
 
         if (!$user) {
-            return response()->json(['error' => 'Email tidak terdaftar'], 401);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Email tidak terdaftar'
+            ], 401);
         }
 
         if (!Hash::check($credentials['password'], $user->password)) {
-            return response()->json(['error' => 'Password salah'], 401);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Password salah'
+            ], 401);
         }
 
         if (Auth::attempt($credentials)) {
@@ -59,6 +65,11 @@ class LoginController extends Controller
                 ]
             ]);
         }
+
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Login gagal. Silakan coba lagi.'
+        ], 401);
     }
 
     public function logout(Request $request)

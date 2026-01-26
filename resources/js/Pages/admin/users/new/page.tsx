@@ -10,6 +10,7 @@ import AdminPageLayout from "../../layout"
 import { Link, router } from "@inertiajs/react"
 
 import type { Errors } from "@inertiajs/core"
+import { getFieldErrorMessage } from "@/lib/api-messages"
 
 export default function NewUserPage() {
   const [formData, setFormData] = useState({
@@ -22,6 +23,13 @@ export default function NewUserPage() {
   })
   const [errors, setErrors] = useState<Errors>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const namaLengkapError = getFieldErrorMessage(errors.nama_lengkap)
+  const usernameError = getFieldErrorMessage(errors.username)
+  const emailError = getFieldErrorMessage(errors.email)
+  const passwordError = getFieldErrorMessage(errors.password)
+  const tipeUserError = getFieldErrorMessage(errors.tipe_user)
+  const classError = getFieldErrorMessage(errors.class)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -89,8 +97,8 @@ export default function NewUserPage() {
                     className={errors.nama_lengkap ? "border-red-500" : ""}
                     required
                   />
-                  {errors.nama_lengkap && (
-                    <p className="text-sm text-red-500">{errors.nama_lengkap[0]}</p>
+                  {namaLengkapError && (
+                    <p className="text-sm text-red-500">{namaLengkapError}</p>
                   )}
                 </div>
 
@@ -104,8 +112,8 @@ export default function NewUserPage() {
                     className={errors.username ? "border-red-500" : ""}
                     required
                   />
-                  {errors.username && (
-                    <p className="text-sm text-red-500">{errors.username[0]}</p>
+                  {usernameError && (
+                    <p className="text-sm text-red-500">{usernameError}</p>
                   )}
                 </div>
 
@@ -120,8 +128,8 @@ export default function NewUserPage() {
                     className={errors.email ? "border-red-500" : ""}
                     required
                   />
-                  {errors.email && (
-                    <p className="text-sm text-red-500">{errors.email[0]}</p>
+                  {emailError && (
+                    <p className="text-sm text-red-500">{emailError}</p>
                   )}
                 </div>
 
@@ -136,8 +144,8 @@ export default function NewUserPage() {
                     className={errors.password ? "border-red-500" : ""}
                     required
                   />
-                  {errors.password && (
-                    <p className="text-sm text-red-500">{errors.password[0]}</p>
+                  {passwordError && (
+                    <p className="text-sm text-red-500">{passwordError}</p>
                   )}
                 </div>
 
@@ -156,8 +164,8 @@ export default function NewUserPage() {
                       <SelectItem value="admin">Administrator</SelectItem>
                     </SelectContent>
                   </Select>
-                  {errors.tipe_user && (
-                    <p className="text-sm text-red-500">{errors.tipe_user[0]}</p>
+                  {tipeUserError && (
+                    <p className="text-sm text-red-500">{tipeUserError}</p>
                   )}
                 </div>
 
@@ -171,8 +179,8 @@ export default function NewUserPage() {
                     className={errors.class ? "border-red-500" : ""}
                     placeholder="e.g., XII TKJ 1"
                   />
-                  {errors.class && (
-                    <p className="text-sm text-red-500">{errors.class[0]}</p>
+                  {classError && (
+                    <p className="text-sm text-red-500">{classError}</p>
                   )}
                 </div>
               </div>
@@ -194,4 +202,3 @@ export default function NewUserPage() {
     </AdminPageLayout>
   )
 }
-

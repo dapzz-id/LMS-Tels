@@ -200,7 +200,7 @@ export default function ViewCoursePage({ course }: Props) {
               <div className="grid gap-6 md:grid-cols-2">
                 <div className="space-y-4">
                   <div>
-                    <h3 className="mb-1 text-sm font-medium text-slate-500 dark:text-slate-400">Department</h3>
+                    <h3 className="mb-1 text-sm font-medium text-slate-500 dark:text-slate-400">Subject</h3>
                     <p className="font-medium">{course.mapel.nama_mapel}</p>
                   </div>
                   <div>

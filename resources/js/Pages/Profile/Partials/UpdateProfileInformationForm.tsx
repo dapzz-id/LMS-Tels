@@ -18,6 +18,7 @@ import {
     DialogTrigger,
 } from '@/Components/ui/dialog';
 import { toast } from 'sonner';
+import { getFirstMessage } from '@/lib/api-messages';
 import { Lock } from 'lucide-react';
 
 export default function UpdateProfileInformation({
@@ -29,7 +30,8 @@ export default function UpdateProfileInformation({
     status?: string;
     className?: string;
 }) {
-    const user = usePage().props.auth.user;
+    const { auth, flash } = usePage().props as any;
+    const user = auth.user;
     const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
 
     const { data, setData, patch, errors, processing, recentlySuccessful } =
@@ -55,18 +57,11 @@ export default function UpdateProfileInformation({
 
         passwordForm.put(route('password.update'), {
             onSuccess: () => {
-                toast.success('Password updated successfully!');
                 setIsPasswordModalOpen(false);
                 passwordForm.reset();
             },
             onError: (errors) => {
-                if (errors.current_password) {
-                    toast.error('Current password is incorrect');
-                } else if (errors.password) {
-                    toast.error('New password validation failed');
-                } else {
-                    toast.error('Failed to update password');
-                }
+                toast.error(getFirstMessage({ errors }, 'Failed to update password'));
             },
         });
     };
@@ -220,14 +215,14 @@ export default function UpdateProfileInformation({
                     </Dialog>
 
                     <Transition
-                        show={recentlySuccessful}
+                        show={recentlySuccessful && !!flash?.success}
                         enter="transition ease-in-out"
                         enterFrom="opacity-0"
                         leave="transition ease-in-out"
                         leaveTo="opacity-0"
                     >
                         <p className="text-sm text-gray-600">
-                            Saved.
+                            {flash?.success}
                         </p>
                     </Transition>
                 </div>

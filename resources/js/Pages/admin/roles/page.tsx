@@ -99,8 +99,8 @@ const roles = [
   },
   {
     id: 5,
-    name: "Department Head",
-    description: "Can oversee teachers and courses in their department",
+    name: "Subject Head",
+    description: "Can oversee teachers and courses in their subject",
     users: 16,
     isSystem: false,
     permissions: {
@@ -594,4 +594,3 @@ export default function RolesPage() {
     </AdminPageLayout>
   )
 }
-

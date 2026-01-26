@@ -38,6 +38,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/Components/ui/avatar"
 import TeacherLayout from "../layout"
 import { toast } from "sonner"
+import { getFirstMessage } from "@/lib/api-messages"
 import { Link } from "@inertiajs/react"
 import { Toaster } from "sonner"
 
@@ -89,10 +90,10 @@ export default function CoursesPage({ courses = [] }: Props) {
       const data = await response.json()
 
       if (data.status === 'success') {
-        toast.success('Course deleted successfully')
+        toast.success(getFirstMessage(data, 'Course deleted successfully'))
         router.reload() // Refresh the page to update the list
       } else {
-        toast.error(data.message || 'Failed to delete course')
+        toast.error(getFirstMessage(data, 'Failed to delete course'))
       }
     } catch (error) {
       toast.error('Error deleting course')
@@ -164,10 +165,10 @@ export default function CoursesPage({ courses = [] }: Props) {
                     <Filter className="w-4 h-4 text-slate-500" />
                     <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
                       <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="Filter by department" />
+                        <SelectValue placeholder="Filter by subject" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">All Departments</SelectItem>
+                        <SelectItem value="all">All Subjects</SelectItem>
                         {Array.from(new Set(courses.map(course => course.mapel?.nama_mapel))).map((department) => (
                           <SelectItem key={department} value={department?.toLowerCase() || ''}>
                             {department}
@@ -186,7 +187,7 @@ export default function CoursesPage({ courses = [] }: Props) {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Course</TableHead>
-                    <TableHead>Department</TableHead>
+                    <TableHead>Subject</TableHead>
                     <TableHead>Content</TableHead>
                     <TableHead>Students</TableHead>
                     <TableHead>Created At</TableHead>
@@ -293,4 +294,3 @@ export default function CoursesPage({ courses = [] }: Props) {
     </TeacherLayout>
   )
 }
-

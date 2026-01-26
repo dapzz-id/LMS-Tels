@@ -164,7 +164,7 @@ const logs = [
     details: {
       target: "emily.williams@example.com",
       oldRole: "Teacher",
-      newRole: "Department Head",
+      newRole: "Subject Head",
       reason: "Promotion",
     },
   },
@@ -462,4 +462,3 @@ export default function SystemLogsPage() {
     </div>
   )
 }
-

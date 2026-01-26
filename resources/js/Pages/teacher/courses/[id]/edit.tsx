@@ -17,6 +17,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/Components/ui/tabs"
 import axios from "axios"
+import { getFirstMessage } from "@/lib/api-messages"
 import { RadioGroup, RadioGroupItem } from "@/Components/ui/radio-group"
 import { Badge } from "@/Components/ui/badge"
 
@@ -95,7 +96,7 @@ interface QuizData {
 
 const courseFormSchema = z.object({
   id_mapel: z.string({
-    required_error: "Please select a department.",
+    required_error: "Please select a subject.",
   }),
   judul_kursus: z
     .string()
@@ -419,13 +420,13 @@ export default function EditCoursePage({ course, mapel, availableClasses = [] }:
         // Convert the storage path to a full URL
         const fullUrl = `${API_BASE_URL}${response.data.url}`
         form.setValue(`pembahasan.${pembahasanIndex}.contents.${contentIndex}.url`, fullUrl)
-        toast.success('PDF uploaded successfully')
+        toast.success(getFirstMessage(response.data, 'PDF uploaded successfully'))
       } else {
-        toast.error(response.data.message || 'Failed to upload PDF')
+        toast.error(getFirstMessage(response.data, 'Failed to upload PDF'))
       }
     } catch (error: any) {
       console.error('Upload error:', error)
-      toast.error(error.response?.data?.message || 'Failed to upload PDF')
+      toast.error(getFirstMessage(error.response?.data, 'Failed to upload PDF'))
     }
   }
 
@@ -486,10 +487,10 @@ export default function EditCoursePage({ course, mapel, availableClasses = [] }:
       })
 
       if (response.data.status === "success") {
-        toast.success("Course updated successfully")
+        toast.success(getFirstMessage(response.data, "Course updated successfully"))
         router.visit(`/teacher/courses/${course.id}`)
       } else {
-        toast.error(response.data.message || "Failed to update course")
+        toast.error(getFirstMessage(response.data, "Failed to update course"))
       }
     } catch (error: any) {
       console.error("Submit error:", error.response)
@@ -530,7 +531,7 @@ export default function EditCoursePage({ course, mapel, availableClasses = [] }:
           }, 2000)
         }
       } else {
-        toast.error("Error updating course")
+        toast.error(getFirstMessage(error.response?.data, "Error updating course"))
       }
     } finally {
       setIsSubmitting(false)
@@ -579,11 +580,11 @@ export default function EditCoursePage({ course, mapel, availableClasses = [] }:
                       name="id_mapel"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Department</FormLabel>
+                          <FormLabel>Subject</FormLabel>
                           <Select value={field.value} onValueChange={field.onChange}>
                             <FormControl>
                               <SelectTrigger>
-                                <SelectValue placeholder="Select a department" />
+                                <SelectValue placeholder="Select a subject" />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
@@ -1329,7 +1330,7 @@ export default function EditCoursePage({ course, mapel, availableClasses = [] }:
                       <h3 className="text-lg font-medium">Basic Information</h3>
                       <div className="grid gap-4">
                         <div>
-                          <h4 className="text-sm font-medium text-slate-500">Department</h4>
+                          <h4 className="text-sm font-medium text-slate-500">Subject</h4>
                           <p>{mapel.find((m) => m.id.toString() === form.watch("id_mapel"))?.nama_mapel}</p>
                         </div>
                         <div>
