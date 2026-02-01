@@ -282,13 +282,13 @@ export default function CreateCoursePage({ mapel }: Props) {
       const data = form.getValues();
 
       // Debug log
-      console.log('Form data before submission:', data);
+      // console.log('Form data before submission:', data);
 
       // Trigger validation
       const isValid = await form.trigger();
       if (!isValid) {
         const errors = form.formState.errors;
-        console.log('Validation errors:', errors);
+        // console.log('Validation errors:', errors);
 
         // Show specific error messages
         let errorMessage = 'Please fix the validation errors';
@@ -374,11 +374,11 @@ export default function CreateCoursePage({ mapel }: Props) {
 
     // Create/Update course
     const url = `/admin/courses`;
-    console.log('Submitting to URL:', url);
+    // console.log('Submitting to URL:', url);
 
     // Debug CSRF token
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-    console.log('CSRF Token:', csrfToken);
+    // console.log('CSRF Token:', csrfToken);
 
     const response = await axios.post(url, formData, {
       headers: {

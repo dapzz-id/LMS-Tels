@@ -54,9 +54,9 @@ interface Props {
 
 export default function AdminGradesShowPage({ submission, detailedResults }: Props) {
   // Debug: Log the submission data
-  console.log('Submission data:', submission);
-  console.log('Course content:', submission.courseContent);
-  console.log('Detailed results:', detailedResults);
+  // console.log('Submission data:', submission);
+  // console.log('Course content:', submission.courseContent);
+  // console.log('Detailed results:', detailedResults);
 
   const percentage = submission.total_questions > 0
     ? Math.round((submission.score / submission.total_questions) * 100)

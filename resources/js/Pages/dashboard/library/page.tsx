@@ -22,6 +22,7 @@ import {
   PlusCircle,
   Search,
   Star,
+  User,
   Video,
 } from "lucide-react"
 

@@ -51,23 +51,23 @@ export default function StudentActivityIntegration({ children }: StudentActivity
 
     // Check if user is a student
     if (user && user.tipe_user === 'siswa') {
-      console.log('StudentActivityIntegration: Student detected, initializing activity tracker...')
+      // console.log('StudentActivityIntegration: Student detected, initializing activity tracker...')
 
       // Wait a bit for the tracker to be available
       const initTracker = () => {
         if (window.studentActivityTracker) {
-          console.log('StudentActivityIntegration: Tracker found, updating user data...')
+          // console.log('StudentActivityIntegration: Tracker found, updating user data...')
           window.studentActivityTracker.updateUserData(user)
 
           // Force start tracking if not already tracking
           if (!window.studentActivityTracker.isTracking) {
-            console.log('StudentActivityIntegration: Starting tracking...')
+            // console.log('StudentActivityIntegration: Starting tracking...')
             window.studentActivityTracker.processUserAndStart(user)
           }
 
           initializedRef.current = true
         } else {
-          console.log('StudentActivityIntegration: Tracker not ready, retrying...')
+          // console.log('StudentActivityIntegration: Tracker not ready, retrying...')
           setTimeout(initTracker, 100)
         }
       }
@@ -78,7 +78,7 @@ export default function StudentActivityIntegration({ children }: StudentActivity
       // Also try after a delay as fallback
       setTimeout(initTracker, 1000)
     } else {
-      console.log('StudentActivityIntegration: Not a student or no user, skipping initialization')
+      // console.log('StudentActivityIntegration: Not a student or no user, skipping initialization')
     }
   }, [])
 

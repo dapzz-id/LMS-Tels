@@ -137,7 +137,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
       });
 
       if (response.data.status === 'success') {
-        console.log('Video completion saved to database:', response.data);
+        // console.log('Video completion saved to database:', response.data);
 
         // Also update progress in the main progress table
         await updateMainProgress(courseId, contentId, 1); // 1 for video completion
@@ -163,7 +163,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
       });
 
       if (response.data.status === 'success') {
-        console.log('PDF download saved to database:', response.data);
+        // console.log('PDF download saved to database:', response.data);
 
         // Also update progress in the main progress table
         await updateMainProgress(courseId, contentId, 2); // 2 for PDF download
@@ -190,7 +190,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
       });
 
       if (response.data.status === 'success') {
-        console.log('Quiz completion saved to database:', response.data);
+        // console.log('Quiz completion saved to database:', response.data);
 
         // Also update progress in the main progress table
         await updateMainProgress(courseId, contentId, 3); // 3 for quiz completion
@@ -221,7 +221,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
         progress_per_subbab: progressPerSubbab
       });
 
-      console.log('Main progress updated:', response.data);
+      // console.log('Main progress updated:', response.data);
     } catch (error) {
       console.error('Error updating main progress:', error);
     }
@@ -262,32 +262,32 @@ const CourseLearnPage = ({ id }: { id: string }) => {
           return
         }
 
-        console.log("Fetching course details for ID:", id)
+        // console.log("Fetching course details for ID:", id)
         const response = await axios.get(`/api/getDataCourseku/${id}`)
-        console.log("Raw API Response:", response)
-        console.log("Response data:", response.data)
-        console.log("Response data.kursus:", response.data?.kursus)
+        // console.log("Raw API Response:", response)
+        // console.log("Response data:", response.data)
+        // console.log("Response data.kursus:", response.data?.kursus)
 
         if (response.data && response.data.kursus && response.data.kursus.length > 0) {
           const courseData = response.data.kursus[0] // Get the first course from the array
-          console.log("Course data before processing:", courseData)
+          // console.log("Course data before processing:", courseData)
 
           // Ensure contents is an array and has valid quiz data
           if (!Array.isArray(courseData.contents)) {
-            console.log("Contents is not an array, setting to empty array")
+            // console.log("Contents is not an array, setting to empty array")
             courseData.contents = []
           } else {
             // Validate quiz data in contents
             courseData.contents = courseData.contents.map((content: Course["contents"][0]) => {
-              console.log("Processing content:", content)
+              // console.log("Processing content:", content)
               if (content.type === "quiz" && content.quiz_data) {
-                console.log("Found quiz content with data:", content.quiz_data)
+                // console.log("Found quiz content with data:", content.quiz_data)
                 try {
                   // Ensure quiz_data is properly parsed
                   if (typeof content.quiz_data === "string") {
-                    console.log("Parsing quiz data string:", content.quiz_data)
+                    // console.log("Parsing quiz data string:", content.quiz_data)
                     const parsedData = JSON.parse(content.quiz_data)
-                    console.log("Parsed quiz data:", parsedData)
+                    // console.log("Parsed quiz data:", parsedData)
                     content.quiz_data = parsedData
                   }
                 } catch (e) {
@@ -297,18 +297,18 @@ const CourseLearnPage = ({ id }: { id: string }) => {
               }
               return content
             })
-            console.log("Processed contents array:", courseData.contents)
+            // console.log("Processed contents array:", courseData.contents)
           }
 
-          console.log("Setting course data:", courseData)
+          // console.log("Setting course data:", courseData)
           setCourse(courseData)
 
           // Set first content as active if available
           if (courseData.contents.length > 0) {
-            console.log("Setting active content to first item:", courseData.contents[0])
+            // console.log("Setting active content to first item:", courseData.contents[0])
             setActiveContent(courseData.contents[0])
           } else {
-            console.log("No contents available to set as active")
+            // console.log("No contents available to set as active")
           }
 
           // Auto-expand all sections initially
@@ -385,7 +385,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
     setQuizLoading(true)
     setQuizError(null)
     try {
-      console.log("Starting quiz with content:", content)
+      // console.log("Starting quiz with content:", content)
 
       // Parse quiz data - handle different possible formats
       let quizData: any[] = []
@@ -410,7 +410,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
         } else {
           quizData = []
         }
-        console.log("Parsed quiz data:", quizData)
+        // console.log("Parsed quiz data:", quizData)
       } catch (e) {
         console.error("Error parsing quiz data:", e)
         quizData = []
@@ -436,7 +436,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
           : [],
       }
 
-      console.log("Prepared quiz object:", quiz)
+      // console.log("Prepared quiz object:", quiz)
 
       // Validate that we have questions
       if (!quiz.questions || quiz.questions.length === 0) {
@@ -459,7 +459,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
       })
       window.dispatchEvent(quizStartEvent)
 
-      console.log("Navigating to quiz page with params:", { courseId: id, id: content.id })
+      // console.log("Navigating to quiz page with params:", { courseId: id, id: content.id })
       // Use the correct route with proper parameter names
       router.get(route("student.quiz.course", { courseId: id, id: content.id }))
     } catch (error: any) {
@@ -522,13 +522,13 @@ const CourseLearnPage = ({ id }: { id: string }) => {
   // Update the handleBackToCourses function
   const handleBackToCourses = () => {
     const storedCourseId = sessionStorage.getItem("currentCourseId")
-    console.log("Back button clicked, stored course ID:", storedCourseId)
+    // console.log("Back button clicked, stored course ID:", storedCourseId)
 
     if (storedCourseId) {
-      console.log("Navigating back to course with ID:", storedCourseId)
+      // console.log("Navigating back to course with ID:", storedCourseId)
       router.get(route("student.courses.learn", { id: storedCourseId }))
     } else {
-      console.log("No stored course ID, navigating to courses list")
+      // console.log("No stored course ID, navigating to courses list")
       router.get(route("student.courses"))
     }
   }
@@ -536,10 +536,10 @@ const CourseLearnPage = ({ id }: { id: string }) => {
   // Update the handleQuizCompletion function
   const handleQuizCompletion = () => {
     const storedCourseId = sessionStorage.getItem("currentCourseId")
-    console.log("Handling quiz completion, stored course ID:", storedCourseId)
+    // console.log("Handling quiz completion, stored course ID:", storedCourseId)
 
     if (storedCourseId) {
-      console.log("Navigating back to course with ID:", storedCourseId)
+      // console.log("Navigating back to course with ID:", storedCourseId)
       // Navigate back to course first
       router.get(route("student.courses.learn", { id: storedCourseId }))
       // Clear stored data
@@ -558,7 +558,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
         }
       }, 1000)
     } else {
-      console.log("No stored course ID found, navigating to courses list")
+      // console.log("No stored course ID found, navigating to courses list")
       router.get(route("student.courses"))
     }
   }
@@ -569,8 +569,8 @@ const CourseLearnPage = ({ id }: { id: string }) => {
   useEffect(() => {
     const handleQuizComplete = (event: CustomEvent) => {
       const storedCourseId = sessionStorage.getItem("currentCourseId")
-      console.log("Quiz completion event received:", event.detail)
-      console.log("Stored course ID:", storedCourseId)
+      // console.log("Quiz completion event received:", event.detail)
+      // console.log("Stored course ID:", storedCourseId)
 
       // Track quiz completion with the new method
       if (window.studentActivityTracker && event.detail) {
@@ -592,7 +592,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
       }
 
       if (storedCourseId) {
-        console.log("Navigating back to course with ID:", storedCourseId)
+        // console.log("Navigating back to course with ID:", storedCourseId)
         router.get(route("student.courses.learn", { id: storedCourseId }))
         // Clear stored data
         sessionStorage.removeItem("currentQuiz")
@@ -606,7 +606,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
           }
         }, 500)
       } else {
-        console.log("No stored course ID found, navigating to courses list")
+        // console.log("No stored course ID found, navigating to courses list")
         router.get(route("student.courses"))
       }
     }
@@ -624,7 +624,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
       if (document.visibilityState === "visible") {
         const storedCourseId = sessionStorage.getItem("currentCourseId")
         if (storedCourseId) {
-          console.log("Page became visible, stored course ID:", storedCourseId)
+          // console.log("Page became visible, stored course ID:", storedCourseId)
           handleQuizCompletion()
         }
       }
@@ -677,7 +677,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
         const script = document.createElement('script');
         script.src = 'https://www.youtube.com/iframe_api';
         script.onload = () => {
-          console.log('YouTube IFrame API loaded');
+          // console.log('YouTube IFrame API loaded');
           initializeYouTubePlayers();
         };
         document.body.appendChild(script);
@@ -689,7 +689,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
 
     // Set up global callback for when API is ready
     (window as any).onYouTubeIframeAPIReady = () => {
-      console.log('YouTube IFrame API ready');
+      // console.log('YouTube IFrame API ready');
       initializeYouTubePlayers();
     };
 
@@ -730,7 +730,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
                 'onStateChange': (window as any).onPlayerStateChange
               }
             });
-            console.log('YouTube player initialized for video:', videoId);
+            // console.log('YouTube player initialized for video:', videoId);
           } catch (error) {
             console.error('Error initializing YouTube player:', error);
           }
@@ -745,7 +745,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
 
   // Set up player ready handler
   (window as any).onPlayerReady = (event: any) => {
-    console.log('Player is ready');
+    // console.log('Player is ready');
   };
 
   // Set up state change handler
@@ -753,11 +753,11 @@ const CourseLearnPage = ({ id }: { id: string }) => {
     const videoId = extractYouTubeVideoId(activeContent?.url || '');
     if (!videoId) return;
 
-    console.log('Player state changed:', event.data, 'for video:', videoId);
+    // console.log('Player state changed:', event.data, 'for video:', videoId);
 
     // Video has ended
     if (event.data === 0) {
-      console.log('Video ended, marking as completed:', videoId);
+      // console.log('Video ended, marking as completed:', videoId);
 
       // Mark video as completed and update state immediately
       const newCompletedVideos = new Set(completedVideos);
@@ -788,22 +788,22 @@ const CourseLearnPage = ({ id }: { id: string }) => {
         toast.error('Failed to save video completion. Please try again.');
       }
 
-      console.log('Video completed:', videoId);
+      // console.log('Video completed:', videoId);
     }
 
     // Video is playing
     if (event.data === 1) {
-      console.log('Video started playing');
+      // console.log('Video started playing');
     }
   };
 
   // Debug effect to log completed videos
   useEffect(() => {
-    console.log('Current completed videos:', Array.from(completedVideos));
+    // console.log('Current completed videos:', Array.from(completedVideos));
     if (activeContent?.type === "video" && activeContent.url) {
       const videoId = extractYouTubeVideoId(activeContent.url);
       if (videoId) {
-        console.log('Current video ID:', videoId, 'Is completed:', completedVideos.has(videoId));
+        // console.log('Current video ID:', videoId, 'Is completed:', completedVideos.has(videoId));
       }
     }
   }, [completedVideos, activeContent]);
@@ -943,7 +943,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
                 toast.error('Failed to save video completion. Please try again.');
               }
 
-              console.log('Video automatically marked as completed:', videoId);
+              // console.log('Video automatically marked as completed:', videoId);
 
               // Clear interval since we've completed the video
               if (intervalId) {
@@ -1063,7 +1063,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
                 isVideoCompleted = true;
               }
             } catch (e) {
-              console.log('Could not get video time information:', e);
+              // console.log('Could not get video time information:', e);
             }
           }
         }
@@ -1203,7 +1203,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
         let questionCount = 0
         let quizData: any[] = []
         try {
-          console.log("Rendering quiz content:", content)
+          // console.log("Rendering quiz content:", content)
           if (typeof content.quiz_data === "string") {
             quizData = JSON.parse(content.quiz_data)
           } else if (Array.isArray(content.quiz_data)) {
@@ -1214,7 +1214,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
             quizData = []
           }
           if (Array.isArray(quizData)) questionCount = quizData.length
-          console.log("Processed quiz data for rendering:", { quizData, questionCount })
+          // console.log("Processed quiz data for rendering:", { quizData, questionCount })
         } catch (e) {
           console.error("Error processing quiz data for rendering:", e)
           quizData = []
@@ -1229,7 +1229,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
 
         // Track quiz start when button is clicked
         const handleStartQuiz = () => {
-          console.log("Start Quiz button clicked"); // untuk debugging
+          // console.log("Start Quiz button clicked"); // untuk debugging
 
           // Track quiz start
           if (window.studentActivityTracker) {
@@ -1726,7 +1726,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
                               isCurrentContentCompleted = currentCompletedVideos.has(videoId);
                             }
                           }
-                          console.log('Checking video completion:', videoId, 'Completed:', isCurrentContentCompleted);
+                          // console.log('Checking video completion:', videoId, 'Completed:', isCurrentContentCompleted);
                         }
                       } else if (activeContent?.type === "pdf" && activeContent.url) {
                         const pdfFilename = activeContent.url.split("/").pop() || '';
@@ -1751,13 +1751,13 @@ const CourseLearnPage = ({ id }: { id: string }) => {
                               isCurrentContentCompleted = currentDownloadedPDFs.has(pdfFilename);
                             }
                           }
-                          console.log('Checking PDF download:', pdfFilename, 'Downloaded:', isCurrentContentCompleted);
+                          // console.log('Checking PDF download:', pdfFilename, 'Downloaded:', isCurrentContentCompleted);
                         }
                       } else if (activeContent?.type === "quiz") {
                         // For quizzes, check if there's a submission in the quizSubmissions array
                         const quizSubmission = getQuizSubmission(activeContent.id);
                         isCurrentContentCompleted = !!quizSubmission;
-                        console.log('Checking quiz completion:', activeContent.id, 'Completed:', isCurrentContentCompleted);
+                        // console.log('Checking quiz completion:', activeContent.id, 'Completed:', isCurrentContentCompleted);
                       }
 
                       return (
@@ -1767,7 +1767,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
                             className="gap-2 transition-colors bg-transparent hover:bg-blue-50 dark:hover:bg-blue-800/50"
                             disabled={isFirstInSection}
                             onClick={() => {
-                              console.log('Previous button clicked');
+                              // console.log('Previous button clicked');
                               // Check if current content is completed before moving to previous
                               if ((activeContent?.type === "video" || activeContent?.type === "pdf" || activeContent?.type === "quiz") && !isCurrentContentCompleted) {
                                 if (activeContent?.type === "video") {
@@ -1781,7 +1781,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
                               }
 
                               if (currentIndex > 0) {
-                                console.log('Navigating to previous content');
+                                // console.log('Navigating to previous content');
                                 setActiveContent(currentSubPembahasanContents[currentIndex - 1])
                               }
                             }}
@@ -1807,9 +1807,9 @@ const CourseLearnPage = ({ id }: { id: string }) => {
                             className="gap-2 transition-colors bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
                             disabled={isLastInSection}
                             onClick={() => {
-                              console.log('Next button clicked');
-                              console.log('Current content type:', activeContent?.type);
-                              console.log('Is current content completed:', isCurrentContentCompleted);
+                              // console.log('Next button clicked');
+                              // console.log('Current content type:', activeContent?.type);
+                              // console.log('Is current content completed:', isCurrentContentCompleted);
 
                               // Check if current content is completed before moving to next
                               if ((activeContent?.type === "video" || activeContent?.type === "pdf" || activeContent?.type === "quiz") && !isCurrentContentCompleted) {
@@ -1824,10 +1824,10 @@ const CourseLearnPage = ({ id }: { id: string }) => {
                               }
 
                               if (currentIndex < currentSubPembahasanContents.length - 1) {
-                                console.log('Navigating to next content');
+                                // console.log('Navigating to next content');
                                 setActiveContent(currentSubPembahasanContents[currentIndex + 1])
                               } else {
-                                console.log('Already at last content in section');
+                                // console.log('Already at last content in section');
                               }
                             }}
                           >

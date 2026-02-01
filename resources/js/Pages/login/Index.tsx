@@ -45,7 +45,7 @@ export default function LoginPage() {
         })
 
         // Redirect to dashboard or handle the successful login
-        console.log(response.data)
+        // console.log(response.data)
         setIsLoading(false)
         switch (response.data.data.tipe_user) {
           case 'admin':

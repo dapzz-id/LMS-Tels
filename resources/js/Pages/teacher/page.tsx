@@ -39,9 +39,9 @@ export default function TeacherDashboard() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        console.log('Fetching teacher dashboard stats...')
+        // console.log('Fetching teacher dashboard stats...')
         const response = await axios.get('/api/teacher/analytics?range=last-30-days')
-        console.log('Teacher dashboard response:', response.data)
+        // console.log('Teacher dashboard response:', response.data)
         setStats(response.data.data)
       } catch (error) {
         console.error('Error fetching teacher dashboard stats:', error)

@@ -51,9 +51,9 @@ const QuizPage = (props: QuizPageProps) => {
   // Add specific logging for optionImages (only in development)
   useEffect(() => {
     if (process.env.NODE_ENV === 'development' && initialQuiz) {
-      console.log('Quiz data received:', initialQuiz);
+      // console.log('Quiz data received:', initialQuiz);
       initialQuiz.questions.forEach((question, index) => {
-        console.log(`Question ${index} optionImages:`, question.optionImages);
+        // console.log(`Question ${index} optionImages:`, question.optionImages);
       });
     }
   }, [initialQuiz]);
@@ -122,8 +122,8 @@ const QuizPage = (props: QuizPageProps) => {
 
   // Only log in development mode
   if (process.env.NODE_ENV === 'development') {
-    console.log('QuizPage - quizId:', quizId, 'courseId:', courseId, 'props:', props, 'page.props:', page.props);
-    console.log('Quiz data:', quiz);
+    // console.log('QuizPage - quizId:', quizId, 'courseId:', courseId, 'props:', props, 'page.props:', page.props);
+    // console.log('Quiz data:', quiz);
   }
 
   // Initialize activity tracker and track quiz start when component mounts
@@ -136,7 +136,7 @@ const QuizPage = (props: QuizPageProps) => {
 
     // Track quiz start only once
     if (quiz && quizId && courseId && window.studentActivityTracker && !quizTracked) {
-      console.log('Quiz page loaded, tracking quiz start:', { quizId, courseId });
+      // console.log('Quiz page loaded, tracking quiz start:', { quizId, courseId });
       window.studentActivityTracker.trackActivity('quiz_start', {
         course_id: courseId,
         quiz_id: quizId
@@ -207,13 +207,13 @@ const QuizPage = (props: QuizPageProps) => {
 
     // Debug logging (only in development)
     if (process.env.NODE_ENV === 'development') {
-      console.log('Time calculation:', { questionTimeLimit, quizTimeLimit, question, quiz });
+      // console.log('Time calculation:', { questionTimeLimit, quizTimeLimit, question, quiz });
     }
 
     // Test the logic
     const result = (questionTimeLimit != null ? questionTimeLimit : quizTimeLimit) * 60;
     if (process.env.NODE_ENV === 'development') {
-      console.log('Calculated time result:', result);
+      // console.log('Calculated time result:', result);
     }
 
     return result;
@@ -257,7 +257,7 @@ const QuizPage = (props: QuizPageProps) => {
               setCurrentQuestion(parsedData.currentQuestion);
             }
 
-            console.log('Restored quiz data:', parsedData);
+            // console.log('Restored quiz data:', parsedData);
             return;
           }
         } catch (e) {
@@ -275,7 +275,7 @@ const QuizPage = (props: QuizPageProps) => {
         const initialTime = getInitialTime();
         setTimeLeft(initialTime);
         isDataRestoredRef.current = true;
-        console.log('Set initial time for quiz:', initialTime);
+        // console.log('Set initial time for quiz:', initialTime);
       }
     }
   }, [quiz, props.id]);
@@ -336,7 +336,7 @@ const QuizPage = (props: QuizPageProps) => {
   useEffect(() => {
     if (error) {
       toast.error(error)
-      console.log('Navigating back to course with ID:', courseId)
+      // console.log('Navigating back to course with ID:', courseId)
       if (courseId) {
         router.visit(`/dashboard/courses/${courseId}/learn`)
       } else {
@@ -399,7 +399,7 @@ const QuizPage = (props: QuizPageProps) => {
 
       // Track quiz submission
       if (window.studentActivityTracker) {
-        console.log('Quiz submitted, tracking activity:', { quizId, courseId, score: response.data.score });
+        // console.log('Quiz submitted, tracking activity:', { quizId, courseId, score: response.data.score });
         window.studentActivityTracker.trackActivity('quiz_submit', {
           course_id: courseId,
           quiz_id: quizId,
@@ -423,7 +423,7 @@ const QuizPage = (props: QuizPageProps) => {
           quiz_id: parseInt(quizId),    // This should be the quiz content ID
           score: response.data.score
         });
-        console.log('Quiz completion saved to database');
+        // console.log('Quiz completion saved to database');
       } catch (error) {
         console.error('Error saving quiz completion to database:', error);
       }
@@ -489,7 +489,7 @@ const QuizPage = (props: QuizPageProps) => {
       if (storedQuiz) {
         try {
           const parsedQuiz = JSON.parse(storedQuiz);
-          console.log('Loaded quiz from sessionStorage:', parsedQuiz);
+          // console.log('Loaded quiz from sessionStorage:', parsedQuiz);
           setQuiz(parsedQuiz);
         } catch (e) {
           console.error('Error parsing stored quiz:', e);
@@ -499,9 +499,9 @@ const QuizPage = (props: QuizPageProps) => {
 
     // Log quiz data for debugging
     if (quiz) {
-      console.log('Quiz data:', quiz);
+      // console.log('Quiz data:', quiz);
       (quiz as Quiz).questions.forEach((question: QuizQuestion, index: number) => {
-        console.log(`Question ${index}:`, question);
+        // console.log(`Question ${index}:`, question);
       });
     }
   }, [initialQuiz, quiz]);
@@ -509,7 +509,7 @@ const QuizPage = (props: QuizPageProps) => {
   // Defensive check for missing or empty questions
   if (!quiz || !quiz.questions || quiz.questions.length === 0) {
     // Log the quiz object for debugging
-    console.log('Quiz object:', quiz);
+    // console.log('Quiz object:', quiz);
 
     // Check if this is a one submission only error
     if (error && error.includes('already taken this quiz')) {
@@ -536,14 +536,14 @@ const QuizPage = (props: QuizPageProps) => {
       );
     }
 
-    console.log('Quiz validation failed:', {
-      quiz,
-      hasQuiz: !!quiz,
-      hasQuestions: !!(quiz && quiz.questions),
-      questionCount: quiz?.questions?.length || 0,
-      initialQuiz,
-      sessionStorageQuiz: sessionStorage.getItem('currentQuiz')
-    });
+    // console.log('Quiz validation failed:', {
+    //   quiz,
+    //   hasQuiz: !!quiz,
+    //   hasQuestions: !!(quiz && quiz.questions),
+    //   questionCount: quiz?.questions?.length || 0,
+    //   initialQuiz,
+    //   sessionStorageQuiz: sessionStorage.getItem('currentQuiz')
+    // });
     return renderLayout(
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -751,11 +751,11 @@ const QuizPage = (props: QuizPageProps) => {
 
                                 // Only log in development
                                 if (process.env.NODE_ENV === 'development') {
-                                  console.log(`Rendering option ${index} for question ${currentQuestion}:`, {
-                                    hasOptionImage,
-                                    optionImage: hasOptionImage ? optionImages[index] : null,
-                                    allOptionImages: optionImages
-                                  });
+                                  // console.log(`Rendering option ${index} for question ${currentQuestion}:`, {
+                                  //   hasOptionImage,
+                                  //   optionImage: hasOptionImage ? optionImages[index] : null,
+                                  //   allOptionImages: optionImages
+                                  // });
                                 }
 
                                 return hasOptionImage && (

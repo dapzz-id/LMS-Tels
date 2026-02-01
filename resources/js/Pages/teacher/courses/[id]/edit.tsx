@@ -175,17 +175,17 @@ const courseFormSchema = z.object({
 type CourseFormValues = z.infer<typeof courseFormSchema>
 
 function mapCourseToFormValues(course: Props["course"]): CourseFormValues {
-  console.log("Mapping course data:", course)
+  // console.log("Mapping course data:", course)
 
   // Map from sub_pembahasan structure to form values
   const pembahasan =
     course.sub_pembahasan?.map((sub) => {
-      console.log("Processing sub_pembahasan:", sub)
+      // console.log("Processing sub_pembahasan:", sub)
 
       // Map contents from the contents array
       const contents =
         sub.contents?.map((content) => {
-          console.log("Processing content:", content)
+          // console.log("Processing content:", content)
 
           let quiz_data = undefined
 
@@ -434,7 +434,7 @@ export default function EditCoursePage({ course, mapel, availableClasses = [] }:
     setIsSubmitting(true)
 
     try {
-      console.log("Submitting values:", values)
+      // console.log("Submitting values:", values)
 
       const formData = new FormData()
       formData.append("_method", "PUT")
@@ -512,7 +512,7 @@ export default function EditCoursePage({ course, mapel, availableClasses = [] }:
         })
 
         // Log the full error response for debugging
-        console.log('Full validation error response:', error.response.data)
+        // console.log('Full validation error response:', error.response.data)
 
         // If there are more than 5 errors, show a summary message
         if (errorCount >= 5) {
@@ -539,7 +539,7 @@ export default function EditCoursePage({ course, mapel, availableClasses = [] }:
   }
 
   useEffect(() => {
-    console.log("FORM ERRORS", form.formState.errors)
+    // console.log("FORM ERRORS", form.formState.errors)
   }, [form.formState.errors])
 
   return (
@@ -639,7 +639,7 @@ export default function EditCoursePage({ course, mapel, availableClasses = [] }:
                             className="object-cover w-48 h-32 rounded-lg"
                             onError={(e) => {
                               const target = e.target as HTMLImageElement;
-                              console.log('Image failed to load:', target.src);
+                              // console.log('Image failed to load:', target.src);
                               target.src = '/placeholder.svg?height=128&width=192';
                             }}
                           />
@@ -1349,7 +1349,7 @@ export default function EditCoursePage({ course, mapel, availableClasses = [] }:
                             className="object-cover w-48 h-32 mt-2 rounded-lg"
                             onError={(e) => {
                               const target = e.target as HTMLImageElement;
-                              console.log('Image failed to load:', target.src);
+                              // console.log('Image failed to load:', target.src);
                               target.src = '/placeholder.svg?height=128&width=192';
                             }}
                           />

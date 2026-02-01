@@ -104,7 +104,7 @@ export default function ViewCoursePage({ course }: Props) {
     return API_BASE_URL + course.url_thumbnail;
   };
 
-  console.log(course)
+  // console.log(course)
 
   const parseQuizData = (quizData: string | QuizQuestion[] | undefined): QuizQuestion[] => {
     if (!quizData) return []
@@ -231,7 +231,7 @@ export default function ViewCoursePage({ course }: Props) {
                       className="object-cover w-full h-48 border rounded-lg"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement
-                        console.log('Image failed to load:', target.src);
+                        // console.log('Image failed to load:', target.src);
                         target.src = "/placeholder.svg?height=192&width=384"
                       }}
                     />

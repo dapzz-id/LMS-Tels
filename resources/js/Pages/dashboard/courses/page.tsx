@@ -95,20 +95,20 @@ const StudentCoursesPage = () => {
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        console.log('Fetching courses...');
+        // console.log('Fetching courses...');
         const coursesResponse = await axios.get('/api/getDataCourseku')
-        console.log('Courses Response:', coursesResponse.data)
+        // console.log('Courses Response:', coursesResponse.data)
 
         // Check if we have valid courses data
         if (coursesResponse.data && Array.isArray(coursesResponse.data.kursus)) {
-          console.log('Setting courses:', coursesResponse.data.kursus);
+          // console.log('Setting courses:', coursesResponse.data.kursus);
           setCourses(coursesResponse.data.kursus)
 
           // Group courses by department
           const groupedDepartments = groupCoursesByDepartment(coursesResponse.data.kursus)
           setDepartments(groupedDepartments)
         } else {
-          console.log('No courses data in response:', coursesResponse.data)
+          // console.log('No courses data in response:', coursesResponse.data)
           setCourses([])
           setDepartments([])
           if (coursesResponse.data?.message) {

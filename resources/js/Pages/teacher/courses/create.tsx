@@ -274,13 +274,13 @@ export default function CreateCoursePage({ mapel, availableClasses = [] }: Props
       const data = form.getValues();
 
       // Debug log
-      console.log('Form data before submission:', data);
+      // console.log('Form data before submission:', data);
 
       // Trigger validation
       const isValid = await form.trigger();
       if (!isValid) {
         const errors = form.formState.errors;
-        console.log('Validation errors:', errors);
+        // console.log('Validation errors:', errors);
         Object.entries(errors).forEach(([field, error]) => {
           if (error?.message) {
             toast.error(error.message as string, {
@@ -339,7 +339,7 @@ export default function CreateCoursePage({ mapel, availableClasses = [] }: Props
 
       // Create/Update course
       const url = `/teacher/courses`;
-      console.log('Submitting to URL:', url);
+      // console.log('Submitting to URL:', url);
 
       const response = await axios.post(url, formData, {
         headers: {
