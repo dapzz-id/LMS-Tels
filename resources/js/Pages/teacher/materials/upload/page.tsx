@@ -71,7 +71,7 @@
 
 //     // Simulate API call
 //     setTimeout(() => {
-//       console.log(data, uploadedFiles)
+
 //       setIsSubmitting(false)
 //       toast({
 //         title: "Materials uploaded successfully",

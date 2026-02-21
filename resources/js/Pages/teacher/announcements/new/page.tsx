@@ -68,7 +68,7 @@
 
 //     // Simulate API call
 //     setTimeout(() => {
-//       console.log(data)
+
 //       setIsSubmitting(false)
 //     //   toast(
 //     //     message: "Announcement sent successfully",

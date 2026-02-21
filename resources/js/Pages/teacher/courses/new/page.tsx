@@ -74,7 +74,7 @@
 
 //     // Simulate API call
 //     setTimeout(() => {
-//       console.log(data)
+
 //       setIsSubmitting(false)
 //       toast({
 //         title: "Course created successfully",

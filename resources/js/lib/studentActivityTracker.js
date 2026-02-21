@@ -17,9 +17,6 @@ class StudentActivityTracker {
     }
 
     init() {
-        // console.log('StudentActivityTracker: Initializing...');
-        // console.log('Current URL:', window.location.href);
-
         // Wait for Inertia to be ready and get user data
         this.waitForUserAndStart();
 
@@ -32,11 +29,9 @@ class StudentActivityTracker {
         const user = this.getUserFromProps();
 
         if (user) {
-            // console.log('StudentActivityTracker: User found:', user);
             this.userData = user;
             this.processUserAndStart(user);
         } else {
-            // console.log('StudentActivityTracker: No user found, retrying in 100ms...');
             setTimeout(() => this.waitForUserAndStart(), 100);
         }
     }
@@ -48,38 +43,25 @@ class StudentActivityTracker {
         const auth = props?.auth;
         const user = auth?.user;
 
-        // If not found in Inertia props, try to get from current page
-        if (!user && window.location.pathname.includes('/dashboard')) {
-            // For dashboard pages, we can try to get user from the current page context
-            // This is a fallback for when Inertia props are not immediately available
-            // console.log('StudentActivityTracker: Trying to get user from page context...');
-        }
-
         return user;
     }
 
     processUserAndStart(user) {
         // Only track if user is a student
         if (this.isStudent(user)) {
-            // console.log('StudentActivityTracker: User is a student, starting tracking...');
             this.startTracking();
-        } else {
-            // console.log('StudentActivityTracker: User is not a student (user type:', user.tipe_user, ')');
         }
     }
 
     isStudent(user) {
         // Check if user exists and is a student
         if (user && user.tipe_user === 'siswa') {
-            // console.log('StudentActivityTracker: User is confirmed student');
             return true;
         }
 
         // Fallback: check if we're on student pages
         const isStudentPage = window.location.pathname.includes('/dashboard') &&
-                             !window.location.pathname.includes('/admin');
-
-        // console.log('StudentActivityTracker: Is student page:', isStudentPage);
+            !window.location.pathname.includes('/admin');
 
         return isStudentPage;
     }
@@ -104,8 +86,6 @@ class StudentActivityTracker {
 
         // Track when user leaves
         this.trackPageUnload();
-
-        // console.log('Student activity tracking started');
     }
 
     stopTracking() {
@@ -121,8 +101,6 @@ class StudentActivityTracker {
         if (this.flushInterval) {
             clearInterval(this.flushInterval);
         }
-
-        // console.log('Student activity tracking stopped');
     }
 
     trackActivity(activityType, data = {}) {
@@ -142,7 +120,6 @@ class StudentActivityTracker {
             }
         };
 
-        // console.log('StudentActivityTracker: Tracking activity:', activity);
         this.activityQueue.push(activity);
         this.lastActivity = activity;
 
@@ -303,13 +280,6 @@ class StudentActivityTracker {
                 });
             }
         });
-
-        // Also listen for quiz submission events in the quiz page
-        if (window.location.pathname.includes('/quiz/')) {
-            // Check for quiz submission completion
-            const originalSubmit = window.handleSubmit; // If there's a handleSubmit function
-            // We'll track this through the existing quiz tracking in the page components
-        }
     }
 
     extractYouTubeVideoId(url) {
@@ -342,7 +312,6 @@ class StudentActivityTracker {
                 await this.sendActivity(activity);
             }
         } catch (error) {
-            console.error('Error sending activity:', error);
             // Re-add activities to queue on error
             this.activityQueue.unshift(...activities);
         }
@@ -350,12 +319,10 @@ class StudentActivityTracker {
 
     async sendActivity(activity) {
         try {
-            // console.log('StudentActivityTracker: Sending activity to server:', activity);
-
             // Get CSRF token from meta tag or Inertia props
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ||
-                             window.Inertia?.props?.csrf_token ||
-                             '';
+                window.Inertia?.props?.csrf_token ||
+                '';
 
             const response = await fetch('/api/student/activity', {
                 method: 'POST',
@@ -372,10 +339,8 @@ class StudentActivityTracker {
             }
 
             const result = await response.json();
-            // console.log('StudentActivityTracker: Activity sent successfully:', result);
             return result;
         } catch (error) {
-            console.error('StudentActivityTracker: Failed to send activity:', error);
             throw error;
         }
     }
@@ -384,9 +349,9 @@ class StudentActivityTracker {
         // Extract course ID from URL or page elements
         const urlParams = new URLSearchParams(window.location.search);
         const courseId = urlParams.get('course_id') ||
-                        urlParams.get('id') ||
-                        document.querySelector('[data-course-id]')?.dataset.courseId ||
-                        this.extractCourseIdFromUrl();
+            urlParams.get('id') ||
+            document.querySelector('[data-course-id]')?.dataset.courseId ||
+            this.extractCourseIdFromUrl();
 
         return courseId;
     }
@@ -395,8 +360,8 @@ class StudentActivityTracker {
         // Extract quiz ID from URL or page elements
         const urlParams = new URLSearchParams(window.location.search);
         const quizId = urlParams.get('quiz_id') ||
-                      document.querySelector('[data-quiz-id]')?.dataset.quizId ||
-                      this.extractQuizIdFromUrl();
+            document.querySelector('[data-quiz-id]')?.dataset.quizId ||
+            this.extractQuizIdFromUrl();
 
         return quizId;
     }
@@ -424,14 +389,12 @@ class StudentActivityTracker {
 
     trackPageUnload() {
         window.addEventListener('beforeunload', () => {
-            // console.log('StudentActivityTracker: Page unloading, tracking logout...');
             this.trackActivity('logout');
             this.flushQueue();
         });
 
         // Also track when user navigates away
         window.addEventListener('pagehide', () => {
-            // console.log('StudentActivityTracker: Page hiding, tracking logout...');
             this.trackActivity('logout');
             this.flushQueue();
         });
@@ -467,10 +430,6 @@ class StudentActivityTracker {
 
             // Save to database
             this.savePDFDownloadToDatabase(pdfId);
-
-            // console.log('StudentActivityTracker: PDF download tracked:', { pdfId, pdfUrl });
-        } else if (this.trackedPDFs.has(pdfId)) {
-            // console.log('StudentActivityTracker: PDF already tracked:', pdfId);
         }
     }
 
@@ -487,10 +446,6 @@ class StudentActivityTracker {
 
             // Save to database
             this.saveVideoCompletionToDatabase(videoId);
-
-            // console.log('StudentActivityTracker: Video play tracked:', { videoId, videoUrl });
-        } else if (this.trackedVideos.has(videoId)) {
-            // console.log('StudentActivityTracker: Video already tracked:', videoId);
         }
     }
 
@@ -507,10 +462,6 @@ class StudentActivityTracker {
 
             // Save to database
             this.saveQuizCompletionToDatabase(quizId, courseId, score);
-
-            // console.log('StudentActivityTracker: Quiz completion tracked:', { quizId, courseId, score });
-        } else if (this.trackedQuizzes.has(quizId)) {
-            // console.log('StudentActivityTracker: Quiz already tracked:', quizId);
         }
     }
 
@@ -522,14 +473,12 @@ class StudentActivityTracker {
                 course_id: this.getCourseId(),
                 timestamp: new Date().toISOString()
             });
-            // console.log('StudentActivityTracker: Quiz start tracked:', quizId);
         }
     }
 
     // Method to update user data (useful when user data changes)
     updateUserData(userData) {
         this.userData = userData;
-        // console.log('StudentActivityTracker: User data updated:', userData);
     }
 
     // Save video completion to database
@@ -540,14 +489,13 @@ class StudentActivityTracker {
             const contentId = this.getCurrentContentId();
 
             if (!courseId || !contentId) {
-                // console.log('StudentActivityTracker: Missing course or content ID for video completion');
                 return;
             }
 
             // Get CSRF token
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ||
-                             window.Inertia?.props?.csrf_token ||
-                             '';
+                window.Inertia?.props?.csrf_token ||
+                '';
 
             // Send request to save video completion
             const response = await fetch('/api/progress/video-completion', {
@@ -570,9 +518,9 @@ class StudentActivityTracker {
             }
 
             const result = await response.json();
-            // console.log('StudentActivityTracker: Video completion saved to database:', result);
+            return result;
         } catch (error) {
-            console.error('StudentActivityTracker: Failed to save video completion to database:', error);
+            // Error silently ignored for production
         }
     }
 
@@ -584,14 +532,13 @@ class StudentActivityTracker {
             const contentId = this.getCurrentContentId();
 
             if (!courseId || !contentId) {
-                // console.log('StudentActivityTracker: Missing course or content ID for PDF download');
                 return;
             }
 
             // Get CSRF token
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ||
-                             window.Inertia?.props?.csrf_token ||
-                             '';
+                window.Inertia?.props?.csrf_token ||
+                '';
 
             // Send request to save PDF download
             const response = await fetch('/api/progress/pdf-download', {
@@ -613,9 +560,9 @@ class StudentActivityTracker {
             }
 
             const result = await response.json();
-            // console.log('StudentActivityTracker: PDF download saved to database:', result);
+            return result;
         } catch (error) {
-            console.error('StudentActivityTracker: Failed to save PDF download to database:', error);
+            // Error silently ignored for production
         }
     }
 
@@ -626,14 +573,13 @@ class StudentActivityTracker {
             const contentId = this.getCurrentContentId();
 
             if (!courseId || !contentId) {
-                // console.log('StudentActivityTracker: Missing course or content ID for quiz completion');
                 return;
             }
 
             // Get CSRF token
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ||
-                             window.Inertia?.props?.csrf_token ||
-                             '';
+                window.Inertia?.props?.csrf_token ||
+                '';
 
             // Send request to save quiz completion
             const response = await fetch('/api/progress/quiz-completion', {
@@ -656,9 +602,9 @@ class StudentActivityTracker {
             }
 
             const result = await response.json();
-            // console.log('StudentActivityTracker: Quiz completion saved to database:', result);
+            return result;
         } catch (error) {
-            console.error('StudentActivityTracker: Failed to save quiz completion to database:', error);
+            // Error silently ignored for production
         }
     }
 
@@ -689,11 +635,9 @@ let activityTracker = null;
 // Function to initialize tracker
 function initializeTracker() {
     if (activityTracker) {
-        // console.log('StudentActivityTracker: Tracker already exists, skipping...');
         return;
     }
 
-    // console.log('StudentActivityTracker: Creating new tracker instance...');
     activityTracker = new StudentActivityTracker();
     window.studentActivityTracker = activityTracker;
 }
@@ -707,24 +651,20 @@ function waitForInertia() {
     const user = auth?.user;
 
     if (user) {
-        // console.log('StudentActivityTracker: User found, initializing...');
         initializeTracker();
     } else {
-        // console.log('StudentActivityTracker: Waiting for user data...');
         setTimeout(waitForInertia, 100);
     }
 }
 
 // Initialize on DOM ready
 document.addEventListener('DOMContentLoaded', () => {
-    // console.log('StudentActivityTracker: DOM ready, waiting for Inertia...');
     waitForInertia();
 });
 
 // Initialize on Inertia page visits
 if (window.Inertia) {
     window.Inertia.on('navigate', () => {
-        // console.log('StudentActivityTracker: Inertia navigation, resetting tracker...');
         // Reset tracker on navigation
         activityTracker = null;
         setTimeout(waitForInertia, 100);
@@ -734,25 +674,12 @@ if (window.Inertia) {
 // Fallback: try to initialize after a longer delay
 setTimeout(() => {
     if (!activityTracker) {
-        // console.log('StudentActivityTracker: Fallback initialization...');
         waitForInertia();
     }
 }, 3000);
 
-// Global functions for testing and debugging
-window.testActivityTracking = function() {
-    // console.log('Testing activity tracking...');
-    if (window.studentActivityTracker) {
-        window.studentActivityTracker.trackActivity('test_activity', { test: true });
-        // console.log('Test activity sent!');
-    } else {
-        // console.log('Activity tracker not initialized yet');
-    }
-};
-
 // Global function to initialize activity tracker with user data
-window.initializeActivityTracker = function(userData) {
-    // console.log('Initializing activity tracker with user data:', userData);
+window.initializeActivityTracker = function (userData) {
     if (userData && userData.tipe_user === 'siswa') {
         if (!window.studentActivityTracker) {
             window.studentActivityTracker = new StudentActivityTracker();
@@ -760,30 +687,6 @@ window.initializeActivityTracker = function(userData) {
         // Force start tracking with the provided user data
         window.studentActivityTracker.updateUserData(userData);
         window.studentActivityTracker.processUserAndStart(userData);
-    }
-};
-
-window.checkActivityTrackerStatus = function() {
-    // console.log('=== Activity Tracker Status ===');
-    // console.log('Tracker instance:', !!window.studentActivityTracker);
-
-    // Get user data using the same method as the tracker
-    const inertia = window.Inertia;
-    const props = inertia?.props;
-    const auth = props?.auth;
-    const user = auth?.user;
-
-    // console.log('User data:', user);
-    // console.log('Current URL:', window.location.href);
-
-    if (window.studentActivityTracker) {
-        // console.log('Is tracking:', window.studentActivityTracker.isTracking);
-        // console.log('Last activity:', window.studentActivityTracker.lastActivity);
-        // console.log('Queue size:', window.studentActivityTracker.activityQueue.length);
-        // console.log('User data in tracker:', window.studentActivityTracker.userData);
-        // console.log('Tracked PDFs:', Array.from(window.studentActivityTracker.trackedPDFs));
-        // console.log('Tracked Videos:', Array.from(window.studentActivityTracker.trackedVideos));
-        // console.log('Tracked Quizzes:', Array.from(window.studentActivityTracker.trackedQuizzes));
     }
 };
 

@@ -154,7 +154,7 @@ export default function StudentMonitoringPage({
       })
       setActivitySummary(response.data.data)
     } catch (error) {
-      console.error('Error loading activity summary:', error)
+      
     } finally {
       setIsLoadingSummary(false)
     }
@@ -165,7 +165,7 @@ export default function StudentMonitoringPage({
       const response = await axios.get('/api/admin/student-monitoring/class-stats')
       setClassStats(response.data.data)
     } catch (error) {
-      console.error('Error loading class stats:', error)
+      
     }
   }
 
@@ -224,7 +224,7 @@ export default function StudentMonitoringPage({
         setStats(data.stats)
         setLastUpdate(data.lastUpdate)
       } catch (error) {
-        console.error('Error polling for updates:', error)
+        
       }
     }
 
@@ -309,7 +309,7 @@ export default function StudentMonitoringPage({
       const response = await axios.get(`/api/admin/student-monitoring/student/${student.user.id}`)
       setStudentDetails(response.data.data)
     } catch (error) {
-      console.error('Error fetching student details:', error)
+      
     }
   }
 

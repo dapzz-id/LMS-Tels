@@ -94,7 +94,7 @@ export default function AdminAnalyticsPage() {
         const response = await axios.get(`/api/admin/analytics?range=${timeRange}`)
         setData(response.data.data)
       } catch (error) {
-        console.error('Error fetching analytics:', error)
+        
       } finally {
         setLoading(false)
       }

@@ -15,16 +15,16 @@ export function renderMath(element: HTMLElement | null) {
   // Check if MathJax is available
   const mathJax = (window as any).MathJax;
   if (!mathJax) {
-    console.warn('MathJax not loaded');
+    
     return;
   }
 
   // Render equations in the element
   try {
     mathJax.typesetPromise([element]).catch((err: any) => {
-      console.warn('MathJax rendering error:', err);
+      
     });
   } catch (error) {
-    console.warn('Error rendering math equations:', error);
+    
   }
 }

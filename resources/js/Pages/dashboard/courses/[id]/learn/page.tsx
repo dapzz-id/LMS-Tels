@@ -19,12 +19,10 @@ import {
   Clock,
   ChevronDown,
   ChevronRight,
-  Award,
-  Menu
+  Award
 } from "lucide-react"
 import { Dialog } from "@/Components/ui/dialog"
 import { DialogContent } from "@radix-ui/react-dialog"
-import StudentSidebar from "@/Components/StudentSidebar"
 
 interface SubPembahasan {
   id: number
@@ -89,16 +87,10 @@ const CourseLearnPage = ({ id }: { id: string }) => {
   const [downloadedPDFs, setDownloadedPDFs] = useState<Set<string>>(new Set()) // Track downloaded PDFs
   const [videoWatchTime, setVideoWatchTime] = useState<Map<string, number>>(new Map()) // Track watch time
   const [isQuizCompleted, setIsQuizCompleted] = useState(false) // Add this line
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
   const renderLayout = (content: JSX.Element) => (
     <div className="flex min-h-screen bg-gray-50 dark:bg-blue-950/90">
-      <StudentSidebar
-        active="courses"
-        isOpen={isSidebarOpen}
-        onClose={() => setIsSidebarOpen(false)}
-      />
-      <div className="flex-1 lg:pl-64">
+      <div className="flex-1">
         {content}
       </div>
     </div>
@@ -118,7 +110,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
         setQuizSubmissions(response.data.submissions)
       }
     } catch (error) {
-      console.error("Error fetching quiz submissions:", error)
+
     }
   }
 
@@ -137,7 +129,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
       });
 
       if (response.data.status === 'success') {
-        // console.log('Video completion saved to database:', response.data);
+
 
         // Also update progress in the main progress table
         await updateMainProgress(courseId, contentId, 1); // 1 for video completion
@@ -145,7 +137,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
 
       return response.data;
     } catch (error) {
-      console.error('Error saving video completion:', error);
+
       if (axios.isAxiosError(error)) {
         return error.response?.data;
       }
@@ -163,7 +155,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
       });
 
       if (response.data.status === 'success') {
-        // console.log('PDF download saved to database:', response.data);
+
 
         // Also update progress in the main progress table
         await updateMainProgress(courseId, contentId, 2); // 2 for PDF download
@@ -171,7 +163,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
 
       return response.data;
     } catch (error) {
-      console.error('Error saving PDF download:', error);
+
       if (axios.isAxiosError(error)) {
         return error.response?.data;
       }
@@ -190,7 +182,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
       });
 
       if (response.data.status === 'success') {
-        // console.log('Quiz completion saved to database:', response.data);
+
 
         // Also update progress in the main progress table
         await updateMainProgress(courseId, contentId, 3); // 3 for quiz completion
@@ -198,7 +190,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
 
       return response.data;
     } catch (error) {
-      console.error('Error saving quiz completion:', error);
+
       if (axios.isAxiosError(error)) {
         return error.response?.data;
       }
@@ -221,9 +213,9 @@ const CourseLearnPage = ({ id }: { id: string }) => {
         progress_per_subbab: progressPerSubbab
       });
 
-      // console.log('Main progress updated:', response.data);
+
     } catch (error) {
-      console.error('Error updating main progress:', error);
+
     }
   };
 
@@ -248,7 +240,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
         localStorage.setItem(`downloaded-pdfs-${courseId}`, JSON.stringify(Array.from(pdfNames)));
       }
     } catch (error) {
-      console.error("Error loading progress from database:", error);
+
     }
   };
 
@@ -256,64 +248,64 @@ const CourseLearnPage = ({ id }: { id: string }) => {
     const fetchCourseDetails = async () => {
       try {
         if (!id) {
-          console.error("Course ID is undefined")
+
           toast.error("Invalid course ID")
           router.get(route("student.courses"))
           return
         }
 
-        // console.log("Fetching course details for ID:", id)
+
         const response = await axios.get(`/api/getDataCourseku/${id}`)
-        // console.log("Raw API Response:", response)
-        // console.log("Response data:", response.data)
-        // console.log("Response data.kursus:", response.data?.kursus)
+
+
+
 
         if (response.data && response.data.kursus && response.data.kursus.length > 0) {
           const courseData = response.data.kursus[0] // Get the first course from the array
-          // console.log("Course data before processing:", courseData)
+
 
           // Ensure contents is an array and has valid quiz data
           if (!Array.isArray(courseData.contents)) {
-            // console.log("Contents is not an array, setting to empty array")
+
             courseData.contents = []
           } else {
             // Validate quiz data in contents
             courseData.contents = courseData.contents.map((content: Course["contents"][0]) => {
-              // console.log("Processing content:", content)
+
               if (content.type === "quiz" && content.quiz_data) {
-                // console.log("Found quiz content with data:", content.quiz_data)
+
                 try {
                   // Ensure quiz_data is properly parsed
                   if (typeof content.quiz_data === "string") {
-                    // console.log("Parsing quiz data string:", content.quiz_data)
+
                     const parsedData = JSON.parse(content.quiz_data)
-                    // console.log("Parsed quiz data:", parsedData)
+
                     content.quiz_data = parsedData
                   }
                 } catch (e) {
-                  console.error("Error parsing quiz data:", e)
+
                   content.quiz_data = null
                 }
               }
               return content
             })
-            // console.log("Processed contents array:", courseData.contents)
+
           }
 
-          // console.log("Setting course data:", courseData)
+
           setCourse(courseData)
 
           // Set first content as active if available
           if (courseData.contents.length > 0) {
-            // console.log("Setting active content to first item:", courseData.contents[0])
+
             setActiveContent(courseData.contents[0])
           } else {
-            // console.log("No contents available to set as active")
+
           }
 
           // Auto-expand all sections initially
           if (courseData.sub_pembahasan && courseData.sub_pembahasan.length > 0) {
-            const allSectionIds : Set<number>= new Set(courseData.sub_pembahasan.map((sp: SubPembahasan) => sp.id))
+            const allSectionIds: Set<number> = new Set(courseData.sub_pembahasan.map((sp: SubPembahasan) => sp.id))
             setExpandedSections(allSectionIds)
           }
 
@@ -323,18 +315,14 @@ const CourseLearnPage = ({ id }: { id: string }) => {
           // Load progress from database
           await loadProgressFromDatabase(id)
         } else {
-          console.error("Invalid response format or empty kursus array:", response.data)
+
           toast.error("Course not found")
           router.get(route("student.courses"))
         }
       } catch (error) {
-        console.error("Error fetching course details:", error)
+
         if (axios.isAxiosError(error)) {
-          console.error("Axios error details:", {
-            status: error.response?.status,
-            data: error.response?.data,
-            headers: error.response?.headers,
-          })
+
         }
         toast.error("Failed to load course details")
         router.get(route("student.courses"))
@@ -361,13 +349,13 @@ const CourseLearnPage = ({ id }: { id: string }) => {
   // Group contents by sub_pembahasan
   const groupedContents: GroupedContent[] = course
     ? course.sub_pembahasan
-        ?.map((subPembahasan) => ({
-          subPembahasan,
-          contents: course.contents
-            .filter((content) => content.sub_pembahasan_id === subPembahasan.id)
-            .sort((a, b) => a.order - b.order),
-        }))
-        .filter((group) => group.contents.length > 0) || []
+      ?.map((subPembahasan) => ({
+        subPembahasan,
+        contents: course.contents
+          .filter((content) => content.sub_pembahasan_id === subPembahasan.id)
+          .sort((a, b) => a.order - b.order),
+      }))
+      .filter((group) => group.contents.length > 0) || []
     : []
 
   const toggleSection = (sectionId: number) => {
@@ -385,7 +373,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
     setQuizLoading(true)
     setQuizError(null)
     try {
-      // console.log("Starting quiz with content:", content)
+
 
       // Parse quiz data - handle different possible formats
       let quizData: any[] = []
@@ -410,9 +398,9 @@ const CourseLearnPage = ({ id }: { id: string }) => {
         } else {
           quizData = []
         }
-        // console.log("Parsed quiz data:", quizData)
+
       } catch (e) {
-        console.error("Error parsing quiz data:", e)
+
         quizData = []
       }
 
@@ -425,18 +413,18 @@ const CourseLearnPage = ({ id }: { id: string }) => {
         passing_score: 70, // Default passing score
         questions: Array.isArray(quizData)
           ? quizData.map((q, index) => ({
-              id: index + 1,
-              question: q.question || "",
-              options: q.options || ["", "", "", ""],
-              correct_answer: q.correctAnswer !== undefined ? q.correctAnswer : 0,
-              explanation: q.explanation || "",
-              points: q.points || 10,
-              timeLimit: q.timeLimit || 60,
-            }))
+            id: index + 1,
+            question: q.question || "",
+            options: q.options || ["", "", "", ""],
+            correct_answer: q.correctAnswer !== undefined ? q.correctAnswer : 0,
+            explanation: q.explanation || "",
+            points: q.points || 10,
+            timeLimit: q.timeLimit || 60,
+          }))
           : [],
       }
 
-      // console.log("Prepared quiz object:", quiz)
+
 
       // Validate that we have questions
       if (!quiz.questions || quiz.questions.length === 0) {
@@ -459,11 +447,11 @@ const CourseLearnPage = ({ id }: { id: string }) => {
       })
       window.dispatchEvent(quizStartEvent)
 
-      // console.log("Navigating to quiz page with params:", { courseId: id, id: content.id })
+
       // Use the correct route with proper parameter names
       router.get(route("student.quiz.course", { courseId: id, id: content.id }))
     } catch (error: any) {
-      console.error("Error starting quiz:", error)
+
       setQuizError(error.message || "Invalid quiz data format")
     } finally {
       setQuizLoading(false)
@@ -480,7 +468,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
           router.visit(route("login"))
         },
         onError: (errors) => {
-          console.error("Logout error:", errors)
+
           toast.error("Failed to logout. Please try again.")
         },
       },
@@ -510,7 +498,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
         toast.error(getFirstMessage(response.data, 'Failed to claim certificate'));
       }
     } catch (error) {
-      console.error('Error claiming certificate:', error);
+
       if (axios.isAxiosError(error)) {
         toast.error(getFirstMessage(error.response?.data, 'Failed to claim certificate'));
       } else {
@@ -522,13 +510,13 @@ const CourseLearnPage = ({ id }: { id: string }) => {
   // Update the handleBackToCourses function
   const handleBackToCourses = () => {
     const storedCourseId = sessionStorage.getItem("currentCourseId")
-    // console.log("Back button clicked, stored course ID:", storedCourseId)
+
 
     if (storedCourseId) {
-      // console.log("Navigating back to course with ID:", storedCourseId)
+
       router.get(route("student.courses.learn", { id: storedCourseId }))
     } else {
-      // console.log("No stored course ID, navigating to courses list")
+
       router.get(route("student.courses"))
     }
   }
@@ -536,10 +524,10 @@ const CourseLearnPage = ({ id }: { id: string }) => {
   // Update the handleQuizCompletion function
   const handleQuizCompletion = () => {
     const storedCourseId = sessionStorage.getItem("currentCourseId")
-    // console.log("Handling quiz completion, stored course ID:", storedCourseId)
+
 
     if (storedCourseId) {
-      // console.log("Navigating back to course with ID:", storedCourseId)
+
       // Navigate back to course first
       router.get(route("student.courses.learn", { id: storedCourseId }))
       // Clear stored data
@@ -558,7 +546,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
         }
       }, 1000)
     } else {
-      // console.log("No stored course ID found, navigating to courses list")
+
       router.get(route("student.courses"))
     }
   }
@@ -569,8 +557,8 @@ const CourseLearnPage = ({ id }: { id: string }) => {
   useEffect(() => {
     const handleQuizComplete = (event: CustomEvent) => {
       const storedCourseId = sessionStorage.getItem("currentCourseId")
-      // console.log("Quiz completion event received:", event.detail)
-      // console.log("Stored course ID:", storedCourseId)
+
+
 
       // Track quiz completion with the new method
       if (window.studentActivityTracker && event.detail) {
@@ -592,7 +580,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
       }
 
       if (storedCourseId) {
-        // console.log("Navigating back to course with ID:", storedCourseId)
+
         router.get(route("student.courses.learn", { id: storedCourseId }))
         // Clear stored data
         sessionStorage.removeItem("currentQuiz")
@@ -606,7 +594,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
           }
         }, 500)
       } else {
-        // console.log("No stored course ID found, navigating to courses list")
+
         router.get(route("student.courses"))
       }
     }
@@ -624,7 +612,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
       if (document.visibilityState === "visible") {
         const storedCourseId = sessionStorage.getItem("currentCourseId")
         if (storedCourseId) {
-          // console.log("Page became visible, stored course ID:", storedCourseId)
+
           handleQuizCompletion()
         }
       }
@@ -677,7 +665,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
         const script = document.createElement('script');
         script.src = 'https://www.youtube.com/iframe_api';
         script.onload = () => {
-          // console.log('YouTube IFrame API loaded');
+
           initializeYouTubePlayers();
         };
         document.body.appendChild(script);
@@ -689,7 +677,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
 
     // Set up global callback for when API is ready
     (window as any).onYouTubeIframeAPIReady = () => {
-      // console.log('YouTube IFrame API ready');
+
       initializeYouTubePlayers();
     };
 
@@ -730,9 +718,9 @@ const CourseLearnPage = ({ id }: { id: string }) => {
                 'onStateChange': (window as any).onPlayerStateChange
               }
             });
-            // console.log('YouTube player initialized for video:', videoId);
+
           } catch (error) {
-            console.error('Error initializing YouTube player:', error);
+
           }
         }
       }
@@ -745,7 +733,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
 
   // Set up player ready handler
   (window as any).onPlayerReady = (event: any) => {
-    // console.log('Player is ready');
+
   };
 
   // Set up state change handler
@@ -753,11 +741,11 @@ const CourseLearnPage = ({ id }: { id: string }) => {
     const videoId = extractYouTubeVideoId(activeContent?.url || '');
     if (!videoId) return;
 
-    // console.log('Player state changed:', event.data, 'for video:', videoId);
+
 
     // Video has ended
     if (event.data === 0) {
-      // console.log('Video ended, marking as completed:', videoId);
+
 
       // Mark video as completed and update state immediately
       const newCompletedVideos = new Set(completedVideos);
@@ -788,22 +776,21 @@ const CourseLearnPage = ({ id }: { id: string }) => {
         toast.error('Failed to save video completion. Please try again.');
       }
 
-      // console.log('Video completed:', videoId);
+
     }
 
     // Video is playing
     if (event.data === 1) {
-      // console.log('Video started playing');
+
     }
   };
 
   // Debug effect to log completed videos
   useEffect(() => {
-    // console.log('Current completed videos:', Array.from(completedVideos));
     if (activeContent?.type === "video" && activeContent.url) {
       const videoId = extractYouTubeVideoId(activeContent.url);
       if (videoId) {
-        // console.log('Current video ID:', videoId, 'Is completed:', completedVideos.has(videoId));
+        // Log removed
       }
     }
   }, [completedVideos, activeContent]);
@@ -818,7 +805,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
           setCompletedVideos(new Set(parsed));
         }
       } catch (e) {
-        console.error('Error parsing saved completed videos:', e);
+
       }
     }
   }, [id]);
@@ -833,7 +820,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
           setDownloadedPDFs(new Set(parsed));
         }
       } catch (e) {
-        console.error('Error parsing saved downloaded PDFs:', e);
+
       }
     }
   }, [id]);
@@ -876,7 +863,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
 
       // Don't auto-claim, just check eligibility
     } catch (error) {
-      console.error('Error checking certificate eligibility:', error);
+
       setCertificateChecked(true);
     }
   };
@@ -943,7 +930,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
                 toast.error('Failed to save video completion. Please try again.');
               }
 
-              // console.log('Video automatically marked as completed:', videoId);
+
 
               // Clear interval since we've completed the video
               if (intervalId) {
@@ -953,7 +940,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
             }
           }
         } catch (error) {
-          console.error('Error checking video progress:', error);
+
         }
       }
       // If we don't have the player API yet, we still check localStorage in the render function
@@ -1063,7 +1050,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
                 isVideoCompleted = true;
               }
             } catch (e) {
-              // console.log('Could not get video time information:', e);
+
             }
           }
         }
@@ -1203,7 +1190,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
         let questionCount = 0
         let quizData: any[] = []
         try {
-          // console.log("Rendering quiz content:", content)
+
           if (typeof content.quiz_data === "string") {
             quizData = JSON.parse(content.quiz_data)
           } else if (Array.isArray(content.quiz_data)) {
@@ -1214,9 +1201,9 @@ const CourseLearnPage = ({ id }: { id: string }) => {
             quizData = []
           }
           if (Array.isArray(quizData)) questionCount = quizData.length
-          // console.log("Processed quiz data for rendering:", { quizData, questionCount })
+
         } catch (e) {
-          console.error("Error processing quiz data for rendering:", e)
+
           quizData = []
         }
         // Use content.duration for quiz time limit, fallback to 30 if not set
@@ -1229,7 +1216,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
 
         // Track quiz start when button is clicked
         const handleStartQuiz = () => {
-          // console.log("Start Quiz button clicked"); // untuk debugging
+          // untuk debugging
 
           // Track quiz start
           if (window.studentActivityTracker) {
@@ -1332,20 +1319,11 @@ const CourseLearnPage = ({ id }: { id: string }) => {
       <header className="sticky top-0 z-30 border-b border-blue-100 bg-white/80 backdrop-blur-sm dark:border-blue-800 dark:bg-blue-900/80">
         <div className="container px-4 py-4 mx-auto">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center">
               <Button
                 variant="ghost"
-                size="icon"
-                className="lg:hidden"
-                onClick={() => setIsSidebarOpen(true)}
-              >
-                <Menu className="w-5 h-5" />
-                <span className="sr-only">Toggle sidebar</span>
-              </Button>
-              <Button
-                variant="ghost"
-                onClick={handleBackToCourses}
-                className="flex items-center gap-2 transition-colors hover:bg-blue-50 dark:hover:bg-blue-800/50"
+                onClick={() => router.visit('/dashboard/courses')}
+                className="flex items-center gap-2"
               >
                 <ArrowLeft className="w-4 h-4" />
                 Back to Courses
@@ -1498,11 +1476,10 @@ const CourseLearnPage = ({ id }: { id: string }) => {
                             <Button
                               key={content.id}
                               variant={activeContent?.id === content.id ? "default" : "ghost"}
-                              className={`w-full justify-start gap-2 transition-all duration-200 group relative text-xs h-auto py-2 ${
-                                activeContent?.id === content.id
-                                  ? "bg-blue-50 dark:bg-blue-800/50 text-blue-700 dark:text-blue-200"
-                                  : "hover:bg-gray-50 dark:hover:bg-gray-800/50"
-                              }`}
+                              className={`w-full justify-start gap-2 transition-all duration-200 group relative text-xs h-auto py-2 ${activeContent?.id === content.id
+                                ? "bg-blue-50 dark:bg-blue-800/50 text-blue-700 dark:text-blue-200"
+                                : "hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                                }`}
                               onClick={() => {
                                 // Check if current active content is completed
                                 let isCurrentContentCompleted = true;
@@ -1555,8 +1532,8 @@ const CourseLearnPage = ({ id }: { id: string }) => {
                                 // Only restrict navigation if current content is not completed
                                 // and user is trying to navigate to a different content
                                 if ((activeContent?.type === "video" || activeContent?.type === "pdf" || activeContent?.type === "quiz") &&
-                                    !isCurrentContentCompleted &&
-                                    activeContent?.id !== content.id) {
+                                  !isCurrentContentCompleted &&
+                                  activeContent?.id !== content.id) {
                                   if (activeContent?.type === "video") {
                                     toast.error("Please complete the current video before navigating to another content.");
                                   } else if (activeContent?.type === "pdf") {
@@ -1572,11 +1549,10 @@ const CourseLearnPage = ({ id }: { id: string }) => {
                             >
                               <div className="flex items-center flex-1 min-w-0 gap-2">
                                 <span
-                                  className={`flex items-center justify-center w-5 h-5 rounded-full text-xs font-medium transition-colors flex-shrink-0 ${
-                                    activeContent?.id === content.id
-                                      ? "bg-blue-100 dark:bg-blue-700 text-blue-700 dark:text-blue-200"
-                                      : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400"
-                                  }`}
+                                  className={`flex items-center justify-center w-5 h-5 rounded-full text-xs font-medium transition-colors flex-shrink-0 ${activeContent?.id === content.id
+                                    ? "bg-blue-100 dark:bg-blue-700 text-blue-700 dark:text-blue-200"
+                                    : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400"
+                                    }`}
                                 >
                                   {contentIndex + 1}
                                 </span>
@@ -1589,12 +1565,6 @@ const CourseLearnPage = ({ id }: { id: string }) => {
                                   </span>
                                 </div>
                               </div>
-                              {content.duration && (
-                                <span className="flex items-center flex-shrink-0 gap-1 text-xs text-gray-500 dark:text-gray-400">
-                                  <Clock className="w-3 h-3" />
-                                  {content.duration}m
-                                </span>
-                              )}
                               {activeContent?.id === content.id && (
                                 <div className="absolute top-0 bottom-0 left-0 w-1 bg-blue-600 rounded-r-full dark:bg-blue-400" />
                               )}
@@ -1691,8 +1661,8 @@ const CourseLearnPage = ({ id }: { id: string }) => {
                       // Get current sub-pembahasan contents only
                       const currentSubPembahasanContents = activeContent
                         ? course.contents
-                            .filter((content) => content.sub_pembahasan_id === activeContent.sub_pembahasan_id)
-                            .sort((a, b) => a.order - b.order)
+                          .filter((content) => content.sub_pembahasan_id === activeContent.sub_pembahasan_id)
+                          .sort((a, b) => a.order - b.order)
                         : []
 
                       const currentIndex = currentSubPembahasanContents.findIndex(
@@ -1726,7 +1696,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
                               isCurrentContentCompleted = currentCompletedVideos.has(videoId);
                             }
                           }
-                          // console.log('Checking video completion:', videoId, 'Completed:', isCurrentContentCompleted);
+
                         }
                       } else if (activeContent?.type === "pdf" && activeContent.url) {
                         const pdfFilename = activeContent.url.split("/").pop() || '';
@@ -1751,13 +1721,13 @@ const CourseLearnPage = ({ id }: { id: string }) => {
                               isCurrentContentCompleted = currentDownloadedPDFs.has(pdfFilename);
                             }
                           }
-                          // console.log('Checking PDF download:', pdfFilename, 'Downloaded:', isCurrentContentCompleted);
+
                         }
                       } else if (activeContent?.type === "quiz") {
                         // For quizzes, check if there's a submission in the quizSubmissions array
                         const quizSubmission = getQuizSubmission(activeContent.id);
                         isCurrentContentCompleted = !!quizSubmission;
-                        // console.log('Checking quiz completion:', activeContent.id, 'Completed:', isCurrentContentCompleted);
+
                       }
 
                       return (
@@ -1767,7 +1737,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
                             className="gap-2 transition-colors bg-transparent hover:bg-blue-50 dark:hover:bg-blue-800/50"
                             disabled={isFirstInSection}
                             onClick={() => {
-                              // console.log('Previous button clicked');
+
                               // Check if current content is completed before moving to previous
                               if ((activeContent?.type === "video" || activeContent?.type === "pdf" || activeContent?.type === "quiz") && !isCurrentContentCompleted) {
                                 if (activeContent?.type === "video") {
@@ -1781,7 +1751,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
                               }
 
                               if (currentIndex > 0) {
-                                // console.log('Navigating to previous content');
+
                                 setActiveContent(currentSubPembahasanContents[currentIndex - 1])
                               }
                             }}
@@ -1807,9 +1777,9 @@ const CourseLearnPage = ({ id }: { id: string }) => {
                             className="gap-2 transition-colors bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
                             disabled={isLastInSection}
                             onClick={() => {
-                              // console.log('Next button clicked');
-                              // console.log('Current content type:', activeContent?.type);
-                              // console.log('Is current content completed:', isCurrentContentCompleted);
+
+
+
 
                               // Check if current content is completed before moving to next
                               if ((activeContent?.type === "video" || activeContent?.type === "pdf" || activeContent?.type === "quiz") && !isCurrentContentCompleted) {
@@ -1824,10 +1794,10 @@ const CourseLearnPage = ({ id }: { id: string }) => {
                               }
 
                               if (currentIndex < currentSubPembahasanContents.length - 1) {
-                                // console.log('Navigating to next content');
+
                                 setActiveContent(currentSubPembahasanContents[currentIndex + 1])
                               } else {
-                                // console.log('Already at last content in section');
+
                               }
                             }}
                           >

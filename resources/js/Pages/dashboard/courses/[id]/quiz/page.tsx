@@ -10,10 +10,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card"
 import { Progress } from "@/Components/ui/progress"
 import { RadioGroup, RadioGroupItem } from "@/Components/ui/radio-group"
 import { Label } from "@/Components/ui/label"
-import { ArrowLeft, Timer, CheckCircle2, AlertCircle, Menu } from "lucide-react"
+import { ArrowLeft, Timer, CheckCircle2, AlertCircle } from "lucide-react"
 import { cn, renderMath } from "@/lib/utils"
 import { usePage } from "@inertiajs/react"
-import StudentSidebar from "@/Components/StudentSidebar"
 
 interface QuizQuestion {
   id: number
@@ -51,9 +50,9 @@ const QuizPage = (props: QuizPageProps) => {
   // Add specific logging for optionImages (only in development)
   useEffect(() => {
     if (process.env.NODE_ENV === 'development' && initialQuiz) {
-      // console.log('Quiz data received:', initialQuiz);
+
       initialQuiz.questions.forEach((question, index) => {
-        // console.log(`Question ${index} optionImages:`, question.optionImages);
+
       });
     }
   }, [initialQuiz]);
@@ -68,16 +67,10 @@ const QuizPage = (props: QuizPageProps) => {
 
   // State for tracking activities
   const [quizTracked, setQuizTracked] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const renderLayout = (content: JSX.Element) => (
     <div className="flex min-h-screen bg-gray-50 dark:bg-blue-950/90">
-      <StudentSidebar
-        active="courses"
-        isOpen={isSidebarOpen}
-        onClose={() => setIsSidebarOpen(false)}
-      />
-      <div className="flex-1 lg:pl-64">
+      <div className="flex-1">
         {content}
       </div>
     </div>
@@ -122,8 +115,8 @@ const QuizPage = (props: QuizPageProps) => {
 
   // Only log in development mode
   if (process.env.NODE_ENV === 'development') {
-    // console.log('QuizPage - quizId:', quizId, 'courseId:', courseId, 'props:', props, 'page.props:', page.props);
-    // console.log('Quiz data:', quiz);
+
+
   }
 
   // Initialize activity tracker and track quiz start when component mounts
@@ -136,7 +129,7 @@ const QuizPage = (props: QuizPageProps) => {
 
     // Track quiz start only once
     if (quiz && quizId && courseId && window.studentActivityTracker && !quizTracked) {
-      // console.log('Quiz page loaded, tracking quiz start:', { quizId, courseId });
+
       window.studentActivityTracker.trackActivity('quiz_start', {
         course_id: courseId,
         quiz_id: quizId
@@ -207,13 +200,13 @@ const QuizPage = (props: QuizPageProps) => {
 
     // Debug logging (only in development)
     if (process.env.NODE_ENV === 'development') {
-      // console.log('Time calculation:', { questionTimeLimit, quizTimeLimit, question, quiz });
+
     }
 
     // Test the logic
     const result = (questionTimeLimit != null ? questionTimeLimit : quizTimeLimit) * 60;
     if (process.env.NODE_ENV === 'development') {
-      // console.log('Calculated time result:', result);
+
     }
 
     return result;
@@ -257,11 +250,11 @@ const QuizPage = (props: QuizPageProps) => {
               setCurrentQuestion(parsedData.currentQuestion);
             }
 
-            // console.log('Restored quiz data:', parsedData);
+
             return;
           }
         } catch (e) {
-          console.error('Error parsing saved quiz data:', e);
+
         }
       }
 
@@ -275,7 +268,7 @@ const QuizPage = (props: QuizPageProps) => {
         const initialTime = getInitialTime();
         setTimeLeft(initialTime);
         isDataRestoredRef.current = true;
-        // console.log('Set initial time for quiz:', initialTime);
+
       }
     }
   }, [quiz, props.id]);
@@ -336,7 +329,7 @@ const QuizPage = (props: QuizPageProps) => {
   useEffect(() => {
     if (error) {
       toast.error(error)
-      // console.log('Navigating back to course with ID:', courseId)
+
       if (courseId) {
         router.visit(`/dashboard/courses/${courseId}/learn`)
       } else {
@@ -399,7 +392,7 @@ const QuizPage = (props: QuizPageProps) => {
 
       // Track quiz submission
       if (window.studentActivityTracker) {
-        // console.log('Quiz submitted, tracking activity:', { quizId, courseId, score: response.data.score });
+
         window.studentActivityTracker.trackActivity('quiz_submit', {
           course_id: courseId,
           quiz_id: quizId,
@@ -423,9 +416,9 @@ const QuizPage = (props: QuizPageProps) => {
           quiz_id: parseInt(quizId),    // This should be the quiz content ID
           score: response.data.score
         });
-        // console.log('Quiz completion saved to database');
+
       } catch (error) {
-        console.error('Error saving quiz completion to database:', error);
+
       }
 
       // Dispatch custom event for quiz completion
@@ -440,7 +433,7 @@ const QuizPage = (props: QuizPageProps) => {
 
       toast.success(getFirstMessage(response.data, "Quiz submitted successfully!"))
     } catch (error) {
-      console.error("Error submitting quiz:", error)
+
       if (axios.isAxiosError(error)) {
         toast.error(getFirstMessage(error.response?.data, "Failed to submit quiz"))
       } else {
@@ -489,19 +482,19 @@ const QuizPage = (props: QuizPageProps) => {
       if (storedQuiz) {
         try {
           const parsedQuiz = JSON.parse(storedQuiz);
-          // console.log('Loaded quiz from sessionStorage:', parsedQuiz);
+
           setQuiz(parsedQuiz);
         } catch (e) {
-          console.error('Error parsing stored quiz:', e);
+
         }
       }
     }
 
     // Log quiz data for debugging
     if (quiz) {
-      // console.log('Quiz data:', quiz);
+
       (quiz as Quiz).questions.forEach((question: QuizQuestion, index: number) => {
-        // console.log(`Question ${index}:`, question);
+
       });
     }
   }, [initialQuiz, quiz]);
@@ -509,7 +502,7 @@ const QuizPage = (props: QuizPageProps) => {
   // Defensive check for missing or empty questions
   if (!quiz || !quiz.questions || quiz.questions.length === 0) {
     // Log the quiz object for debugging
-    // console.log('Quiz object:', quiz);
+
 
     // Check if this is a one submission only error
     if (error && error.includes('already taken this quiz')) {
@@ -536,10 +529,6 @@ const QuizPage = (props: QuizPageProps) => {
       );
     }
 
-    // console.log('Quiz validation failed:', {
-    //   quiz,
-    //   hasQuiz: !!quiz,
-    //   hasQuestions: !!(quiz && quiz.questions),
     //   questionCount: quiz?.questions?.length || 0,
     //   initialQuiz,
     //   sessionStorageQuiz: sessionStorage.getItem('currentQuiz')
@@ -655,15 +644,6 @@ const QuizPage = (props: QuizPageProps) => {
             <div className="flex items-center">
               <Button
                 variant="ghost"
-                size="icon"
-                className="mr-2 lg:hidden"
-                onClick={() => setIsSidebarOpen(true)}
-              >
-                <Menu className="w-5 h-5" />
-                <span className="sr-only">Toggle sidebar</span>
-              </Button>
-              <Button
-                variant="ghost"
                 onClick={() => courseId ? router.visit(`/dashboard/courses/${courseId}/learn`) : router.visit('/dashboard/courses')}
                 className="flex items-center gap-2"
               >
@@ -751,11 +731,7 @@ const QuizPage = (props: QuizPageProps) => {
 
                                 // Only log in development
                                 if (process.env.NODE_ENV === 'development') {
-                                  // console.log(`Rendering option ${index} for question ${currentQuestion}:`, {
-                                  //   hasOptionImage,
-                                  //   optionImage: hasOptionImage ? optionImages[index] : null,
-                                  //   allOptionImages: optionImages
-                                  // });
+
                                 }
 
                                 return hasOptionImage && (
@@ -769,7 +745,7 @@ const QuizPage = (props: QuizPageProps) => {
                                 );
                               } catch (error) {
                                 // Handle any errors gracefully
-                                console.warn('Error rendering option image:', error);
+
                                 return null;
                               }
                             })()}

@@ -17,8 +17,6 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/Components/ui/tabs"
 import { RadioGroup, RadioGroupItem } from "@/Components/ui/radio-group"
-import MathEquationToolbar from "@/Components/MathEquationToolbar"
-import MathPreview from "@/Components/MathPreview"
 import axios, { AxiosProgressEvent } from "axios"
 import { extractMessages, getFirstMessage } from "@/lib/api-messages"
 
@@ -63,7 +61,6 @@ const courseFormSchema = z.object({
   thumbnail: z.any().optional(),
   url_thumbnail: z.string().optional(),
   contentTypes: z.array(z.enum(['video', 'pdf', 'quiz'])).default(['video', 'pdf', 'quiz']),
-  estimated_duration: z.number().optional(),
   prerequisites: z.array(z.string()).optional(),
   learning_objectives: z.array(z.string()).optional(),
   target_audience: z.array(z.string()).optional(),
@@ -76,7 +73,6 @@ const courseFormSchema = z.object({
       title: z.string().min(3, { message: "Content title must be at least 3 characters." }).optional(), // Make optional
       description: z.string().min(10, { message: "Content description must be at least 10 characters." }).optional(), // Make optional
       url: z.string().optional(),
-      duration: z.number().optional(),
       is_required: z.boolean().default(true),
       points: z.number().optional(),
       passing_score: z.number().optional(),
@@ -129,7 +125,6 @@ export default function CreateCoursePage({ mapel }: Props) {
             title: "Video Title",
             description: "Video description here",
             url: "",
-            duration: 0,
             is_required: true,
             points: 0,
             passing_score: 0,
@@ -250,7 +245,7 @@ export default function CreateCoursePage({ mapel }: Props) {
         toast.error(getFirstMessage(response.data, 'Failed to upload PDF'));
       }
     } catch (error: any) {
-      console.error('Error uploading PDF:', error);
+
       toast.error(getFirstMessage(error.response?.data, 'Failed to upload PDF'));
     } finally {
       setUploadProgress(prev => ({
@@ -260,18 +255,6 @@ export default function CreateCoursePage({ mapel }: Props) {
     }
   };
 
-  const getVideoDuration = (file: File): Promise<number> => {
-    return new Promise((resolve, reject) => {
-      const video = document.createElement('video');
-      video.preload = 'metadata';
-      video.onloadedmetadata = () => {
-        window.URL.revokeObjectURL(video.src);
-        resolve(video.duration);
-      };
-      video.onerror = reject;
-      video.src = URL.createObjectURL(file);
-    });
-  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -282,153 +265,150 @@ export default function CreateCoursePage({ mapel }: Props) {
       const data = form.getValues();
 
       // Debug log
-      // console.log('Form data before submission:', data);
+
 
       // Trigger validation
       const isValid = await form.trigger();
       if (!isValid) {
         const errors = form.formState.errors;
-        // console.log('Validation errors:', errors);
+
 
         // Show specific error messages
         let errorMessage = 'Please fix the validation errors';
 
-      if (errors.id_mapel) {
-        errorMessage = errors.id_mapel.message as string || 'Please select a subject';
-      } else if (errors.judul_kursus) {
-        errorMessage = errors.judul_kursus.message as string || 'Please enter a valid course title';
-      } else if (errors.deskripsi_kursus) {
-        errorMessage = errors.deskripsi_kursus.message as string || 'Please enter a valid course description';
-      } else {
-        // Show all errors
-        Object.entries(errors).forEach(([field, error]) => {
-          if (error?.message) {
-            toast.error(error.message as string, {
-              position: 'bottom-right',
+        if (errors.id_mapel) {
+          errorMessage = errors.id_mapel.message as string || 'Please select a subject';
+        } else if (errors.judul_kursus) {
+          errorMessage = errors.judul_kursus.message as string || 'Please enter a valid course title';
+        } else if (errors.deskripsi_kursus) {
+          errorMessage = errors.deskripsi_kursus.message as string || 'Please enter a valid course description';
+        } else {
+          // Show all errors
+          Object.entries(errors).forEach(([field, error]) => {
+            if (error?.message) {
+              toast.error(error.message as string, {
+                position: 'bottom-right',
+              });
+            }
+          });
+        }
+
+        if (errorMessage) {
+          toast.error(errorMessage, {
+            position: 'bottom-right',
+          });
+        }
+
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Prepare form data
+      formData.append('id_mapel', data.id_mapel);
+      formData.append('judul_kursus', data.judul_kursus);
+      formData.append('deskripsi_kursus', data.deskripsi_kursus);
+
+      // Handle thumbnail
+      if (data.thumbnail instanceof File) {
+        formData.append('thumbnail', data.thumbnail);
+      } else if (data.url_thumbnail) {
+        formData.append('url_thumbnail', data.url_thumbnail);
+      }
+
+      // Always send these as arrays (even if empty)
+      formData.append('prerequisites', JSON.stringify(data.prerequisites ?? []));
+      formData.append('learning_objectives', JSON.stringify(data.learning_objectives ?? []));
+      formData.append('target_audience', JSON.stringify(data.target_audience ?? []));
+
+      // Convert duration to number if it exists and handle image data
+      if (data.pembahasan) {
+        data.pembahasan.forEach((pembahasan, index) => {
+          if (pembahasan.contents) {
+            pembahasan.contents.forEach((content, contentIndex) => {
+
+              // Ensure quiz data is properly formatted with image support
+              if (content.type === 'quiz' && content.quiz_data) {
+                // Make sure timeLimit and passingScore are numbers
+                if (content.quiz_data.timeLimit !== undefined) {
+                  content.quiz_data.timeLimit = Number(content.quiz_data.timeLimit);
+                }
+                if (content.quiz_data.passingScore !== undefined) {
+                  content.quiz_data.passingScore = Number(content.quiz_data.passingScore);
+                }
+
+                // Ensure questions have proper structure with image support
+                content.quiz_data.questions = content.quiz_data.questions.map(question => ({
+                  question: question.question,
+                  options: question.options,
+                  correctAnswer: Number(question.correctAnswer),
+                  imageUrl: question.imageUrl || undefined,
+                  optionImages: question.optionImages || [null, null, null, null] // Add this line
+                }));
+              }
             });
           }
         });
       }
 
-      if (errorMessage) {
-        toast.error(errorMessage, {
-          position: 'bottom-right',
-        });
-      }
+      formData.append('pembahasan', JSON.stringify(data.pembahasan));
 
-      setIsSubmitting(false);
-      return;
-    }
+      // Create/Update course
+      const url = `/admin/courses`;
 
-    // Prepare form data
-    formData.append('id_mapel', data.id_mapel);
-    formData.append('judul_kursus', data.judul_kursus);
-    formData.append('deskripsi_kursus', data.deskripsi_kursus);
 
-    // Handle thumbnail
-    if (data.thumbnail instanceof File) {
-      formData.append('thumbnail', data.thumbnail);
-    } else if (data.url_thumbnail) {
-      formData.append('url_thumbnail', data.url_thumbnail);
-    }
+      // Debug CSRF token
+      const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
 
-    // Always send these as arrays (even if empty)
-    formData.append('prerequisites', JSON.stringify(data.prerequisites ?? []));
-    formData.append('learning_objectives', JSON.stringify(data.learning_objectives ?? []));
-    formData.append('target_audience', JSON.stringify(data.target_audience ?? []));
 
-    // Convert duration to number if it exists and handle image data
-    if (data.pembahasan) {
-      data.pembahasan.forEach((pembahasan, index) => {
-        if (pembahasan.contents) {
-          pembahasan.contents.forEach((content, contentIndex) => {
-            if (content.type === 'video' && content.duration) {
-              content.duration = Number(content.duration);
-            }
-
-            // Ensure quiz data is properly formatted with image support
-            if (content.type === 'quiz' && content.quiz_data) {
-              // Make sure timeLimit and passingScore are numbers
-              if (content.quiz_data.timeLimit !== undefined) {
-                content.quiz_data.timeLimit = Number(content.quiz_data.timeLimit);
-              }
-              if (content.quiz_data.passingScore !== undefined) {
-                content.quiz_data.passingScore = Number(content.quiz_data.passingScore);
-              }
-
-              // Ensure questions have proper structure with image support
-              content.quiz_data.questions = content.quiz_data.questions.map(question => ({
-                question: question.question,
-                options: question.options,
-                correctAnswer: Number(question.correctAnswer),
-                imageUrl: question.imageUrl || undefined,
-                optionImages: question.optionImages || [null, null, null, null] // Add this line
-              }));
-            }
-          });
+      const response = await axios.post(url, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'X-CSRF-TOKEN': csrfToken || '',
         }
       });
-    }
 
-    formData.append('pembahasan', JSON.stringify(data.pembahasan));
-
-    // Create/Update course
-    const url = `/admin/courses`;
-    // console.log('Submitting to URL:', url);
-
-    // Debug CSRF token
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-    // console.log('CSRF Token:', csrfToken);
-
-    const response = await axios.post(url, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-        'X-CSRF-TOKEN': csrfToken || '',
-      }
-    });
-
-    if (response.data.status === 'success') {
-      toast.success(getFirstMessage(response.data, 'Course created successfully'), {
-        position: 'bottom-right',
-      });
-      router.visit('/admin/courses');
-    } else {
-      console.error('Failed to create course:', response.data.errors);
-      const messages = extractMessages(response.data);
-      if (messages.length > 0) {
-        messages.slice(0, 5).forEach((message) => {
-          toast.error(message, { position: 'bottom-right' });
+      if (response.data.status === 'success') {
+        toast.success(getFirstMessage(response.data, 'Course created successfully'), {
+          position: 'bottom-right',
         });
+        router.visit('/admin/courses');
       } else {
-        toast.error('Failed to create course. Please check the console for details.', {
+
+        const messages = extractMessages(response.data);
+        if (messages.length > 0) {
+          messages.slice(0, 5).forEach((message) => {
+            toast.error(message, { position: 'bottom-right' });
+          });
+        } else {
+          toast.error('Failed to create course. Please check the console for details.', {
+            position: 'bottom-right',
+          });
+        }
+      }
+    } catch (error) {
+
+      if (axios.isAxiosError(error)) {
+
+        const messages = extractMessages(error.response?.data);
+        if (messages.length > 0) {
+          messages.slice(0, 5).forEach((message) => {
+            toast.error(message, { position: 'bottom-right' });
+          });
+        } else {
+          toast.error(`Error: ${getFirstMessage(error.response?.data, 'Failed to create course')}`, {
+            position: 'bottom-right',
+          });
+        }
+      } else {
+
+        toast.error('An unexpected error occurred', {
           position: 'bottom-right',
         });
       }
+    } finally {
+      setIsSubmitting(false);
     }
-  } catch (error) {
-    console.error('Submission error:', error);
-    if (axios.isAxiosError(error)) {
-      console.error('Validation errors:', error.response?.data);
-      const messages = extractMessages(error.response?.data);
-      if (messages.length > 0) {
-        messages.slice(0, 5).forEach((message) => {
-          toast.error(message, { position: 'bottom-right' });
-        });
-      } else {
-        toast.error(`Error: ${getFirstMessage(error.response?.data, 'Failed to create course')}`, {
-          position: 'bottom-right',
-        });
-      }
-    } else {
-      console.error('Unexpected error:', error);
-      toast.error('An unexpected error occurred', {
-        position: 'bottom-right',
-      });
-    }
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+  };
 
   const toggleSection = (section: string) => {
     setExpandedSections(prev => ({
@@ -440,52 +420,51 @@ export default function CreateCoursePage({ mapel }: Props) {
   const addPembahasan = () => {
     const currentPembahasan = form.getValues('pembahasan') || [];
     form.setValue('pembahasan', [
-  ...currentPembahasan,
-  {
-    title: `Section ${currentPembahasan.length + 1}`,
-    description: `Description for section ${currentPembahasan.length + 1}`,
-    contents: [
+      ...currentPembahasan,
       {
-        type: 'video' as const,
-        title: "Video Title",
-        description: "Video description here",
-        url: "",
-        duration: 0,
-        is_required: true,
-        points: 0,
-        passing_score: 0,
-        quiz_data: undefined,
-      },
-      {
-        type: 'pdf' as const,
-        title: "PDF Title",
-        description: "PDF description here",
-        url: "",
-        is_required: true,
-        points: 0,
-        passing_score: 0,
-        quiz_data: undefined,
-      },
-      {
-        type: 'quiz' as const,
-        title: "Quiz Title",
-        description: "Quiz description here",
-        is_required: true,
-        points: 0,
-        passing_score: 0,
-        quiz_data: {
-          timeLimit: 30,
-          passingScore: 70,
-          questions: [{
-            question: '',
-            options: ['', '', '', ''],
-            correctAnswer: 0
-          }]
-        }
+        title: `Section ${currentPembahasan.length + 1}`,
+        description: `Description for section ${currentPembahasan.length + 1}`,
+        contents: [
+          {
+            type: 'video' as const,
+            title: "Video Title",
+            description: "Video description here",
+            url: "",
+            is_required: true,
+            points: 0,
+            passing_score: 0,
+            quiz_data: undefined,
+          },
+          {
+            type: 'pdf' as const,
+            title: "PDF Title",
+            description: "PDF description here",
+            url: "",
+            is_required: true,
+            points: 0,
+            passing_score: 0,
+            quiz_data: undefined,
+          },
+          {
+            type: 'quiz' as const,
+            title: "Quiz Title",
+            description: "Quiz description here",
+            is_required: true,
+            points: 0,
+            passing_score: 0,
+            quiz_data: {
+              timeLimit: 30,
+              passingScore: 70,
+              questions: [{
+                question: '',
+                options: ['', '', '', ''],
+                correctAnswer: 0
+              }]
+            }
+          }
+        ]
       }
-    ]
-  }
-]);
+    ]);
 
   };
 
@@ -580,10 +559,6 @@ export default function CreateCoursePage({ mapel }: Props) {
           if (content.type === 'video') {
             if (!content.url) {
               toast.error(`Section ${index + 1}, Video ${contentIndex + 1}: URL is required`);
-              return false;
-            }
-            if (content.duration === undefined || content.duration < 0) {
-              toast.error(`Section ${index + 1}, Video ${contentIndex + 1}: Duration must be a positive number`);
               return false;
             }
           }
@@ -968,24 +943,6 @@ export default function CreateCoursePage({ mapel }: Props) {
                                           </FormItem>
                                         )}
                                       />
-                                      <FormField
-                                        control={form.control}
-                                        name={`pembahasan.${pembahasanIndex}.contents.${contentIndex}.duration`}
-                                        render={({ field }) => (
-                                          <FormItem>
-                                            <FormLabel>Duration (minutes)</FormLabel>
-                                            <FormControl>
-                                              <Input
-                                                type="number"
-                                                {...field}
-                                                onChange={(e) => field.onChange(Number(e.target.value))}
-                                                placeholder="Enter video duration"
-                                              />
-                                            </FormControl>
-                                            <FormMessage />
-                                          </FormItem>
-                                        )}
-                                      />
                                     </div>
                                   )}
 
@@ -1181,7 +1138,7 @@ export default function CreateCoursePage({ mapel }: Props) {
                                                             toast.error(getFirstMessage(response.data, 'Failed to upload image'));
                                                           }
                                                         } catch (error: any) {
-                                                          console.error('Error uploading image:', error);
+
                                                           toast.error(getFirstMessage(error.response?.data, 'Failed to upload image'));
                                                         }
                                                       }}
@@ -1198,36 +1155,13 @@ export default function CreateCoursePage({ mapel }: Props) {
                                                 <FormItem>
                                                   <FormLabel>Question Text</FormLabel>
                                                   <div className="space-y-2">
-                                                    <div className="flex gap-2">
-                                                      <MathEquationToolbar
-                                                        onInsert={(equation) => {
-                                                          const cursorPosition = (document.activeElement as HTMLTextAreaElement)?.selectionStart || 0;
-                                                          const newValue = field.value ?
-                                                            field.value.substring(0, cursorPosition) +
-                                                            (equation.includes('#') ? equation : `$${equation}$`) +
-                                                            field.value.substring(cursorPosition) :
-                                                            (equation.includes('#') ? equation : `$${equation}$`);
-                                                          field.onChange(newValue);
-                                                        }}
+                                                    <FormControl>
+                                                      <Textarea
+                                                        placeholder="Enter your question"
+                                                        className="min-h-[80px]"
+                                                        {...field}
                                                       />
-                                                      <FormControl>
-                                                        <Textarea
-                                                          placeholder="Enter your question"
-                                                          className="min-h-[80px]"
-                                                          {...field}
-                                                        />
-                                                      </FormControl>
-                                                    </div>
-                                                    {/* Real-time Math Preview */}
-                                                    {field.value && (
-                                                      <div className="mt-2">
-                                                        <div className="text-xs font-medium text-gray-600 mb-1">Preview:</div>
-                                                        <MathPreview
-                                                          content={field.value}
-                                                          className="min-h-[40px] shadow-sm"
-                                                        />
-                                                      </div>
-                                                    )}
+                                                    </FormControl>
                                                   </div>
                                                   <FormMessage />
                                                 </FormItem>
@@ -1245,35 +1179,12 @@ export default function CreateCoursePage({ mapel }: Props) {
                                                       render={({ field }) => (
                                                         <FormItem className="flex-1">
                                                           <div className="space-y-2">
-                                                            <div className="flex gap-2">
-                                                              <MathEquationToolbar
-                                                                onInsert={(equation) => {
-                                                                  const cursorPosition = (document.activeElement as HTMLInputElement)?.selectionStart || 0;
-                                                                  const newValue = field.value ?
-                                                                    field.value.substring(0, cursorPosition) +
-                                                                    (equation.includes('#') ? equation : `$${equation}$`) +
-                                                                    field.value.substring(cursorPosition) :
-                                                                    (equation.includes('#') ? equation : `$${equation}$`);
-                                                                  field.onChange(newValue);
-                                                                }}
+                                                            <FormControl>
+                                                              <Input
+                                                                placeholder={`Option ${optionIndex + 1}`}
+                                                                {...field}
                                                               />
-                                                              <FormControl>
-                                                                <Input
-                                                                  placeholder={`Option ${optionIndex + 1}`}
-                                                                  {...field}
-                                                                />
-                                                              </FormControl>
-                                                            </div>
-                                                            {/* Real-time Math Preview for Option */}
-                                                            {field.value && (
-                                                              <div className="mt-1">
-                                                                <div className="text-xs font-medium text-gray-600 mb-1">Preview:</div>
-                                                                <MathPreview
-                                                                  content={field.value}
-                                                                  className="min-h-[20px] shadow-sm text-sm"
-                                                                />
-                                                              </div>
-                                                            )}
+                                                            </FormControl>
                                                           </div>
                                                           <FormMessage />
                                                         </FormItem>
@@ -1396,7 +1307,7 @@ export default function CreateCoursePage({ mapel }: Props) {
                                                                   toast.error(getFirstMessage(response.data, 'Failed to upload image'));
                                                                 }
                                                               } catch (error: any) {
-                                                                console.error('Error uploading image:', error);
+
                                                                 toast.error(getFirstMessage(error.response?.data, 'Failed to upload image'));
                                                               }
                                                             }}
@@ -1587,7 +1498,6 @@ export default function CreateCoursePage({ mapel }: Props) {
                                   {content.type === 'video' && (
                                     <>
                                       <p><strong>URL:</strong> {content.url}</p>
-                                      <p><strong>Duration:</strong> {content.duration} minutes</p>
                                     </>
                                   )}
                                   {content.type === 'pdf' && (

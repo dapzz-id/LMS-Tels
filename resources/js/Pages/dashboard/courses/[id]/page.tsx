@@ -106,7 +106,7 @@ const CourseDetailsPage = ({ params }: { params: { id: string } }) => {
           toast.error(getFirstMessage(response.data, 'Invalid course data received'))
         }
       } catch (error) {
-        console.error('Error fetching course details:', error)
+        
         if (axios.isAxiosError(error)) {
           toast.error(getFirstMessage(error.response?.data, 'Failed to load course details'))
         } else {

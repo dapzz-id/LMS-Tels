@@ -98,7 +98,7 @@ export default function AnalyticsPage() {
         const response = await axios.get(`/api/teacher/analytics?range=${timeRange}`)
         setData(response.data.data)
       } catch (error) {
-        console.error('Error fetching analytics:', error)
+        
       } finally {
         setLoading(false)
       }

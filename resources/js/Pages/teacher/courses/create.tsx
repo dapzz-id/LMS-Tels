@@ -55,7 +55,6 @@ const courseFormSchema = z.object({
   thumbnail: z.any().optional(),
   url_thumbnail: z.string().optional(),
   contentTypes: z.array(z.enum(['video', 'pdf', 'quiz'])).default(['video', 'pdf', 'quiz']),
-  estimated_duration: z.number().optional(),
   prerequisites: z.array(z.string()).optional(),
   learning_objectives: z.array(z.string()).optional(),
   target_audience: z.array(z.string()).optional(),
@@ -69,7 +68,6 @@ const courseFormSchema = z.object({
       title: z.string().min(3, { message: "Content title must be at least 3 characters." }).optional(),
       description: z.string().min(10, { message: "Content description must be at least 10 characters." }).optional(),
       url: z.string().optional(),
-      duration: z.number().optional(),
       is_required: z.boolean().default(true),
       points: z.number().optional(),
       passing_score: z.number().optional(),
@@ -122,7 +120,6 @@ export default function CreateCoursePage({ mapel, availableClasses = [] }: Props
             title: "Video Title",
             description: "Video description here",
             url: "",
-            duration: 0,
             is_required: true,
             points: 0,
             passing_score: 0,
@@ -242,7 +239,7 @@ export default function CreateCoursePage({ mapel, availableClasses = [] }: Props
         toast.error(getFirstMessage(response.data, 'Failed to upload PDF'));
       }
     } catch (error: any) {
-      console.error('Error uploading PDF:', error);
+
       toast.error(getFirstMessage(error.response?.data, 'Failed to upload PDF'));
     } finally {
       setUploadProgress(prev => ({
@@ -252,18 +249,6 @@ export default function CreateCoursePage({ mapel, availableClasses = [] }: Props
     }
   };
 
-  const getVideoDuration = (file: File): Promise<number> => {
-    return new Promise((resolve, reject) => {
-      const video = document.createElement('video');
-      video.preload = 'metadata';
-      video.onloadedmetadata = () => {
-        window.URL.revokeObjectURL(video.src);
-        resolve(video.duration);
-      };
-      video.onerror = reject;
-      video.src = URL.createObjectURL(file);
-    });
-  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -274,13 +259,13 @@ export default function CreateCoursePage({ mapel, availableClasses = [] }: Props
       const data = form.getValues();
 
       // Debug log
-      // console.log('Form data before submission:', data);
+
 
       // Trigger validation
       const isValid = await form.trigger();
       if (!isValid) {
         const errors = form.formState.errors;
-        // console.log('Validation errors:', errors);
+
         Object.entries(errors).forEach(([field, error]) => {
           if (error?.message) {
             toast.error(error.message as string, {
@@ -314,9 +299,6 @@ export default function CreateCoursePage({ mapel, availableClasses = [] }: Props
         data.pembahasan.forEach((pembahasan, index) => {
           if (pembahasan.contents) {
             pembahasan.contents.forEach((content, contentIndex) => {
-              if (content.type === 'video' && content.duration) {
-                content.duration = Number(content.duration);
-              }
 
               // Handle quiz data with image support
               if (content.type === 'quiz' && content.quiz_data) {
@@ -339,7 +321,7 @@ export default function CreateCoursePage({ mapel, availableClasses = [] }: Props
 
       // Create/Update course
       const url = `/teacher/courses`;
-      // console.log('Submitting to URL:', url);
+
 
       const response = await axios.post(url, formData, {
         headers: {
@@ -353,7 +335,7 @@ export default function CreateCoursePage({ mapel, availableClasses = [] }: Props
         });
         router.visit('/teacher/courses');
       } else {
-        console.error('Failed to create course:', response.data.errors);
+
         const messages = extractMessages(response.data);
         if (messages.length > 0) {
           messages.slice(0, 5).forEach((message) => {
@@ -366,9 +348,9 @@ export default function CreateCoursePage({ mapel, availableClasses = [] }: Props
         }
       }
     } catch (error) {
-      console.error('Submission error:', error);
+
       if (axios.isAxiosError(error)) {
-        console.error('Validation errors:', error.response?.data);
+
         const messages = extractMessages(error.response?.data);
         if (messages.length > 0) {
           messages.slice(0, 5).forEach((message) => {
@@ -380,7 +362,7 @@ export default function CreateCoursePage({ mapel, availableClasses = [] }: Props
           });
         }
       } else {
-        console.error('Unexpected error:', error);
+
         toast.error('An unexpected error occurred', {
           position: 'bottom-right',
         });
@@ -400,52 +382,51 @@ export default function CreateCoursePage({ mapel, availableClasses = [] }: Props
   const addPembahasan = () => {
     const currentPembahasan = form.getValues('pembahasan') || [];
     form.setValue('pembahasan', [
-  ...currentPembahasan,
-  {
-    title: `Section ${currentPembahasan.length + 1}`,
-    description: `Description for section ${currentPembahasan.length + 1}`,
-    contents: [
+      ...currentPembahasan,
       {
-        type: 'video' as const,
-        title: "Video Title",
-        description: "Video description here",
-        url: "",
-        duration: 0,
-        is_required: true,
-        points: 0,
-        passing_score: 0,
-        quiz_data: undefined,
-      },
-      {
-        type: 'pdf' as const,
-        title: "PDF Title",
-        description: "PDF description here",
-        url: "",
-        is_required: true,
-        points: 0,
-        passing_score: 0,
-        quiz_data: undefined,
-      },
-      {
-        type: 'quiz' as const,
-        title: "Quiz Title",
-        description: "Quiz description here",
-        is_required: true,
-        points: 0,
-        passing_score: 0,
-        quiz_data: {
-          timeLimit: 30,
-          passingScore: 70,
-          questions: [{
-            question: '',
-            options: ['', '', '', ''],
-            correctAnswer: 0
-          }]
-        }
+        title: `Section ${currentPembahasan.length + 1}`,
+        description: `Description for section ${currentPembahasan.length + 1}`,
+        contents: [
+          {
+            type: 'video' as const,
+            title: "Video Title",
+            description: "Video description here",
+            url: "",
+            is_required: true,
+            points: 0,
+            passing_score: 0,
+            quiz_data: undefined,
+          },
+          {
+            type: 'pdf' as const,
+            title: "PDF Title",
+            description: "PDF description here",
+            url: "",
+            is_required: true,
+            points: 0,
+            passing_score: 0,
+            quiz_data: undefined,
+          },
+          {
+            type: 'quiz' as const,
+            title: "Quiz Title",
+            description: "Quiz description here",
+            is_required: true,
+            points: 0,
+            passing_score: 0,
+            quiz_data: {
+              timeLimit: 30,
+              passingScore: 70,
+              questions: [{
+                question: '',
+                options: ['', '', '', ''],
+                correctAnswer: 0
+              }]
+            }
+          }
+        ]
       }
-    ]
-  }
-]);
+    ]);
 
   };
 
@@ -530,10 +511,6 @@ export default function CreateCoursePage({ mapel, availableClasses = [] }: Props
           if (content.type === 'video') {
             if (!content.url) {
               toast.error(`Section ${index + 1}, Video ${contentIndex + 1}: URL is required`);
-              return false;
-            }
-            if (content.duration === undefined || content.duration < 0) {
-              toast.error(`Section ${index + 1}, Video ${contentIndex + 1}: Duration must be a positive number`);
               return false;
             }
           }
@@ -646,14 +623,14 @@ export default function CreateCoursePage({ mapel, availableClasses = [] }: Props
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-          <Button
-            variant="outline"
-            onClick={() => router.visit('/teacher/courses')}
+            <Button
+              variant="outline"
+              onClick={() => router.visit('/teacher/courses')}
               className="mb-4"
-          >
+            >
               <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Courses
-          </Button>
+              Back to Courses
+            </Button>
             <h1 className="text-3xl font-bold tracking-tight text-transparent bg-gradient-to-r from-blue-700 to-blue-500 bg-clip-text">
               Create New Course
             </h1>
@@ -674,10 +651,10 @@ export default function CreateCoursePage({ mapel, availableClasses = [] }: Props
             <form onSubmit={handleSubmit} className="space-y-8">
               <TabsContent value="details">
                 <Card>
-          <CardHeader>
+                  <CardHeader>
                     <CardTitle>Basic Information</CardTitle>
                     <CardDescription>Enter the basic details about your course.</CardDescription>
-          </CardHeader>
+                  </CardHeader>
                   <CardContent className="space-y-6">
                     <div className="flex flex-col gap-6 md:flex-row">
                       <div className="w-full space-y-6 md:w-2/3">
@@ -691,16 +668,16 @@ export default function CreateCoursePage({ mapel, availableClasses = [] }: Props
                                 <FormControl>
                                   <SelectTrigger>
                                     <SelectValue placeholder="Select a subject" />
-                    </SelectTrigger>
+                                  </SelectTrigger>
                                 </FormControl>
-                    <SelectContent>
+                                <SelectContent>
                                   {mapel.map((item) => (
                                     <SelectItem key={item.id} value={item.id.toString()}>
                                       {item.nama_mapel}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                               <FormDescription>Select the subject this course belongs to.</FormDescription>
                               <FormMessage />
                             </FormItem>
@@ -849,8 +826,8 @@ export default function CreateCoursePage({ mapel, availableClasses = [] }: Props
                               >
                                 Remove Section
                               </Button>
-                  )}
-                </div>
+                            )}
+                          </div>
                         </CardHeader>
                         <CardContent className="space-y-6">
                           <FormField
@@ -888,7 +865,7 @@ export default function CreateCoursePage({ mapel, availableClasses = [] }: Props
                           <div className="space-y-4">
                             <div className="flex items-center justify-between">
                               <h4 className="text-sm font-medium">Content Items</h4>
-              </div>
+                            </div>
 
                             {pembahasan.contents.map((content, contentIndex) => (
                               <Card key={contentIndex} className="border-l-4 border-l-blue-500 border border-dashed">
@@ -954,24 +931,6 @@ export default function CreateCoursePage({ mapel, availableClasses = [] }: Props
                                             <FormDescription>
                                               Only YouTube video links are allowed
                                             </FormDescription>
-                                            <FormMessage />
-                                          </FormItem>
-                                        )}
-                                      />
-                                      <FormField
-                                        control={form.control}
-                                        name={`pembahasan.${pembahasanIndex}.contents.${contentIndex}.duration`}
-                                        render={({ field }) => (
-                                          <FormItem>
-                                            <FormLabel>Duration (minutes)</FormLabel>
-                                            <FormControl>
-                                              <Input
-                                                type="number"
-                                                {...field}
-                                                onChange={(e) => field.onChange(Number(e.target.value))}
-                                                placeholder="Enter video duration"
-                                              />
-                                            </FormControl>
                                             <FormMessage />
                                           </FormItem>
                                         )}
@@ -1176,7 +1135,7 @@ export default function CreateCoursePage({ mapel, availableClasses = [] }: Props
                                                             toast.error(getFirstMessage(response.data, 'Failed to upload image'));
                                                           }
                                                         } catch (error: any) {
-                                                          console.error('Error uploading image:', error);
+
                                                           toast.error(getFirstMessage(error.response?.data, 'Failed to upload image'));
                                                         }
                                                       }}
@@ -1338,7 +1297,7 @@ export default function CreateCoursePage({ mapel, availableClasses = [] }: Props
                                                                   toast.error(getFirstMessage(response.data, 'Failed to upload image'));
                                                                 }
                                                               } catch (error: any) {
-                                                                console.error('Error uploading image:', error);
+
                                                                 toast.error(getFirstMessage(error.response?.data, 'Failed to upload image'));
                                                               }
                                                             }}
@@ -1502,7 +1461,7 @@ export default function CreateCoursePage({ mapel, availableClasses = [] }: Props
                           </div>
                         )}
                       </div>
-              </div>
+                    </div>
 
                     <div className="mt-8 space-y-6">
                       <h3 className="text-lg font-semibold">Course Content</h3>
@@ -1527,7 +1486,6 @@ export default function CreateCoursePage({ mapel, availableClasses = [] }: Props
                                   {content.type === 'video' && (
                                     <>
                                       <p><strong>URL:</strong> {content.url}</p>
-                                      <p><strong>Duration:</strong> {content.duration} minutes</p>
                                     </>
                                   )}
                                   {content.type === 'pdf' && (
@@ -1592,19 +1550,19 @@ export default function CreateCoursePage({ mapel, availableClasses = [] }: Props
 
               <div className="flex justify-between mt-6">
                 {activeTab === 'preview' && (
-                <Button
-                  type="button"
+                  <Button
+                    type="button"
                     onClick={handlePrevious}
-                >
+                  >
                     Previous
-                </Button>
+                  </Button>
                 )}
 
                 <div className="flex gap-2 ml-auto">
                   {activeTab === 'preview' && (
-                <Button
-                  type="submit"
-                  disabled={isSubmitting}
+                    <Button
+                      type="submit"
+                      disabled={isSubmitting}
                       className="bg-blue-600 hover:bg-blue-700"
                     >
                       {isSubmitting ? (
@@ -1618,7 +1576,7 @@ export default function CreateCoursePage({ mapel, availableClasses = [] }: Props
                           <span>Publish Course</span>
                         </>
                       )}
-                </Button>
+                    </Button>
                   )}
                 </div>
               </div>

@@ -115,7 +115,7 @@ export default function DepartmentsPage({ departments }: Props) {
       }
     } catch (error) {
       toast.error('Error creating subject')
-      console.error(error)
+      
     } finally {
       setIsSubmitting(false)
     }
@@ -160,7 +160,7 @@ export default function DepartmentsPage({ departments }: Props) {
       }
     } catch (error) {
       toast.error('Error updating subject')
-      console.error(error)
+      
     } finally {
       setIsSubmitting(false)
     }
@@ -238,7 +238,7 @@ export default function DepartmentsPage({ departments }: Props) {
       }
     } catch (error) {
       toast.error('Error deleting subject')
-      console.error(error)
+      
     } finally {
       setIsDeleteSubmitting(false)
     }

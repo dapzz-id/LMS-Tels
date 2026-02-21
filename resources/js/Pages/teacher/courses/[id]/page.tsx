@@ -40,7 +40,6 @@ interface Course {
       title: string;
       description: string;
       url: string;
-      duration: number;
     }>;
   }>;
 }
@@ -167,9 +166,9 @@ export default function TeacherCourseDetailPage({ course }: Props) {
                               <div>
                                 <p className="font-medium">{content.title}</p>
                                 <p className="text-sm text-slate-500 dark:text-slate-400">
-                                  {content.type === "video" ? `${content.duration} minutes` :
-                                   content.type === "pdf" ? "PDF Document" :
-                                   "Quiz"}
+                                  {content.type === "video" ? "YouTube Video" :
+                                    content.type === "pdf" ? "PDF Document" :
+                                      "Quiz"}
                                 </p>
                               </div>
                             </div>
@@ -237,7 +236,6 @@ const courses = [
           {
             title: "What is Computer Science?",
             type: "video",
-            duration: 15,
             status: "Published",
           },
           {
@@ -248,7 +246,6 @@ const courses = [
           {
             title: "Basic Programming Concepts",
             type: "video",
-            duration: 22,
             status: "Published",
           },
         ],
@@ -259,19 +256,16 @@ const courses = [
           {
             title: "Understanding Variables",
             type: "video",
-            duration: 18,
             status: "Published",
           },
           {
             title: "Data Types in Programming",
             type: "video",
-            duration: 20,
             status: "Published",
           },
           {
             title: "Working with Strings and Numbers",
             type: "video",
-            duration: 25,
             status: "Published",
           },
         ],

@@ -40,16 +40,16 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        // console.log('Fetching admin stats...')
+        
         const response = await axios.get('/api/admin/get-stats')
-        // console.log('Admin stats response:', response.data)
+        
         setStats(response.data.data)
       } catch (error) {
-        console.error('Error fetching stats:', error)
+        
         // Show a more detailed error message
         if (axios.isAxiosError(error)) {
-          console.error('Response data:', error.response?.data)
-          console.error('Response status:', error.response?.status)
+          
+          
         }
       } finally {
         setLoading(false)

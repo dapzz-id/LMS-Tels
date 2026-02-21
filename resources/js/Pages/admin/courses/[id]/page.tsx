@@ -35,7 +35,6 @@ interface CourseContent {
   title: string
   description?: string
   url?: string
-  duration?: number
   quiz_data?: string | QuizQuestion[]
   order: number
 }
@@ -104,7 +103,7 @@ export default function ViewCoursePage({ course }: Props) {
     return API_BASE_URL + course.url_thumbnail;
   };
 
-  // console.log(course)
+
 
   const parseQuizData = (quizData: string | QuizQuestion[] | undefined): QuizQuestion[] => {
     if (!quizData) return []
@@ -120,7 +119,7 @@ export default function ViewCoursePage({ course }: Props) {
         const parsed = JSON.parse(quizData)
         return Array.isArray(parsed) ? parsed : []
       } catch (error) {
-        console.error("Error parsing quiz data:", error)
+
         return []
       }
     }
@@ -231,7 +230,7 @@ export default function ViewCoursePage({ course }: Props) {
                       className="object-cover w-full h-48 border rounded-lg"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement
-                        // console.log('Image failed to load:', target.src);
+
                         target.src = "/placeholder.svg?height=192&width=384"
                       }}
                     />
@@ -306,9 +305,6 @@ export default function ViewCoursePage({ course }: Props) {
                                             <Badge variant="outline" className="text-xs">
                                               {getContentTypeLabel(content.type)}
                                             </Badge>
-                                            {content.duration && (
-                                              <span className="text-xs text-slate-500">{content.duration} min</span>
-                                            )}
                                           </div>
                                         </div>
                                       </div>
@@ -376,11 +372,10 @@ export default function ViewCoursePage({ course }: Props) {
                                               {question.options?.map((option, optIndex) => (
                                                 <div
                                                   key={optIndex}
-                                                  className={`p-3 rounded-md border ${
-                                                    optIndex === question.correctAnswer
+                                                  className={`p-3 rounded-md border ${optIndex === question.correctAnswer
                                                       ? "bg-green-100 dark:bg-green-900/30 border-green-300 dark:border-green-700 text-green-900 dark:text-green-100"
                                                       : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700"
-                                                  }`}
+                                                    }`}
                                                 >
                                                   <div className="flex items-center gap-2">
                                                     <span className="text-sm font-medium text-slate-500">

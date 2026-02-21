@@ -101,22 +101,14 @@ export default function TeacherGradesPage({
   filters
 }: Props) {
   // Debug: Log the data we're receiving
-  // console.log('Submissions data:', submissions);
-  // console.log('Submissions data array:', submissions.data);
-  // console.log('Data length:', submissions.data.length);
-  // console.log('All submission keys:', submissions.data.length > 0 ? Object.keys(submissions.data[0]) : []);
+  
+  
+  
+   : []);
 
   if (submissions.data.length > 0) {
     const firstSubmission = submissions.data[0];
-    // console.log('First submission details:', {
-    //   id: firstSubmission.id,
-    //   score: firstSubmission.score,
-    //   student_name: firstSubmission.student_name,
-    //   quiz_data: firstSubmission.quiz_data,
-    //   quizContent: firstSubmission.quizContent,
-    //   course_name: firstSubmission.course_name,
-    //   quiz_title: firstSubmission.quiz_title
-    // });
+    
   }
   const [searchQuery, setSearchQuery] = useState(filters.search || "")
   const [courseFilter, setCourseFilter] = useState(filters.course || "all")
@@ -175,13 +167,13 @@ export default function TeacherGradesPage({
 
         const quizData = JSON.parse(quizDataString);
         if (Array.isArray(quizData)) {
-          // console.log('Quiz data for submission', submission.id, ':', quizData);
+          
           return quizData.length;
         }
         return 0;
       } catch (error) {
-        console.error('Error parsing direct quiz data for submission', submission.id, ':', error);
-        console.error('Raw quiz_data:', submission.quiz_data);
+        
+        
       }
     }
 
@@ -190,17 +182,17 @@ export default function TeacherGradesPage({
       try {
         const quizData = JSON.parse(submission.quizContent.quiz_data);
         if (Array.isArray(quizData)) {
-          // console.log('Quiz data from relationship for submission', submission.id, ':', quizData);
+          
           return quizData.length;
         }
         return 0;
       } catch (error) {
-        console.error('Error parsing quiz data from relationship for submission', submission.id, ':', error);
+        
         return 0;
       }
     }
 
-    // console.log('No quiz data found for submission', submission.id);
+    
     return 0;
   }
 

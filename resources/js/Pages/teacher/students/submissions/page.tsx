@@ -282,7 +282,7 @@
 //   // Add a function to handle extension request approval/denial
 //   const handleExtensionRequest = (requestId: string, action: 'approve' | 'deny') => {
 //     // In a real application, this would make an API call to update the database
-//     console.log(`Extension request ${requestId} ${action}`, { notes: requestNotes });
+
 //     setSelectedRequest(null);
 //     setRequestNotes('');
 //   }

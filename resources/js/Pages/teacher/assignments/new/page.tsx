@@ -76,7 +76,7 @@
 
 //     try {
 //       // Simulate API call
-//       console.log("Submitting assignment:", data, "isDraft:", isDraft)
+
 
 //       // Wait for 1 second to simulate API call
 //       await new Promise((resolve) => setTimeout(resolve, 1000))
@@ -84,7 +84,7 @@
 //       // Redirect to assignments page
 //       router.visit("/teacher/assignments")
 //     } catch (error) {
-//       console.error("Error creating assignment:", error)
+
 //     } finally {
 //       setIsSubmitting(false)
 //     }

@@ -154,7 +154,7 @@ export default function GradesPage() {
       link.click();
       document.body.removeChild(link);
     } catch (error) {
-      console.error('Error downloading certificate:', error);
+      
       toast.error('Failed to download certificate. Please try again.');
     }
   }

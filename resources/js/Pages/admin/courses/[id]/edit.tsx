@@ -20,9 +20,7 @@ import axios from "axios"
 import { getFirstMessage } from "@/lib/api-messages"
 import { RadioGroup, RadioGroupItem } from "@/Components/ui/radio-group"
 import { Badge } from "@/Components/ui/badge"
-import { cn, renderMath } from "@/lib/utils"
-import MathEquationToolbar from "@/Components/MathEquationToolbar";
-import MathPreview from "@/Components/MathPreview";
+import { cn } from "@/lib/utils"
 
 interface Mapel {
   id: number
@@ -35,7 +33,6 @@ interface CourseContent {
   title: string
   description?: string
   url?: string | any
-  duration: number
   quiz_data?: {
     timeLimit?: number;
     passingScore?: number;
@@ -124,7 +121,6 @@ const courseFormSchema = z.object({
   keep_existing_thumbnail: z.boolean().default(true),
   status: z.enum(["draft", "published"]).default("draft"),
   contentTypes: z.array(z.enum(["video", "pdf", "quiz"])).default(["video", "pdf", "quiz"]),
-  estimated_duration: z.number().optional(),
   prerequisites: z.array(z.string()).optional(),
   learning_objectives: z.array(z.string()).optional(),
   target_audience: z.array(z.string()).optional(),
@@ -149,7 +145,6 @@ const courseFormSchema = z.object({
               message: "Content description must be at least 10 characters.",
             }).optional(), // Make description optional to fix validation issue
             url: z.any().optional(),
-            duration: z.number().nullable().default(0),
             is_required: z.boolean().default(true),
             points: z.number().optional(),
             passing_score: z.number().optional(),
@@ -171,7 +166,7 @@ const courseFormSchema = z.object({
               )
             }).optional(),
             one_submission_only: z.boolean().default(false).optional(),
-      show_grades: z.boolean().default(true).optional(),
+            show_grades: z.boolean().default(true).optional(),
           }),
         ),
       }),
@@ -182,17 +177,17 @@ const courseFormSchema = z.object({
 type CourseFormValues = z.infer<typeof courseFormSchema>
 
 function mapCourseToFormValues(course: Props["course"]): CourseFormValues {
-  // console.log("Mapping course data:", course)
+
 
   // Map from sub_pembahasan structure to form values
   const pembahasan =
     course.sub_pembahasan?.map((sub) => {
-      // console.log("Processing sub_pembahasan:", sub)
+
 
       // Map contents from the contents array
       const contents =
         sub.contents?.map((content) => {
-          // console.log("Processing content:", content)
+
 
           let quiz_data = undefined
 
@@ -258,7 +253,7 @@ function mapCourseToFormValues(course: Props["course"]): CourseFormValues {
                 }
               }
             } catch (error) {
-              console.error("Error parsing quiz data:", error)
+
               quiz_data = {
                 timeLimit: 30,
                 passingScore: 70,
@@ -280,7 +275,6 @@ function mapCourseToFormValues(course: Props["course"]): CourseFormValues {
             title: content.title || `${content.type} Title`,
             description: content.description || `${content.type} description here`,
             url: content.url || "",
-            duration: content.type === "video" ? content.duration || 0 : content.duration || 0,
             is_required: true,
             points: 0,
             passing_score: 0,
@@ -297,7 +291,6 @@ function mapCourseToFormValues(course: Props["course"]): CourseFormValues {
             title: "Video Title",
             description: "Video description here",
             url: "",
-            duration: 0,
             is_required: true,
             points: 0,
             passing_score: 0,
@@ -309,7 +302,6 @@ function mapCourseToFormValues(course: Props["course"]): CourseFormValues {
             title: "PDF Title",
             description: "PDF description here",
             url: "",
-            duration: 0,
             is_required: true,
             points: 0,
             passing_score: 0,
@@ -321,7 +313,6 @@ function mapCourseToFormValues(course: Props["course"]): CourseFormValues {
             title: "Quiz Title",
             description: "Quiz description here",
             url: "",
-            duration: 0,
             is_required: true,
             points: 0,
             passing_score: 0,
@@ -444,7 +435,7 @@ export default function EditCoursePage({ course, mapel, availableClasses = [] }:
         toast.error(getFirstMessage(response.data, 'Failed to upload PDF'))
       }
     } catch (error: any) {
-      console.error('Upload error:', error)
+
       toast.error(getFirstMessage(error.response?.data, 'Failed to upload PDF'))
     }
   }
@@ -453,7 +444,7 @@ export default function EditCoursePage({ course, mapel, availableClasses = [] }:
     setIsSubmitting(true)
 
     try {
-      // console.log("Submitting values:", values)
+
 
       const formData = new FormData()
       formData.append("_method", "PUT")
@@ -514,9 +505,9 @@ export default function EditCoursePage({ course, mapel, availableClasses = [] }:
         toast.error(getFirstMessage(response.data, "Failed to update course"))
       }
     } catch (error: any) {
-      console.error("Submit error:", error.response)
+
       if (error.response?.data?.errors) {
-        console.error("Validation errors:", error.response.data.errors)
+
         // Show specific validation errors in a more user-friendly way
         let errorCount = 0
         Object.keys(error.response.data.errors).forEach((field) => {
@@ -533,7 +524,7 @@ export default function EditCoursePage({ course, mapel, availableClasses = [] }:
         })
 
         // Log the full error response for debugging
-        // console.log('Full validation error response:', error.response.data)
+
 
         // If there are more than 5 errors, show a summary message
         if (errorCount >= 5) {
@@ -560,32 +551,9 @@ export default function EditCoursePage({ course, mapel, availableClasses = [] }:
   }
 
   useEffect(() => {
-    // console.log("FORM ERRORS", form.formState.errors)
+
   }, [form.formState.errors])
 
-  // Initialize MathJax when component mounts
-  useEffect(() => {
-    // Add MathJax rendering to preview elements
-    const renderMathPreviews = () => {
-      if (typeof window !== 'undefined' && (window as any).MathJax) {
-        const mathElements = document.querySelectorAll('.math-preview');
-        mathElements.forEach(element => {
-          renderMath(element as HTMLElement);
-        });
-      }
-    };
-
-    // Initial render
-    renderMathPreviews();
-
-    // Set up a mutation observer to re-render math when content changes
-    const observer = new MutationObserver(renderMathPreviews);
-    observer.observe(document.body, { childList: true, subtree: true });
-
-    return () => {
-      observer.disconnect();
-    };
-  }, []);
 
   return (
     <AdminPageLayout>
@@ -684,7 +652,7 @@ export default function EditCoursePage({ course, mapel, availableClasses = [] }:
                             className="object-cover w-48 h-32 rounded-lg"
                             onError={(e) => {
                               const target = e.target as HTMLImageElement;
-                              // console.log('Image failed to load:', target.src);
+
                               target.src = '/placeholder.svg?height=128&width=192';
                             }}
                           />
@@ -987,29 +955,6 @@ export default function EditCoursePage({ course, mapel, availableClasses = [] }:
                                     />
                                   )}
 
-                                  {/* Duration for video */}
-                                  {content.type === "video" && (
-                                    <FormField
-                                      control={form.control}
-                                      name={`pembahasan.${pembahasanIndex}.contents.${contentIndex}.duration`}
-                                      render={({ field }) => (
-                                        <FormItem>
-                                          <FormLabel>Duration (minutes)</FormLabel>
-                                          <FormControl>
-                                            <Input
-                                              type="number"
-                                              min="1"
-                                              placeholder="Enter video duration"
-                                              {...field}
-                                              value={field.value ?? ""}
-                                              onChange={(e) => field.onChange(Number(e.target.value))}
-                                            />
-                                          </FormControl>
-                                          <FormMessage />
-                                        </FormItem>
-                                      )}
-                                    />
-                                  )}
 
                                   {/* Quiz data for quiz */}
                                   {content.type === "quiz" && (
@@ -1209,7 +1154,7 @@ export default function EditCoursePage({ course, mapel, availableClasses = [] }:
                                                               toast.error(getFirstMessage(response.data, 'Failed to upload image'));
                                                             }
                                                           } catch (error: any) {
-                                                            console.error('Error uploading image:', error);
+
                                                             toast.error(getFirstMessage(error.response?.data, 'Failed to upload image'));
                                                           }
                                                         }}
@@ -1227,17 +1172,6 @@ export default function EditCoursePage({ course, mapel, availableClasses = [] }:
                                                     <FormLabel>Question Text</FormLabel>
                                                     <div className="space-y-2">
                                                       <div className="flex gap-2">
-                                                        <MathEquationToolbar
-                                                          onInsert={(equation) => {
-                                                            const cursorPosition = (document.activeElement as HTMLTextAreaElement)?.selectionStart || 0;
-                                                            const newValue = field.value ?
-                                                              field.value.substring(0, cursorPosition) +
-                                                              (equation.includes('#') ? equation : `$${equation}$`) +
-                                                              field.value.substring(cursorPosition) :
-                                                              (equation.includes('#') ? equation : `$${equation}$`);
-                                                            field.onChange(newValue);
-                                                          }}
-                                                        />
                                                         <FormControl>
                                                           <Textarea
                                                             placeholder="Enter your question"
@@ -1246,16 +1180,6 @@ export default function EditCoursePage({ course, mapel, availableClasses = [] }:
                                                           />
                                                         </FormControl>
                                                       </div>
-                                                      {/* Real-time Math Preview */}
-                                                      {field.value && (
-                                                        <div className="mt-2">
-                                                          <div className="text-xs font-medium text-gray-600 mb-1">Preview:</div>
-                                                          <MathPreview
-                                                            content={field.value}
-                                                            className="min-h-[40px] shadow-sm"
-                                                          />
-                                                        </div>
-                                                      )}
                                                     </div>
                                                     <FormMessage />
                                                   </FormItem>
@@ -1271,35 +1195,12 @@ export default function EditCoursePage({ course, mapel, availableClasses = [] }:
                                                       render={({ field }) => (
                                                         <FormItem className="flex-1">
                                                           <div className="space-y-2">
-                                                            <div className="flex gap-2">
-                                                              <MathEquationToolbar
-                                                                onInsert={(equation) => {
-                                                                  const cursorPosition = (document.activeElement as HTMLInputElement)?.selectionStart || 0;
-                                                                  const newValue = field.value ?
-                                                                    field.value.substring(0, cursorPosition) +
-                                                                    (equation.includes('#') ? equation : `$${equation}$`) +
-                                                                    field.value.substring(cursorPosition) :
-                                                                    (equation.includes('#') ? equation : `$${equation}$`);
-                                                                  field.onChange(newValue);
-                                                                }}
+                                                            <FormControl>
+                                                              <Input
+                                                                placeholder={`Option ${optionIndex + 1}`}
+                                                                {...field}
                                                               />
-                                                              <FormControl>
-                                                                <Input
-                                                                  placeholder={`Option ${optionIndex + 1}`}
-                                                                  {...field}
-                                                                />
-                                                              </FormControl>
-                                                            </div>
-                                                            {/* Real-time Math Preview for Option */}
-                                                            {field.value && (
-                                                              <div className="mt-1">
-                                                                <div className="text-xs font-medium text-gray-600 mb-1">Preview:</div>
-                                                                <MathPreview
-                                                                  content={field.value}
-                                                                  className="min-h-[20px] shadow-sm text-sm"
-                                                                />
-                                                              </div>
-                                                            )}
+                                                            </FormControl>
                                                           </div>
                                                           <FormMessage />
                                                         </FormItem>
@@ -1420,7 +1321,6 @@ export default function EditCoursePage({ course, mapel, availableClasses = [] }:
                                   title: "New Content",
                                   description: "Content description here",
                                   url: "",
-                                  duration: 0,
                                   is_required: true,
                                   points: 0,
                                   passing_score: 0,
@@ -1546,7 +1446,7 @@ export default function EditCoursePage({ course, mapel, availableClasses = [] }:
                             className="object-cover w-48 h-32 mt-2 rounded-lg"
                             onError={(e) => {
                               const target = e.target as HTMLImageElement;
-                              // console.log('Image failed to load:', target.src);
+
                               target.src = '/placeholder.svg?height=128&width=192';
                             }}
                           />
@@ -1599,9 +1499,6 @@ export default function EditCoursePage({ course, mapel, availableClasses = [] }:
                                       <>
                                         <p>
                                           <strong>URL:</strong> {content.url}
-                                        </p>
-                                        <p>
-                                          <strong>Duration:</strong> {content.duration} minutes
                                         </p>
                                       </>
                                     )}

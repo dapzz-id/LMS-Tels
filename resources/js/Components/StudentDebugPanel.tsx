@@ -42,19 +42,19 @@ export default function StudentDebugPanel() {
   const { auth } = usePage().props as any
   const user = auth?.user
 
-  // console.log('StudentDebugPanel: User from usePage:', user)
+  
 
     // Debug logging
-  // console.log('StudentDebugPanel: Component rendered')
-  // console.log('User from props:', user)
+  
+  
 
   // Add global function for debugging
   if (typeof window !== 'undefined') {
     (window as any).checkInertiaStatus = () => {
-      // console.log('=== Inertia Status Check ===')
-      // console.log('User from props:', user)
-      // console.log('Auth from props:', auth)
-      // console.log('Is student:', isStudent())
+      
+      
+      
+      )
     }
   }
 
@@ -62,7 +62,7 @@ export default function StudentDebugPanel() {
   const isStudent = () => {
     // Use the user from usePage props (same as settings page)
     const isStudentUser = user && user.tipe_user === 'siswa'
-    // console.log('StudentDebugPanel: Is student check:', { user, isStudentUser })
+    
     return isStudentUser
   }
 
@@ -160,13 +160,13 @@ export default function StudentDebugPanel() {
 
   // Only show for students
   if (!isStudent()) {
-    // console.log('StudentDebugPanel: Not showing - user is not a student')
-    // console.log('User:', (window as any).Inertia?.props?.auth?.user)
-    // console.log('User type:', (window as any).Inertia?.props?.auth?.user?.tipe_user)
+    
+    .Inertia?.props?.auth?.user)
+    .Inertia?.props?.auth?.user?.tipe_user)
     // Temporarily force show for testing
-    // console.log('StudentDebugPanel: FORCING SHOW FOR TESTING')
+    
   } else {
-    // console.log('StudentDebugPanel: Rendering debug panel for student')
+    
   }
 
   return (
