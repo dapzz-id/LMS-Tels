@@ -25,7 +25,7 @@ const navItems: Array<{
   href: string
   icon: typeof LayoutDashboard
 }> = [
-  { key: "dashboard", label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { key: "dashboard", label: "Dashboard", href: "/", icon: LayoutDashboard },
   { key: "courses", label: "My Courses", href: "/dashboard/courses", icon: BookOpen },
   { key: "grades", label: "Grades", href: "/dashboard/grades", icon: Award },
   { key: "certificates", label: "Certificates", href: "/dashboard/certificates", icon: FileText },

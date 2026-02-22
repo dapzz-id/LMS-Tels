@@ -28,7 +28,6 @@ interface DashboardStats {
   recent_courses?: Array<{
     id: number
     judul_kursus: string
-    status: string
     created_at: string
   }>
 }
@@ -233,7 +232,6 @@ export default function AdminDashboard() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Title</TableHead>
-                      <TableHead>Status</TableHead>
                       <TableHead>Date</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -241,11 +239,6 @@ export default function AdminDashboard() {
                     {stats.recent_courses.map((course) => (
                       <TableRow key={course.id}>
                         <TableCell className="font-medium">{course.judul_kursus}</TableCell>
-                        <TableCell>
-                          <Badge variant={course.status === 'published' ? 'default' : 'secondary'}>
-                            {course.status}
-                          </Badge>
-                        </TableCell>
                         <TableCell>{new Date(course.created_at).toLocaleDateString()}</TableCell>
                       </TableRow>
                     ))}

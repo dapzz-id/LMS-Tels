@@ -19,6 +19,7 @@ import { toast } from 'sonner';
 import { getFirstMessage } from '@/lib/api-messages';
 import { BookOpen, Lock, Menu } from 'lucide-react';
 import StudentSidebar from '@/Components/StudentSidebar';
+import TeacherLayout from '@/Pages/teacher/layout';
 import DeleteUserForm from './Partials/DeleteUserForm';
 import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm';
 
@@ -28,6 +29,7 @@ export default function Edit({
 }: PageProps<{ mustVerifyEmail: boolean; status?: string }>) {
     const { auth, flash } = usePage().props as any;
     const isStudent = auth?.user?.tipe_user === 'siswa';
+    const isTeacher = auth?.user?.tipe_user === 'guru';
     const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
@@ -61,7 +63,15 @@ export default function Edit({
     };
 
     const profileContent = (
-        <>
+        <div className="mx-auto max-w-5xl space-y-6">
+            <div>
+                <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+                    Settings & Profile
+                </h1>
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                    Manage your account information and security settings.
+                </p>
+            </div>
             <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8 dark:bg-slate-900">
                 <UpdateProfileInformationForm
                     mustVerifyEmail={mustVerifyEmail}
@@ -163,7 +173,7 @@ export default function Edit({
             <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8 dark:bg-slate-900">
                 <DeleteUserForm className="max-w-xl" />
             </div>
-        </>
+        </div>
     );
 
     if (isStudent) {
@@ -207,6 +217,15 @@ export default function Edit({
                     </main>
                 </div>
             </div>
+        );
+    }
+
+    if (isTeacher) {
+        return (
+            <TeacherLayout>
+                <Head title="Teacher Settings" />
+                {profileContent}
+            </TeacherLayout>
         );
     }
 

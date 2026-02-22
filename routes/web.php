@@ -23,22 +23,23 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Admin\KelolaDataDepartmentController;
 use App\Http\Controllers\QuizController;
 use App\Http\Controllers\CertificateController;
+use App\Http\Controllers\StudentDashboardController;
 
-Route::get('/', function () {
+Route::get('/', function (\Illuminate\Http\Request $request) {
     if (Auth::check()) {
         $tipe_user = Auth::user()->tipe_user;
 
         // Redirect berdasarkan tipe user
         return match ($tipe_user) {
             'admin' => Inertia::location(route('admin.dashboard')), // Route khusus untuk admin
-            'siswa' => Inertia::location(route('student.dashboard')), // Route khusus untuk siswa
+            'siswa' => app(StudentDashboardController::class)->index($request), // Dashboard khusus untuk siswa
             'guru' => Inertia::location(route('teacher.dashboard')), // Route khusus untuk guru
             default => tap(Auth::logout(), fn() => back()->withErrors(['npk' => 'Hak akses tidak valid.'])),
         };
     }
 
     return redirect()->route('login');
-});
+})->name('student.dashboard');
 
 // Login, register and password reset routes - must be before auth middleware routes
 Route::get('/login', [LoginController::class, 'index'])->name('login');
@@ -130,10 +131,10 @@ Route::middleware(['web', 'auth'])->group(function () {
 
 // Dashboard routes - users
 Route::middleware(['auth', 'verified'])->group(function () {
-    // Student dashboard
-    Route::get('/', function () {
-        return Inertia::render('dashboard/page');
-    })->name('student.dashboard')->middleware('role:siswa');
+    // Legacy dashboard path compatibility
+    Route::get('/dashboard', function () {
+        return redirect()->route('student.dashboard');
+    })->name('student.dashboard.legacy')->middleware('role:siswa');
 
     // Student courses
     Route::get('/dashboard/courses', function () {

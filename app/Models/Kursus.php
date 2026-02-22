@@ -51,7 +51,6 @@ class Kursus extends Model
     public function siswa()
     {
         return $this->belongsToMany(User::class, 'siswa_kursus', 'id_kursus', 'id_siswa')
-            ->withPivot(['progress', 'completed_at'])
             ->withTimestamps();
     }
 

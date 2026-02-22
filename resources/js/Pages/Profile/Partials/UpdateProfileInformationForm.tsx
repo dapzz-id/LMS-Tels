@@ -5,21 +5,6 @@ import TextInput from '@/Components/TextInput';
 import { Transition } from '@headlessui/react';
 import { Link, useForm, usePage } from '@inertiajs/react';
 import { FormEventHandler, useState } from 'react';
-import { Button } from '@/Components/ui/button';
-import { Input } from '@/Components/ui/input';
-import { Label } from '@/Components/ui/label';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from '@/Components/ui/dialog';
-import { toast } from 'sonner';
-import { getFirstMessage } from '@/lib/api-messages';
-import { Lock } from 'lucide-react';
 
 export default function UpdateProfileInformation({
     mustVerifyEmail,
@@ -32,7 +17,6 @@ export default function UpdateProfileInformation({
 }) {
     const { auth, flash } = usePage().props as any;
     const user = auth.user;
-    const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
     const [clientErrors, setClientErrors] = useState<Record<string, string>>({});
 
     const { data, setData, patch, errors, processing, recentlySuccessful } =
@@ -41,12 +25,6 @@ export default function UpdateProfileInformation({
             username: user.username ?? '',
             email: user.email,
         });
-
-    const passwordForm = useForm({
-        current_password: '',
-        password: '',
-        password_confirmation: '',
-    });
 
     const validateField = (field: string, value: string): string => {
         const trimmed = value.trim();
@@ -95,20 +73,6 @@ export default function UpdateProfileInformation({
         patch(route('profile.update'), {
             onSuccess: () => {
                 setClientErrors({});
-            },
-        });
-    };
-
-    const updatePassword = (e: React.FormEvent) => {
-        e.preventDefault();
-
-        passwordForm.put(route('password.update'), {
-            onSuccess: () => {
-                setIsPasswordModalOpen(false);
-                passwordForm.reset();
-            },
-            onError: (errors) => {
-                toast.error(getFirstMessage({ errors }, 'Failed to update password'));
             },
         });
     };
@@ -207,83 +171,6 @@ export default function UpdateProfileInformation({
 
                 <div className="flex items-center gap-4">
                     <PrimaryButton disabled={processing}>Save</PrimaryButton>
-
-                    <Dialog open={isPasswordModalOpen} onOpenChange={setIsPasswordModalOpen}>
-                        <DialogTrigger asChild>
-                            <Button variant="outline" className="border-blue-200 text-blue-600 hover:bg-blue-50">
-                                <Lock className="h-4 w-4 mr-2" />
-                                Change Password
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-[425px]">
-                            <DialogHeader>
-                                <DialogTitle>Change Password</DialogTitle>
-                                <DialogDescription>
-                                    Enter your current password and choose a new one.
-                                </DialogDescription>
-                            </DialogHeader>
-                            <form onSubmit={updatePassword} className="space-y-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="current_password">Current Password</Label>
-                                    <Input
-                                        id="current_password"
-                                        type="password"
-                                        value={passwordForm.data.current_password}
-                                        onChange={(e) => passwordForm.setData('current_password', e.target.value)}
-                                        placeholder="Enter current password"
-                                        required
-                                    />
-                                    {passwordForm.errors.current_password && (
-                                        <p className="text-sm text-red-600">{passwordForm.errors.current_password}</p>
-                                    )}
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="password">New Password</Label>
-                                    <Input
-                                        id="password"
-                                        type="password"
-                                        value={passwordForm.data.password}
-                                        onChange={(e) => passwordForm.setData('password', e.target.value)}
-                                        placeholder="Enter new password"
-                                        required
-                                    />
-                                    {passwordForm.errors.password && (
-                                        <p className="text-sm text-red-600">{passwordForm.errors.password}</p>
-                                    )}
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="password_confirmation">Confirm New Password</Label>
-                                    <Input
-                                        id="password_confirmation"
-                                        type="password"
-                                        value={passwordForm.data.password_confirmation}
-                                        onChange={(e) => passwordForm.setData('password_confirmation', e.target.value)}
-                                        placeholder="Confirm new password"
-                                        required
-                                    />
-                                    {passwordForm.errors.password_confirmation && (
-                                        <p className="text-sm text-red-600">{passwordForm.errors.password_confirmation}</p>
-                                    )}
-                                </div>
-                                <DialogFooter>
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        onClick={() => setIsPasswordModalOpen(false)}
-                                    >
-                                        Cancel
-                                    </Button>
-                                    <Button
-                                        type="submit"
-                                        className="bg-blue-600 hover:bg-blue-700"
-                                        disabled={passwordForm.processing}
-                                    >
-                                        {passwordForm.processing ? 'Updating...' : 'Update Password'}
-                                    </Button>
-                                </DialogFooter>
-                            </form>
-                        </DialogContent>
-                    </Dialog>
 
                     <Transition
                         show={recentlySuccessful && !!flash?.success}
