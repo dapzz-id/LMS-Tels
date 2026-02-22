@@ -5,6 +5,8 @@ import {
   Users, 
   BookOpen, 
   BarChart2,
+  Settings,
+  LogOut,
   Menu,
   X
 } from "lucide-react";
@@ -104,8 +106,18 @@ export function AdminPageLayout({ children }: AdminPageLayoutProps) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuItem>Profile</DropdownMenuItem>
-                <DropdownMenuItem>Logout</DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/profile" className="flex w-full items-center gap-2">
+                    <Settings className="h-4 w-4" />
+                    Profile
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href={route("logout")} method="post" as="button" className="flex w-full items-center gap-2">
+                    <LogOut className="h-4 w-4" />
+                    Logout
+                  </Link>
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

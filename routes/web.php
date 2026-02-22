@@ -8,23 +8,21 @@ use App\Http\Controllers\Admin\KelolaSoalKuisAdminController;
 use App\Http\Controllers\Admin\KelolaSubPembahasanAdminController;
 use App\Http\Controllers\Admin\MapelAdminController;
 use App\Http\Controllers\ProfileController;
-use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\Auth\ConfirmablePasswordController;
+use App\Http\Controllers\Auth\PasswordController;
+use App\Http\Controllers\Auth\EmailVerificationPromptController;
+use App\Http\Controllers\Auth\VerifyEmailController;
+use App\Http\Controllers\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\LoginController;
-use App\Http\Controllers\CourseController;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Admin\KelolaDataDepartmentController;
-use App\Http\Controllers\Admin\FileUploadController;
 use App\Http\Controllers\QuizController;
-use Illuminate\Support\Facades\Response;
 use App\Http\Controllers\CertificateController;
-
-// Debug POST route to check if /quizzes/{id}/submit is accessible
-Route::post('/quizzes/{id}/submit', function($id) { return 'POST route is working!'; });
 
 Route::get('/', function () {
     if (Auth::check()) {
@@ -60,17 +58,28 @@ Route::post('reset-password', [NewPasswordController::class, 'store'])
     ->name('password.store');
 
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
-Route::get('/logout', [LoginController::class, 'logout'])->name('logout.get');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::put('/password', [PasswordController::class, 'update'])->name('password.update');
+
+    Route::get('/verify-email', EmailVerificationPromptController::class)->name('verification.notice');
+    Route::get('/verify-email/{id}/{hash}', VerifyEmailController::class)
+        ->middleware(['signed', 'throttle:6,1'])
+        ->name('verification.verify');
+    Route::post('/email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
+        ->middleware('throttle:6,1')
+        ->name('verification.send');
+
+    Route::get('/confirm-password', [ConfirmablePasswordController::class, 'show'])->name('password.confirm');
+    Route::post('/confirm-password', [ConfirmablePasswordController::class, 'store']);
 });
 
 Route::middleware(['web', 'auth'])->group(function () {
     Route::prefix('/api')->group(function () {
-        Route::prefix('admin')->group(function () {
+        Route::prefix('admin')->middleware('role:admin')->group(function () {
             Route::get('/get-stats', [DashboardAdminController::class, 'getStats']);
             Route::get('/analytics', [DashboardAdminController::class, 'analytics']);
             Route::post('/upload', [KelolaSubPembahasanAdminController::class, 'store']);
@@ -87,19 +96,23 @@ Route::middleware(['web', 'auth'])->group(function () {
             });
         });
 
-        Route::resource('users', KelolaDataUserAdminController::class);
-        Route::resource('kursus', KelolaDataCourseAdminController::class);
-        Route::resource('kuis', KelolaKuisAdminController::class);
-        Route::resource('soal_kuis', KelolaSoalKuisAdminController::class);
-        Route::resource('sub_pembahasan', KelolaSubPembahasanAdminController::class);
-        Route::resource('mapel', MapelAdminController::class);
+        Route::middleware('role:admin')->group(function () {
+            Route::resource('users', KelolaDataUserAdminController::class);
+            Route::resource('kursus', KelolaDataCourseAdminController::class);
+            Route::resource('kuis', KelolaKuisAdminController::class);
+            Route::resource('soal_kuis', KelolaSoalKuisAdminController::class);
+            Route::resource('sub_pembahasan', KelolaSubPembahasanAdminController::class);
+            Route::resource('mapel', MapelAdminController::class);
+        });
 
         // Add student course routes
         Route::get('/getIDUser', function () {
+            $user = auth()->user();
+
             return response()->json([
                 'id' => auth()->id(),
-                'name' => auth()->user()->name,
-                'email' => auth()->user()->email
+                'name' => $user?->nama_lengkap,
+                'email' => $user?->email,
             ]);
         });
 
@@ -107,8 +120,8 @@ Route::middleware(['web', 'auth'])->group(function () {
         Route::post('/updateProgress', [App\Http\Controllers\CourseController::class, 'updateProgress']);
 
         // Quiz routes
-        Route::get('/quizzes/{id}', [QuizController::class, 'show'])->name('api.quizzes.show');
-        Route::post('/quizzes/{id}/submit', [QuizController::class, 'submit'])->name('api.quizzes.submit');
+        Route::get('/quizzes/{id}', [QuizController::class, 'show'])->name('api.quizzes.show')->middleware('role:siswa');
+        Route::post('/quizzes/{id}/submit', [QuizController::class, 'submit'])->name('api.quizzes.submit')->middleware('role:siswa');
 
         // Certificate routes were here but removed to avoid conflicts
         // They are now properly defined in api.php with correct middleware
@@ -143,12 +156,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return Inertia::render('dashboard/courses/[id]/learn/page', ['id' => $id]);
     })->name('student.courses.learn')->middleware('role:siswa');
 
-    Route::get('/dashboard/courses/{courseId}/quiz/{id}', function ($courseId, $id) {
-        return Inertia::render('dashboard/courses/[id]/quiz/page', [
-            'id' => $id,
-            'courseId' => $courseId
-        ]);
-    })->name('student.quiz.page')->middleware('role:siswa');
+    Route::get('/dashboard/courses/{courseId}/quiz/{id}', [QuizController::class, 'show'])
+        ->name('student.quiz.course')
+        ->middleware('role:siswa');
 
     // Certificate routes
     Route::get('/dashboard/certificates', [CertificateController::class, 'index'])->name('student.certificates')->middleware('role:siswa');
@@ -160,13 +170,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return Inertia::render('dashboard/library/page');
     })->name('student.library')->middleware('role:siswa');
 
-    Route::get('/dashboard/settings', function () {
-        return Inertia::render('dashboard/settings/page');
-    })->name('student.settings')->middleware('role:siswa');
+    Route::get('/dashboard/assignments', function () {
+        return Inertia::render('dashboard/assignments/page');
+    })->name('student.assignments')->middleware('role:siswa');
+
+    Route::get('/dashboard/assignments/{id}', function ($id) {
+        return Inertia::render('dashboard/assignments/[id]/page', ['id' => $id]);
+    })->name('student.assignments.show')->middleware('role:siswa');
+
 });
 
 // Teacher routes
-Route::middleware('role:guru')->prefix('teacher')->group(function () {
+Route::middleware(['auth', 'role:guru'])->prefix('teacher')->group(function () {
     Route::get('/', function () {
         return Inertia::render('teacher/page');
     })->name('teacher.dashboard');
@@ -193,6 +208,26 @@ Route::middleware('role:guru')->prefix('teacher')->group(function () {
         return Inertia::render('teacher/assignments/page');
     })->name('teacher.assignments');
 
+    Route::get('/assignments/new', function () {
+        return Inertia::render('teacher/assignments/new/page');
+    })->name('teacher.assignments.new');
+
+    Route::get('/assignments/templates', function () {
+        return Inertia::render('teacher/assignments/templates/page');
+    })->name('teacher.assignments.templates');
+
+    Route::get('/courses/new', function () {
+        return redirect()->route('teacher.courses.create');
+    })->name('teacher.courses.new');
+
+    Route::get('/announcements/new', function () {
+        return Inertia::render('teacher/announcements/new/page');
+    })->name('teacher.announcements.new');
+
+    Route::get('/materials/upload', function () {
+        return Inertia::render('teacher/materials/upload/page');
+    })->name('teacher.materials.upload');
+
     Route::get('/analytics', function () {
         return Inertia::render('teacher/analytics/page');
     })->name('teacher.analytics');
@@ -203,7 +238,7 @@ Route::middleware('role:guru')->prefix('teacher')->group(function () {
     // Student Monitoring
     Route::get('/student-monitoring', [App\Http\Controllers\Admin\StudentMonitoringController::class, 'index'])->name('teacher.student-monitoring');
 
-})->middleware('role:guru');
+});
 
 // Semua route admin hanya diakses oleh admin yang sudah login
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
@@ -265,22 +300,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
 // Student Activity Tracking API (for students to report their activities)
 Route::post('/api/student/activity', [App\Http\Controllers\Admin\StudentMonitoringController::class, 'trackStudentActivity'])->name('api.student.activity')->middleware('auth');
 
-// Test route for manual activity tracking
-Route::get('/api/student/test-activity', function () {
-    if (auth()->check() && auth()->user()->tipe_user === 'siswa') {
-        \App\Models\StudentActivity::trackActivity(auth()->id(), 'test_activity', [
-            'test' => true,
-            'message' => 'Manual test via API'
-        ]);
-        return response()->json(['status' => 'success', 'message' => 'Test activity recorded']);
-    }
-    return response()->json(['status' => 'error', 'message' => 'Not a student']);
-})->middleware('auth');
-
 // Quiz routes
-Route::get('/quiz/{id}', [QuizController::class, 'show'])->name('student.quiz.show');
-Route::get('/dashboard/courses/{courseId}/quiz/{id}', [QuizController::class, 'show'])->name('student.quiz.course');
-Route::post('/quiz/{id}/submit', [QuizController::class, 'submit'])->name('student.quiz.submit');
+Route::get('/quiz/{id}', [QuizController::class, 'show'])->name('student.quiz.show')->middleware(['auth', 'role:siswa']);
+Route::post('/quiz/{id}/submit', [QuizController::class, 'submit'])->name('student.quiz.submit')->middleware(['auth', 'role:siswa']);
 
 // Teacher Analytics API route (keep this as API since it's used by the analytics page)
 Route::prefix('api/teacher')->middleware(['auth', 'role:guru'])->group(function () {
@@ -305,39 +327,28 @@ Route::prefix('api/admin')->middleware(['auth', 'role:admin'])->group(function (
     Route::get('/student-monitoring/class-stats', [App\Http\Controllers\Admin\StudentMonitoringController::class, 'getClassStats'])->name('api.admin.student-monitoring.class-stats');
 });
 
-// Debug route to check if /quizzes/{id}/submit is accessible
-Route::get('/quizzes/{id}/submit', function($id) { return 'Quiz submit route is working!'; });
+// Download PDF route
+Route::get('/download/pdf/{filename}', function (string $filename) {
+    $safeFilename = basename($filename);
 
-// Debug route to check quiz data
-Route::get('/debug/quiz/{id}', function($id) {
-    $quiz = \App\Models\CourseContent::find($id);
-    if (!$quiz) {
-        return response()->json(['error' => 'Quiz not found'], 404);
+    if (
+        $safeFilename !== $filename ||
+        !preg_match('/^[A-Za-z0-9._-]+$/', $safeFilename)
+    ) {
+        abort(404);
     }
 
-    return response()->json([
-        'id' => $quiz->id,
-        'title' => $quiz->title,
-        'quiz_data' => $quiz->quiz_data,
-        'quiz_data_type' => gettype($quiz->quiz_data),
-        'has_option_images' => collect($quiz->quiz_data['questions'] ?? [])->map(function($q, $index) {
-            return [
-                'question_index' => $index,
-                'has_option_images' => isset($q['optionImages']),
-                'option_images' => $q['optionImages'] ?? null
-            ];
-        })->toArray()
-    ]);
-});
-
-// Download PDF route
-Route::get('/download/pdf/{filename}', function ($filename) {
-    $path = storage_path('app/public/pdfs/' . $filename);
+    $path = storage_path('app/public/pdfs/' . $safeFilename);
     if (!file_exists($path)) {
         abort(404);
     }
-    return response()->download($path);
-})->name('download.pdf');
+
+    return response()->download(
+        $path,
+        $safeFilename,
+        ['X-Content-Type-Options' => 'nosniff']
+    );
+})->name('download.pdf')->middleware('auth');
 
 // Comment out or remove this line if it exists
 // require __DIR__.'/auth.php';

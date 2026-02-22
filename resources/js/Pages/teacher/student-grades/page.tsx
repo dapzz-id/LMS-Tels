@@ -1,10 +1,9 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Head, Link, router } from '@inertiajs/react'
 import {
   Award,
-  Search,
   Filter,
   Eye,
   TrendingUp,
@@ -13,7 +12,6 @@ import {
   FileText,
   ArrowUpDown,
   Calendar,
-  Clock,
   CheckCircle,
   XCircle,
   AlertCircle
@@ -32,7 +30,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/Components/ui/dropdown-menu"
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts'
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 import TeacherLayout from "../layout"
 
 interface Submission {
@@ -90,6 +88,11 @@ interface Props {
 
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#6b7280'];
 
+type PieLabelPayload = {
+  grade_range?: string;
+  percent?: number;
+}
+
 export default function TeacherGradesPage({
   submissions,
   totalSubmissions,
@@ -100,16 +103,7 @@ export default function TeacherGradesPage({
   courses,
   filters
 }: Props) {
-  // Debug: Log the data we're receiving
-  
-  
-  
-   : []);
-
-  if (submissions.data.length > 0) {
-    const firstSubmission = submissions.data[0];
-    
-  }
+  const submissionItems = Array.isArray(submissions?.data) ? submissions.data : []
   const [searchQuery, setSearchQuery] = useState(filters.search || "")
   const [courseFilter, setCourseFilter] = useState(filters.course || "all")
   const [statusFilter, setStatusFilter] = useState(filters.status || "all")
@@ -153,47 +147,47 @@ export default function TeacherGradesPage({
     return "bg-red-100 text-red-700 border-red-200 dark:bg-red-900 dark:text-red-300 dark:border-red-800"
   }
 
-    const calculateTotalQuestions = (submission: Submission) => {
-    // Try direct quiz_data field first (from join)
-    if (submission.quiz_data) {
+  const parseQuizData = (rawQuizData: string): unknown => {
+    let parsed: unknown = rawQuizData
+
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      if (typeof parsed !== "string") {
+        break
+      }
+
+      parsed = JSON.parse(parsed)
+    }
+
+    return parsed
+  }
+
+  const calculateTotalQuestions = (submission: Submission) => {
+    const rawCandidates = [submission.quiz_data, submission.quizContent?.quiz_data].filter(
+      (value): value is string => typeof value === "string" && value.trim().length > 0,
+    )
+
+    for (const rawQuizData of rawCandidates) {
       try {
-        // Handle double-escaped JSON string
-        let quizDataString = submission.quiz_data;
+        const parsed = parseQuizData(rawQuizData)
 
-        // If it's already a string that contains JSON, parse it once
-        if (typeof quizDataString === 'string' && quizDataString.startsWith('"')) {
-          quizDataString = JSON.parse(quizDataString);
+        if (Array.isArray(parsed)) {
+          return parsed.length
         }
 
-        const quizData = JSON.parse(quizDataString);
-        if (Array.isArray(quizData)) {
-          
-          return quizData.length;
+        if (
+          typeof parsed === "object" &&
+          parsed !== null &&
+          "questions" in parsed &&
+          Array.isArray((parsed as { questions?: unknown }).questions)
+        ) {
+          return (parsed as { questions: unknown[] }).questions.length
         }
-        return 0;
-      } catch (error) {
-        
-        
+      } catch {
+        continue
       }
     }
 
-    // Fallback to quizContent relationship
-    if (submission.quizContent && submission.quizContent.quiz_data) {
-      try {
-        const quizData = JSON.parse(submission.quizContent.quiz_data);
-        if (Array.isArray(quizData)) {
-          
-          return quizData.length;
-        }
-        return 0;
-      } catch (error) {
-        
-        return 0;
-      }
-    }
-
-    
-    return 0;
+    return 0
   }
 
   const getGrade = (score: number, totalQuestions: number) => {
@@ -210,6 +204,12 @@ export default function TeacherGradesPage({
     if (percentage >= 80) return <CheckCircle className="w-4 h-4 text-green-600" />
     if (percentage >= 60) return <AlertCircle className="w-4 h-4 text-yellow-600" />
     return <XCircle className="w-4 h-4 text-red-600" />
+  }
+
+  const renderPieLabel = ({ grade_range, percent }: PieLabelPayload) => {
+    const label = grade_range ?? "N/A"
+    const percentage = ((percent ?? 0) * 100).toFixed(0)
+    return `${label} ${percentage}%`
   }
 
   return (
@@ -293,7 +293,7 @@ export default function TeacherGradesPage({
                     cx="50%"
                     cy="50%"
                     labelLine={false}
-                    label={({ grade_range, percent }) => `${grade_range} ${(percent * 100).toFixed(0)}%`}
+                    label={renderPieLabel}
                     outerRadius={100}
                     fill="#8884d8"
                     dataKey="count"
@@ -383,14 +383,14 @@ export default function TeacherGradesPage({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {submissions.data.length === 0 ? (
+                  {submissionItems.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={7} className="text-center py-8">
                         No submissions found matching your filters.
                       </TableCell>
                     </TableRow>
                   ) : (
-                    submissions.data.map((submission) => {
+                    submissionItems.map((submission) => {
                       const totalQuestions = calculateTotalQuestions(submission);
                       const percentage = totalQuestions > 0
                         ? Math.round((submission.score / totalQuestions) * 100)
@@ -438,7 +438,9 @@ export default function TeacherGradesPage({
                           <TableCell>
                             <div className="flex items-center gap-1 text-sm text-slate-500">
                               <Calendar className="w-4 h-4" />
-                              {new Date(submission.submitted_at).toLocaleDateString()}
+                              {Number.isNaN(Date.parse(submission.submitted_at))
+                                ? "-"
+                                : new Date(submission.submitted_at).toLocaleDateString()}
                             </div>
                           </TableCell>
 

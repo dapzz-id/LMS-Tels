@@ -12,7 +12,7 @@ import AdminPageLayout from "../../layout"
 import { toast } from "sonner"
 import { ArrowLeft, Loader2, SaveIcon, Trash2, Plus, Video, FileText, Brain, BookOpen, X, Check, Upload } from "lucide-react"
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/Components/ui/form"
-import { useForm } from "react-hook-form"
+import { useForm, type FieldErrors } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/Components/ui/tabs"
@@ -175,6 +175,7 @@ const courseFormSchema = z.object({
 })
 
 type CourseFormValues = z.infer<typeof courseFormSchema>
+type EditTab = "details" | "content" | "preview"
 
 function mapCourseToFormValues(course: Props["course"]): CourseFormValues {
 
@@ -358,6 +359,7 @@ function mapCourseToFormValues(course: Props["course"]): CourseFormValues {
 export default function EditCoursePage({ course, mapel, availableClasses = [] }: Props) {
   const API_BASE_URL = import.meta.env.VITE_APP_URL;
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [activeTab, setActiveTab] = useState<EditTab>("details")
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null)
   const [thumbnailStatus, setThumbnailStatus] = useState<"existing" | "new" | "removed">("existing")
 
@@ -492,7 +494,7 @@ export default function EditCoursePage({ course, mapel, availableClasses = [] }:
       const classData = form.getValues("class") || [];
       formData.append("class", JSON.stringify(classData))
 
-      const response = await axios.post(`${API_BASE_URL}api/admin/courses/${course.id}`, formData, {
+      const response = await axios.post(`/admin/courses/${course.id}`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
@@ -550,6 +552,55 @@ export default function EditCoursePage({ course, mapel, availableClasses = [] }:
     }
   }
 
+  const findFirstErrorPath = (errors: Record<string, unknown>, prefix = ""): string | null => {
+    for (const [key, value] of Object.entries(errors)) {
+      if (!value) {
+        continue
+      }
+
+      const path = prefix ? `${prefix}.${key}` : key
+
+      if (Array.isArray(value)) {
+        for (let i = 0; i < value.length; i += 1) {
+          const item = value[i]
+          if (item && typeof item === "object") {
+            const nestedPath = findFirstErrorPath(item as Record<string, unknown>, `${path}.${i}`)
+            if (nestedPath) {
+              return nestedPath
+            }
+          }
+        }
+        continue
+      }
+
+      if (typeof value === "object") {
+        const maybeFieldError = value as { message?: unknown }
+        if (typeof maybeFieldError.message === "string" && maybeFieldError.message.length > 0) {
+          return path
+        }
+
+        const nestedPath = findFirstErrorPath(value as Record<string, unknown>, path)
+        if (nestedPath) {
+          return nestedPath
+        }
+      }
+    }
+
+    return null
+  }
+
+  const handleInvalidSubmit = (errors: FieldErrors<CourseFormValues>) => {
+    const firstErrorPath = findFirstErrorPath(errors as Record<string, unknown>)
+
+    if (firstErrorPath?.startsWith("pembahasan")) {
+      setActiveTab("content")
+    } else {
+      setActiveTab("details")
+    }
+
+    toast.error("Form belum valid. Periksa field yang wajib diisi sebelum update.")
+  }
+
   useEffect(() => {
 
   }, [form.formState.errors])
@@ -572,7 +623,7 @@ export default function EditCoursePage({ course, mapel, availableClasses = [] }:
           </div>
         </div>
 
-        <Tabs defaultValue="details" className="space-y-4">
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as EditTab)} className="space-y-4">
           <TabsList className="grid w-full grid-cols-3 mb-6">
             <TabsTrigger value="details">Course Details</TabsTrigger>
             <TabsTrigger value="content">Content</TabsTrigger>
@@ -580,7 +631,7 @@ export default function EditCoursePage({ course, mapel, availableClasses = [] }:
           </TabsList>
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
+            <form onSubmit={form.handleSubmit(handleSubmit, handleInvalidSubmit)} className="space-y-8">
               <TabsContent value="details">
                 <Card>
                   <CardHeader>

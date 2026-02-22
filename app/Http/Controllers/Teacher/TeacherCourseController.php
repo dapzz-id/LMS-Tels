@@ -14,9 +14,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Inertia\Inertia;
-use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use RuntimeException;
 
 class TeacherCourseController extends Controller
 {
@@ -135,8 +136,8 @@ class TeacherCourseController extends Controller
     public function uploadPdf(Request $request)
     {
         try {
-            $validator = Validator::make($request->all(), [
-                'file' => 'required|file|mimes:pdf|max:10240', // 10MB max
+            $request->validate([
+                'file' => 'required|file|mimes:pdf|mimetypes:application/pdf|max:10240',
             ], [
                 'file.required' => 'File wajib diunggah.',
                 'file.file' => 'File tidak valid.',
@@ -144,37 +145,34 @@ class TeacherCourseController extends Controller
                 'file.max' => 'Ukuran file maksimal 10240 KB.',
             ]);
 
-            if ($validator->fails()) {
+            $file = $request->file('file');
+            if ($file === null) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Validation failed',
-                    'errors' => $validator->errors()
+                    'message' => 'File tidak valid.',
                 ], 422);
             }
 
-            $file = $request->file('file');
-
-            // Generate unique filename
-            $filename = time() . '_' . str_replace(' ', '_', $file->getClientOriginalName());
-
-            // Store file in public/storage/pdfs directory
-            $path = $file->storeAs('pdfs', $filename, 'public');
-
-            // Return the storage path with leading slash to make it absolute
-            $url = '/storage/' . $path;
+            $stored = $this->storePdfFile($file, 'pdfs');
 
             return response()->json([
                 'status' => 'success',
-                'message' => 'PDF uploaded successfully',
-                'url' => $url,
-                'filename' => $filename
+                'message' => 'PDF berhasil diunggah.',
+                'url' => $stored['url'],
+                'filename' => $stored['filename'],
+                'size' => $stored['size'],
             ]);
-
-        } catch (\Exception $e) {
-            Log::error('PDF upload error: ' . $e->getMessage());
+        } catch (RuntimeException $e) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Failed to upload PDF: ' . $e->getMessage()
+                'message' => $e->getMessage(),
+            ], 422);
+        } catch (\Throwable $e) {
+            Log::error('Teacher PDF upload error', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Gagal mengunggah PDF.',
             ], 500);
         }
     }
@@ -185,9 +183,8 @@ class TeacherCourseController extends Controller
     public function uploadImage(Request $request)
     {
         try {
-            // Validate the request
-            $validator = Validator::make($request->all(), [
-                'file' => 'required|file|mimes:jpeg,png,jpg,webp,gif|max:5120', // 5MB max
+            $request->validate([
+                'file' => 'required|image|mimes:jpeg,png,jpg,webp,gif|mimetypes:image/jpeg,image/png,image/webp,image/gif|max:5120',
             ], [
                 'file.required' => 'File wajib diunggah.',
                 'file.file' => 'File tidak valid.',
@@ -195,37 +192,34 @@ class TeacherCourseController extends Controller
                 'file.max' => 'Ukuran file maksimal 5120 KB.',
             ]);
 
-            if ($validator->fails()) {
+            $file = $request->file('file');
+            if ($file === null) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Validation failed',
-                    'errors' => $validator->errors()
+                    'message' => 'File tidak valid.',
                 ], 422);
             }
 
-            $file = $request->file('file');
-
-            // Generate unique filename
-            $filename = time() . '_' . str_replace(' ', '_', $file->getClientOriginalName());
-
-            // Store file in public/storage/images directory
-            $path = $file->storeAs('images', $filename, 'public');
-
-            // Return the storage path with leading slash to make it absolute
-            $url = '/storage/' . $path;
+            $stored = $this->storeImageWithoutMetadata($file, 'images');
 
             return response()->json([
                 'status' => 'success',
-                'message' => 'Image uploaded successfully',
-                'url' => $url,
-                'filename' => $filename
+                'message' => 'Gambar berhasil diunggah.',
+                'url' => $stored['url'],
+                'filename' => $stored['filename'],
+                'size' => $stored['size'],
             ]);
-
-        } catch (\Exception $e) {
-            Log::error('Image upload error: ' . $e->getMessage());
+        } catch (RuntimeException $e) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Failed to upload image: ' . $e->getMessage()
+                'message' => $e->getMessage(),
+            ], 422);
+        } catch (\Throwable $e) {
+            Log::error('Teacher image upload error', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Gagal mengunggah gambar.',
             ], 500);
         }
     }
@@ -237,7 +231,7 @@ class TeacherCourseController extends Controller
 
             // Decode JSON string to array if needed
             $input = $request->all();
-            foreach (['pembahasan', 'prerequisites', 'learning_objectives', 'target_audience'] as $key) {
+            foreach (['pembahasan', 'prerequisites', 'learning_objectives', 'target_audience', 'class'] as $key) {
                 if (isset($input[$key]) && is_string($input[$key])) {
                     $input[$key] = json_decode($input[$key], true);
                 }
@@ -311,14 +305,15 @@ class TeacherCourseController extends Controller
                 ], 422);
             }
 
-            // Upload thumbnail if present
-            $thumbnailUrl = $request->hasFile('thumbnail')
-                ? '/storage/' . $request->file('thumbnail')->storeAs(
-                    'thumbnails',
-                    time() . '_' . $request->file('thumbnail')->getClientOriginalName(),
-                    'public'
-                )
-                : $request->input('url_thumbnail');
+            // Upload thumbnail if present (re-encode to strip metadata).
+            $thumbnailUrl = $request->input('url_thumbnail');
+            if ($request->hasFile('thumbnail')) {
+                $thumbnailFile = $request->file('thumbnail');
+                if ($thumbnailFile !== null) {
+                    $thumbnailUpload = $this->storeImageWithoutMetadata($thumbnailFile, 'thumbnails');
+                    $thumbnailUrl = $thumbnailUpload['url'];
+                }
+            }
 
             // Transaction untuk database
             DB::beginTransaction();
@@ -532,6 +527,8 @@ class TeacherCourseController extends Controller
                 'learning_objectives.*' => 'string',
                 'target_audience' => 'nullable|array',
                 'target_audience.*' => 'string',
+                'class' => 'nullable|array',
+                'class.*' => 'string|max:255',
                 'is_featured' => 'nullable|boolean',
                 'keep_existing_thumbnail' => 'nullable|boolean',
                 // Fixed pembahasan validation rules
@@ -549,12 +546,16 @@ class TeacherCourseController extends Controller
                 'pembahasan.*.contents.*.passing_score' => 'nullable|integer|min:0',
                 // Quiz validation rules
                 'pembahasan.*.contents.*.quiz_data' => 'nullable|array',
-                'pembahasan.*.contents.*.quiz_data.*.question' => 'required_if:pembahasan.*.contents.*.type,quiz|string|min:1',
-                'pembahasan.*.contents.*.quiz_data.*.options' => 'required_if:pembahasan.*.contents.*.type,quiz|array|size:4',
-                'pembahasan.*.contents.*.quiz_data.*.options.*' => 'required|string|min:1',
-                'pembahasan.*.contents.*.quiz_data.*.correctAnswer' => 'required_if:pembahasan.*.contents.*.type,quiz|integer|min:0|max:3',
-                'pembahasan.*.contents.*.quiz_data.*.timeLimit' => 'nullable|integer|min:1|max:60',
-                'pembahasan.*.contents.*.quiz_data.*.points' => 'nullable|integer|min:0',
+                'pembahasan.*.contents.*.quiz_data.timeLimit' => 'nullable|integer|min:1|max:60',
+                'pembahasan.*.contents.*.quiz_data.passingScore' => 'nullable|integer|min:0|max:100',
+                'pembahasan.*.contents.*.quiz_data.questions' => 'required_if:pembahasan.*.contents.*.type,quiz|array|min:1',
+                'pembahasan.*.contents.*.quiz_data.questions.*.question' => 'required|string|min:1',
+                'pembahasan.*.contents.*.quiz_data.questions.*.options' => 'required|array|size:4',
+                'pembahasan.*.contents.*.quiz_data.questions.*.options.*' => 'required|string|min:1',
+                'pembahasan.*.contents.*.quiz_data.questions.*.correctAnswer' => 'required|integer|min:0|max:3',
+                'pembahasan.*.contents.*.quiz_data.questions.*.imageUrl' => 'nullable|string',
+                'pembahasan.*.contents.*.quiz_data.questions.*.optionImages' => 'nullable|array',
+                'pembahasan.*.contents.*.quiz_data.questions.*.optionImages.*' => 'nullable|string',
             ];
 
             $messages = [
@@ -594,22 +595,21 @@ class TeacherCourseController extends Controller
 
             if ($request->hasFile('thumbnail')) {
                 // Delete old thumbnail if it exists and is stored locally
-                if ($kursus->url_thumbnail && str_starts_with($kursus->url_thumbnail, 'storage/')) {
-                    $oldPath = str_replace('storage/', '', $kursus->url_thumbnail);
+                if ($kursus->url_thumbnail && str_starts_with($kursus->url_thumbnail, '/storage/')) {
+                    $oldPath = ltrim(str_replace('/storage/', '', $kursus->url_thumbnail), '/');
                     Storage::disk('public')->delete($oldPath);
                 }
 
-                // Upload new thumbnail
-                $thumbnailPath = $request->file('thumbnail')->storeAs(
-                    'thumbnails',
-                    time() . '_' . $request->file('thumbnail')->getClientOriginalName(),
-                    'public'
-                );
-                $thumbnailUrl = '/storage/' . $thumbnailPath;
+                // Upload new thumbnail (re-encode to strip metadata).
+                $thumbnailFile = $request->file('thumbnail');
+                if ($thumbnailFile !== null) {
+                    $thumbnailUpload = $this->storeImageWithoutMetadata($thumbnailFile, 'thumbnails');
+                    $thumbnailUrl = $thumbnailUpload['url'];
+                }
             } elseif (isset($input['keep_existing_thumbnail']) && !$input['keep_existing_thumbnail']) {
                 // User wants to remove thumbnail
-                if ($kursus->url_thumbnail && str_starts_with($kursus->url_thumbnail, 'storage/')) {
-                    $oldPath = str_replace('storage/', '', $kursus->url_thumbnail);
+                if ($kursus->url_thumbnail && str_starts_with($kursus->url_thumbnail, '/storage/')) {
+                    $oldPath = ltrim(str_replace('/storage/', '', $kursus->url_thumbnail), '/');
                     Storage::disk('public')->delete($oldPath);
                 }
                 $thumbnailUrl = null;
@@ -745,15 +745,15 @@ class TeacherCourseController extends Controller
             }
 
             // Delete associated files before deleting the course
-            if ($kursus->url_thumbnail && str_starts_with($kursus->url_thumbnail, 'storage/')) {
-                $thumbnailPath = str_replace('storage/', '', $kursus->url_thumbnail);
+            if ($kursus->url_thumbnail && str_starts_with($kursus->url_thumbnail, '/storage/')) {
+                $thumbnailPath = ltrim(str_replace('/storage/', '', $kursus->url_thumbnail), '/');
                 Storage::disk('public')->delete($thumbnailPath);
             }
 
             // Delete PDF files from sub_pembahasan
             foreach ($kursus->sub_pembahasan as $sub) {
-                if ($sub->url_materi_pdf_sub_pembahasan && str_starts_with($sub->url_materi_pdf_sub_pembahasan, 'storage/')) {
-                    $pdfPath = str_replace('storage/', '', $sub->url_materi_pdf_sub_pembahasan);
+                if ($sub->url_materi_pdf_sub_pembahasan && str_starts_with($sub->url_materi_pdf_sub_pembahasan, '/storage/')) {
+                    $pdfPath = ltrim(str_replace('/storage/', '', $sub->url_materi_pdf_sub_pembahasan), '/');
                     Storage::disk('public')->delete($pdfPath);
                 }
             }
@@ -911,6 +911,102 @@ class TeacherCourseController extends Controller
             Log::error('Error in getCompletedContentCount: ' . $e->getMessage());
             return 0;
         }
+    }
+
+    /**
+     * @return array{path:string,url:string,filename:string,size:int}
+     */
+    private function storePdfFile($file, string $directory): array
+    {
+        $filename = sprintf('%s_%s.pdf', now()->format('YmdHis'), Str::random(8));
+        $path = $file->storeAs(trim($directory, '/'), $filename, 'public');
+
+        return [
+            'path' => $path,
+            'url' => '/storage/'.ltrim($path, '/'),
+            'filename' => $filename,
+            'size' => $file->getSize() ?: 0,
+        ];
+    }
+
+    /**
+     * @return array{path:string,url:string,filename:string,size:int}
+     */
+    private function storeImageWithoutMetadata($file, string $directory): array
+    {
+        $binary = file_get_contents($file->getRealPath());
+        if ($binary === false) {
+            throw new RuntimeException('Gagal membaca file gambar.');
+        }
+
+        $imageInfo = @getimagesizefromstring($binary);
+        $mime = $imageInfo['mime'] ?? null;
+
+        $allowedMimes = [
+            'image/jpeg' => 'jpg',
+            'image/png' => 'png',
+            'image/gif' => 'gif',
+            'image/webp' => 'webp',
+        ];
+
+        if (!$mime || !array_key_exists($mime, $allowedMimes)) {
+            throw new RuntimeException('Format gambar tidak didukung.');
+        }
+
+        $resource = @imagecreatefromstring($binary);
+        if ($resource === false) {
+            throw new RuntimeException('File gambar tidak valid.');
+        }
+
+        $extension = $allowedMimes[$mime];
+        $filename = sprintf('%s_%s.%s', now()->format('YmdHis'), Str::random(8), $extension);
+
+        $tempPath = tempnam(sys_get_temp_dir(), 'img_');
+        if ($tempPath === false) {
+            imagedestroy($resource);
+            throw new RuntimeException('Gagal memproses file gambar.');
+        }
+
+        $outputPath = $tempPath.'.'.$extension;
+        @rename($tempPath, $outputPath);
+
+        $written = match ($mime) {
+            'image/jpeg' => imagejpeg($resource, $outputPath, 85),
+            'image/png' => imagepng($resource, $outputPath, 6),
+            'image/gif' => imagegif($resource, $outputPath),
+            'image/webp' => function_exists('imagewebp')
+                ? imagewebp($resource, $outputPath, 85)
+                : false,
+            default => false,
+        };
+
+        imagedestroy($resource);
+
+        if ($written === false) {
+            @unlink($outputPath);
+            throw new RuntimeException('Gagal memproses file gambar.');
+        }
+
+        $storedBinary = file_get_contents($outputPath);
+        @unlink($outputPath);
+
+        if ($storedBinary === false) {
+            throw new RuntimeException('Gagal memproses file gambar.');
+        }
+
+        $path = trim($directory, '/').'/'.$filename;
+        $stored = Storage::disk('public')->put($path, $storedBinary);
+
+        if (!$stored) {
+            throw new RuntimeException('Gagal menyimpan file gambar.');
+        }
+
+        return [
+            'path' => $path,
+            'url' => '/storage/'.ltrim($path, '/'),
+            'filename' => $filename,
+            'size' => Storage::disk('public')->size($path),
+        ];
     }
 
     private function getCompletionStatus($percentage)

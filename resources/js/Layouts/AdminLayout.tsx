@@ -1,6 +1,7 @@
 import type React from "react"
 import { useState } from "react"
-import { Link } from "@inertiajs/react"
+import { Link, usePage } from "@inertiajs/react"
+import type { PageProps } from "@/types"
 import {
   BookOpen,
   ChevronDown,
@@ -14,11 +15,22 @@ import {
   X,
   Building2,
   Award,
-  Monitor
+  Monitor,
+  Globe
 } from "lucide-react"
 import { Button } from "@/Components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/Components/ui/avatar"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/Components/ui/dropdown-menu"
+import {
+  Dialog,
+  DialogContent,
+  DialogClose,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/Components/ui/dialog"
 
 export default function AdminLayout({
   children,
@@ -26,6 +38,8 @@ export default function AdminLayout({
   children: React.ReactNode
 }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const { app } = usePage<PageProps<{ app?: { vNetLink?: string | null } }>>().props
+  const vNetLink = app?.vNetLink ?? null
 
   return (
     <div className="flex min-h-screen">
@@ -124,6 +138,45 @@ export default function AdminLayout({
             </Button>
           </Link>
         </nav>
+        <div className="mt-auto p-2">
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button
+                variant="outline"
+                className="h-12 w-full justify-start gap-2 rounded-xl border-red-200 text-red-700 hover:bg-red-50 hover:text-red-800 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950"
+              >
+                <Globe className="h-5 w-5" />
+                <span>Login V-Net</span>
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Login V-Net</DialogTitle>
+                <DialogDescription>
+                  Anda akan diarahkan ke halaman login V-Net di tab baru.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter className="gap-2 sm:justify-end">
+                <DialogClose asChild>
+                  <Button type="button" variant="secondary">
+                    Tutup
+                  </Button>
+                </DialogClose>
+                {vNetLink ? (
+                  <Button type="button" asChild>
+                    <a href={vNetLink} target="_blank" rel="noopener noreferrer">
+                      Lanjut ke V-Net
+                    </a>
+                  </Button>
+                ) : (
+                  <Button type="button" disabled>
+                    V_NET_LINK belum diatur
+                  </Button>
+                )}
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
       </aside>
 
       {/* Mobile overlay */}
@@ -167,18 +220,18 @@ export default function AdminLayout({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56 rounded-xl p-2">
-                <Link href="/admin/settings">
-                  <DropdownMenuItem className="rounded-lg cursor-pointer">
-                    <Settings className="mr-2 h-4 w-4" />
+                <DropdownMenuItem asChild className="cursor-pointer rounded-lg">
+                  <Link href="/admin/settings" className="flex w-full items-center gap-2">
+                    <Settings className="h-4 w-4" />
                     <span>Settings</span>
-                  </DropdownMenuItem>
-                </Link>
-                <Link href="/logout" method="post" as="button">
-                  <DropdownMenuItem className="rounded-lg cursor-pointer">
-                    <LogOut className="mr-2 h-4 w-4" />
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild className="cursor-pointer rounded-lg">
+                  <Link href={route("logout")} method="post" as="button" className="flex w-full items-center gap-2">
+                    <LogOut className="h-4 w-4" />
                     <span>Logout</span>
-                  </DropdownMenuItem>
-                </Link>
+                  </Link>
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

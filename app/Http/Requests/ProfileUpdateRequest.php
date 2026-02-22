@@ -8,6 +8,20 @@ use Illuminate\Validation\Rule;
 
 class ProfileUpdateRequest extends FormRequest
 {
+    public function authorize(): bool
+    {
+        return $this->user() !== null;
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'nama_lengkap' => is_string($this->nama_lengkap) ? trim($this->nama_lengkap) : $this->nama_lengkap,
+            'username' => is_string($this->username) ? trim($this->username) : $this->username,
+            'email' => is_string($this->email) ? strtolower(trim($this->email)) : $this->email,
+        ]);
+    }
+
     /**
      * Get the validation rules that apply to the request.
      *

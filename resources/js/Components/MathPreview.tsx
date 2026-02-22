@@ -32,9 +32,10 @@ const MathPreview: React.FC<MathPreviewProps> = ({ content, className = '' }) =>
   return (
     <div
       ref={previewRef}
-      className={`math-preview p-3 bg-white border border-gray-300 rounded-md text-gray-800 ${className}`}
-      dangerouslySetInnerHTML={{ __html: processContent(content) }}
-    />
+      className={`math-preview whitespace-pre-wrap break-words p-3 bg-white border border-gray-300 rounded-md text-gray-800 ${className}`}
+    >
+      {processContent(content)}
+    </div>
   );
 };
 

@@ -1,6 +1,6 @@
 import type React from "react"
 import { useState } from "react"
-import { Link } from "@inertiajs/react"
+import { Link, usePage } from "@inertiajs/react"
 import {
   BookOpen,
   ChevronDown,
@@ -10,14 +10,19 @@ import {
   Settings,
   Users,
   Award,
-  HelpCircle,
   Menu,
   X
 } from "lucide-react"
 import { Button } from "@/Components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/Components/ui/avatar"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/Components/ui/dropdown-menu"
-import { Card, CardContent } from "@/Components/ui/card"
+import type { User } from "@/types"
+
+type TeacherLayoutPageProps = {
+  auth: {
+    user: User
+  }
+}
 
 export default function TeacherLayout({
   children,
@@ -25,6 +30,8 @@ export default function TeacherLayout({
   children: React.ReactNode
 }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const { auth } = usePage<TeacherLayoutPageProps>().props
+  const displayName = auth.user?.nama_lengkap || auth.user?.name || "Teacher"
 
   return (
     <div className="flex min-h-screen">
@@ -146,18 +153,22 @@ export default function TeacherLayout({
                       TC
                     </AvatarFallback>
                   </Avatar>
-                  <span className="hidden font-medium md:inline-flex">Dr. Smith</span>
+                  <span className="hidden font-medium md:inline-flex">{displayName}</span>
                   <ChevronDown className="w-4 h-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56 p-2 rounded-xl">
-                <DropdownMenuItem className="rounded-lg cursor-pointer">
-                  <Settings className="w-4 h-4 mr-2" />
-                  <span>Settings</span>
+                <DropdownMenuItem asChild className="cursor-pointer rounded-lg">
+                  <Link href="/profile" className="flex w-full items-center gap-2">
+                    <Settings className="h-4 w-4" />
+                    <span>Settings</span>
+                  </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem className="rounded-lg cursor-pointer">
-                  <LogOut className="w-4 h-4 mr-2" />
-                  <span>Logout</span>
+                <DropdownMenuItem asChild className="cursor-pointer rounded-lg">
+                  <Link href={route("logout")} method="post" as="button" className="flex w-full items-center gap-2">
+                    <LogOut className="h-4 w-4" />
+                    <span>Logout</span>
+                  </Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

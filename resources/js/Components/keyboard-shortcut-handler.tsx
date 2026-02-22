@@ -9,7 +9,7 @@ export function KeyboardShortcutHandler() {
       // Check for Ctrl/Cmd + K
       if ((event.ctrlKey || event.metaKey) && event.key === "k") {
         event.preventDefault()
-        router.visit("/search")
+        router.visit("/teacher/courses")
       }
       // Check for Ctrl/Cmd + N
       if ((event.ctrlKey || event.metaKey) && event.key === "n") {
@@ -29,4 +29,3 @@ export function KeyboardShortcutHandler() {
 
   return null
 }
-

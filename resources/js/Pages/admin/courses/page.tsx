@@ -69,6 +69,8 @@ export default function CoursesPage({ courses = [], availableClasses = [] }: Pro
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null)
   const [editingClass, setEditingClass] = useState<{ id: number; class: string[] } | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [isSavingClass, setIsSavingClass] = useState(false)
 
   // Filter courses based on search query and filters
   const filteredCourses = courses.filter((course) => {
@@ -83,6 +85,11 @@ export default function CoursesPage({ courses = [], availableClasses = [] }: Pro
   })
 
   const handleDeleteCourse = async (course: Course) => {
+    if (isDeleting) {
+      return
+    }
+
+    setIsDeleting(true)
     try {
       const response = await fetch(`/admin/courses/${course.id}`, {
         method: 'DELETE',
@@ -101,6 +108,7 @@ export default function CoursesPage({ courses = [], availableClasses = [] }: Pro
     } catch (error) {
       toast.error('Error deleting course')
     } finally {
+      setIsDeleting(false)
       setIsDeleteDialogOpen(false)
       setSelectedCourse(null)
     }
@@ -115,6 +123,11 @@ export default function CoursesPage({ courses = [], availableClasses = [] }: Pro
   }
 
   const handleClassUpdate = async (courseId: number, newClasses: string[]) => {
+    if (isSavingClass) {
+      return
+    }
+
+    setIsSavingClass(true)
     try {
       const response = await fetch(`/admin/courses/${courseId}/class`, {
         method: 'PATCH',
@@ -138,6 +151,7 @@ export default function CoursesPage({ courses = [], availableClasses = [] }: Pro
     } catch (error) {
       toast.error('Error assigning classes')
     } finally {
+      setIsSavingClass(false)
       setEditingClass(null)
     }
   }
@@ -277,14 +291,16 @@ export default function CoursesPage({ courses = [], availableClasses = [] }: Pro
                               <Button
                                 size="sm"
                                 onClick={() => handleClassUpdate(course.id, editingClass.class)}
+                                disabled={isSavingClass}
                                 className="h-8 px-2"
                               >
-                                Save
+                                {isSavingClass ? 'Saving...' : 'Save'}
                               </Button>
                               <Button
                                 size="sm"
                                 variant="outline"
                                 onClick={() => setEditingClass(null)}
+                                disabled={isSavingClass}
                                 className="h-8 px-2"
                               >
                                 Cancel
@@ -362,14 +378,16 @@ export default function CoursesPage({ courses = [], availableClasses = [] }: Pro
                 setIsDeleteDialogOpen(false)
                 setSelectedCourse(null)
               }}
+              disabled={isDeleting}
             >
               Cancel
             </Button>
             <Button
               variant="destructive"
               onClick={() => selectedCourse && handleDeleteCourse(selectedCourse)}
+              disabled={isDeleting}
             >
-              Delete
+              {isDeleting ? 'Deleting...' : 'Delete'}
             </Button>
           </DialogFooter>
         </DialogContent>

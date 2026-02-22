@@ -79,10 +79,10 @@ export default function LoginPage() {
         // Handle validation errors
         if (err.response.status === 422 && err.response.data.errors) {
           // Laravel validation errors
-          const validationErrors = Object.values(err.response.data.errors).flat().join("<br>")
+          const validationErrors = Object.values(err.response.data.errors).flat().join("\n")
           Swal.fire({
             title: "Validation Error",
-            html: validationErrors,
+            text: validationErrors,
             icon: "error",
             confirmButtonColor: "#3b82f6",
           })

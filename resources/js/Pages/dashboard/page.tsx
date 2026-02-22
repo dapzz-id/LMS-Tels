@@ -69,18 +69,18 @@ export default function MainDashboard() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56 p-2 rounded-xl">
-                <Link href="/profile">
-                  <DropdownMenuItem className="rounded-lg cursor-pointer">
-                    <Settings className="w-4 h-4 mr-2" />
+                <DropdownMenuItem asChild className="rounded-lg cursor-pointer">
+                  <Link href="/profile" className="flex w-full items-center gap-2">
+                    <Settings className="h-4 w-4" />
                     <span>Profile</span>
-                  </DropdownMenuItem>
-                </Link>
-                <Link href="/logout" method="post" as="button">
-                  <DropdownMenuItem className="rounded-lg cursor-pointer">
-                    <LogOut className="w-4 h-4 mr-2" />
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild className="rounded-lg cursor-pointer">
+                  <Link href={route("logout")} method="post" as="button" className="flex w-full items-center gap-2">
+                    <LogOut className="h-4 w-4" />
                     <span>Logout</span>
-                  </DropdownMenuItem>
-                </Link>
+                  </Link>
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

@@ -68,7 +68,8 @@ interface Department {
 const StudentCoursesPage = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
-  const API_BASE_URL = import.meta.env.VITE_APP_URL;
+  const API_BASE_URL = import.meta.env.VITE_APP_URL || ''
+  const FALLBACK_THUMBNAIL = 'https://placehold.co/600x400/e2e8f0/64748b?text=No+Image'
   const { auth } = usePage().props as any
   const user = auth.user
 
@@ -165,6 +166,13 @@ const StudentCoursesPage = () => {
     return Object.values(departmentMap)
   }
 
+  const getCourseThumbnail = (thumbnail?: string) => {
+    if (!thumbnail) return FALLBACK_THUMBNAIL
+    if (thumbnail.startsWith('http://') || thumbnail.startsWith('https://')) return thumbnail
+    if (thumbnail.startsWith('/')) return `${API_BASE_URL}${thumbnail}`
+    return `${API_BASE_URL}/${thumbnail}`.replace(/([^:]\/)\/+/g, '$1')
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -214,18 +222,18 @@ const StudentCoursesPage = () => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56 rounded-xl p-2">
-                <Link href="/profile">
-                  <DropdownMenuItem className="rounded-lg cursor-pointer">
-                    <Settings className="mr-2 h-4 w-4" />
+                <DropdownMenuItem asChild className="rounded-lg cursor-pointer">
+                  <Link href="/profile" className="flex w-full items-center gap-2">
+                    <Settings className="h-4 w-4" />
                     <span>Profile</span>
-                  </DropdownMenuItem>
-                </Link>
-                <Link href="/logout" method="post" as="button">
-                  <DropdownMenuItem className="rounded-lg cursor-pointer">
-                    <LogOut className="mr-2 h-4 w-4" />
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild className="rounded-lg cursor-pointer">
+                  <Link href={route("logout")} method="post" as="button" className="flex w-full items-center gap-2">
+                    <LogOut className="h-4 w-4" />
                     <span>Logout</span>
-                  </DropdownMenuItem>
-                </Link>
+                  </Link>
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -291,11 +299,11 @@ const StudentCoursesPage = () => {
                           <Card key={course.id} className="overflow-hidden transition-shadow hover:shadow-lg bg-white dark:bg-slate-900">
                             <div className="relative w-full h-48">
                               <img
-                                src={API_BASE_URL + course.url_thumbnail || 'https://placehold.co/600x400/e2e8f0/64748b?text=No+Image'}
+                                src={getCourseThumbnail(course.url_thumbnail)}
                                 alt={course.judul_kursus}
                                 className="object-cover w-full h-full"
                                 onError={(e) => {
-                                  e.currentTarget.src = 'https://placehold.co/600x400/e2e8f0/64748b?text=No+Image';
+                                  e.currentTarget.src = FALLBACK_THUMBNAIL;
                                 }}
                               />
                               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
@@ -337,11 +345,11 @@ const StudentCoursesPage = () => {
                             <div className="flex flex-col md:flex-row">
                               <div className="md:w-1/3">
                                 <img
-                                  src={API_BASE_URL + course.url_thumbnail || 'https://placehold.co/600x400/e2e8f0/64748b?text=No+Image'}
+                                  src={getCourseThumbnail(course.url_thumbnail)}
                                   alt={course.judul_kursus}
                                   className="object-cover w-full h-48 md:h-full"
                                   onError={(e) => {
-                                    e.currentTarget.src = 'https://placehold.co/600x400/e2e8f0/64748b?text=No+Image';
+                                    e.currentTarget.src = FALLBACK_THUMBNAIL;
                                   }}
                                 />
                               </div>

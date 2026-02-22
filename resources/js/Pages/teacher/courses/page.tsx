@@ -66,6 +66,7 @@ export default function CoursesPage({ courses = [] }: Props) {
   const [departmentFilter, setDepartmentFilter] = useState("all")
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   // Filter courses based on search query and filters
   const filteredCourses = courses.filter((course) => {
@@ -80,6 +81,11 @@ export default function CoursesPage({ courses = [] }: Props) {
   })
 
   const handleDeleteCourse = async (course: Course) => {
+    if (isDeleting) {
+      return
+    }
+
+    setIsDeleting(true)
     try {
       const response = await fetch(`/teacher/courses/${course.id}`, {
         method: 'DELETE',
@@ -98,6 +104,7 @@ export default function CoursesPage({ courses = [] }: Props) {
     } catch (error) {
       toast.error('Error deleting course')
     } finally {
+      setIsDeleting(false)
       setIsDeleteDialogOpen(false)
       setSelectedCourse(null)
     }
@@ -279,14 +286,16 @@ export default function CoursesPage({ courses = [] }: Props) {
                 setIsDeleteDialogOpen(false)
                 setSelectedCourse(null)
               }}
+              disabled={isDeleting}
             >
               Cancel
             </Button>
             <Button
               variant="destructive"
               onClick={() => selectedCourse && handleDeleteCourse(selectedCourse)}
+              disabled={isDeleting}
             >
-              Delete
+              {isDeleting ? 'Deleting...' : 'Delete'}
             </Button>
           </DialogFooter>
         </DialogContent>

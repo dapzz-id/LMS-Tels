@@ -162,7 +162,7 @@ class StudentActivityTracker {
         // Track form submissions (like quiz submissions)
         document.addEventListener('submit', (e) => {
             const form = e.target;
-            if (form.classList.contains('quiz-form') || form.dataset.quizId) {
+            if (form instanceof HTMLFormElement && (form.classList.contains('quiz-form') || form.dataset.quizId)) {
                 this.trackActivity('quiz_submit', {
                     quiz_id: form.dataset.quizId,
                     form_data: this.serializeForm(form)
@@ -228,7 +228,7 @@ class StudentActivityTracker {
         document.addEventListener('load', (e) => {
             if (e.target.tagName === 'IFRAME') {
                 const src = e.target.src;
-                if (src && src.includes('youtube.com') || src.includes('youtu.be')) {
+                if (src && (src.includes('youtube.com') || src.includes('youtu.be'))) {
                     const videoId = this.extractYouTubeVideoId(src);
                     if (videoId && !this.trackedVideos.has(videoId)) {
                         this.trackedVideos.add(videoId);
@@ -403,10 +403,6 @@ class StudentActivityTracker {
     // Public methods for manual tracking
     trackCourseView(courseId) {
         this.trackActivity('course_view', { course_id: courseId });
-    }
-
-    trackQuizStart(quizId) {
-        this.trackActivity('quiz_start', { quiz_id: quizId });
     }
 
     trackQuizSubmit(quizId, answers) {

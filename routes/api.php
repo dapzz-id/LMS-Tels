@@ -1,23 +1,22 @@
 <?php
 
 use App\Http\Controllers\CourseController;
-use App\Http\Controllers\Admin\UploadController;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Admin\KelolaSubPembahasanAdminController;
 use App\Http\Controllers\Admin\KelolaDataCourseAdminController;
 use App\Http\Controllers\CertificateController;
 
 Route::get('/getIDUser', function () {
-    return response()->json([
-        'id' => Auth::user()->id,
-        'name' => Auth::user()->nama_lengkap,
-        'email' => Auth::user()->email
-    ]);
-})->middleware('web', 'auth.session');
+    $user = Auth::user();
 
-Route::middleware(['web', 'auth.session'])->group(function () {
+    return response()->json([
+        'id' => $user?->id,
+        'name' => $user?->nama_lengkap,
+        'email' => $user?->email,
+    ]);
+})->middleware(['web', 'auth', 'auth.session']);
+
+Route::middleware(['web', 'auth', 'auth.session'])->group(function () {
     Route::get('/getDataCourse/{id}', [CourseController::class, 'getDataCourse'])->name('getDataCourse');
     Route::get('/getDataCourseku', [CourseController::class, 'getDataCourseku'])->name('getDataCourseku');
     Route::get('/getDataCourseku/{id}', [CourseController::class, 'getDataCourseku'])->name('getDataCourseku.single');
@@ -33,13 +32,13 @@ Route::middleware(['web', 'auth.session'])->group(function () {
     Route::post('/progress/quiz-completion', [CourseController::class, 'saveQuizCompletion'])->name('progress.quiz.completion');
 });
 
-Route::middleware(['web', 'auth.session'])->group(function () {
+Route::middleware(['web', 'auth', 'auth.session', 'role:admin'])->group(function () {
     Route::prefix('admin')->group(function () {
         Route::post('/upload', [App\Http\Controllers\Admin\FileUploadController::class, 'upload'])->name('admin.upload');
     });
 });
 
-Route::middleware(['web', 'auth.session'])->group(function () {
+Route::middleware(['web', 'auth', 'auth.session'])->group(function () {
     Route::get('/courses/student', [CourseController::class, 'getDataCourseku']);
 
     // Certificate API routes with proper authentication
@@ -50,7 +49,7 @@ Route::middleware(['web', 'auth.session'])->group(function () {
     Route::post('/certificates/generate-pdf/{id}', [CertificateController::class, 'generatePdf']);
 });
 
-Route::middleware(['web', 'auth.session'])->prefix('admin')->group(function () {
+Route::middleware(['web', 'auth', 'auth.session', 'role:admin'])->prefix('admin')->group(function () {
     Route::post('/courses', [KelolaDataCourseAdminController::class, 'store']);
     Route::post('/upload', [App\Http\Controllers\Admin\FileUploadController::class, 'upload'])->name('admin.upload');
 });

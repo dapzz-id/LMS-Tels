@@ -6,7 +6,6 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
 class LoginController extends Controller
@@ -15,8 +14,6 @@ class LoginController extends Controller
     {
         if (Auth::check()) {
             $tipe_user = Auth::user()->tipe_user;
-            Log::info('User: ' . Auth::user());
-            Log::info('Tipe User: ' . $tipe_user);
             if ($tipe_user == 'guru') {
                 return redirect()->route('teacher.dashboard');
             } elseif ($tipe_user == 'siswa') {
@@ -56,11 +53,18 @@ class LoginController extends Controller
         }
 
         if (Auth::attempt($credentials)) {
+            $request->session()->regenerate();
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'Login berhasil',
                 'data' => [
-                    'user' => Auth::user(),
+                    'user' => [
+                        'id' => Auth::id(),
+                        'nama_lengkap' => Auth::user()->nama_lengkap,
+                        'email' => Auth::user()->email,
+                        'tipe_user' => Auth::user()->tipe_user,
+                    ],
                     'tipe_user' => Auth::user()->tipe_user,
                 ]
             ]);

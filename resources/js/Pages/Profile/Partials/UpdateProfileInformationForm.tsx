@@ -33,10 +33,12 @@ export default function UpdateProfileInformation({
     const { auth, flash } = usePage().props as any;
     const user = auth.user;
     const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+    const [clientErrors, setClientErrors] = useState<Record<string, string>>({});
 
     const { data, setData, patch, errors, processing, recentlySuccessful } =
         useForm({
-            name: user.name,
+            nama_lengkap: user.nama_lengkap ?? user.name ?? '',
+            username: user.username ?? '',
             email: user.email,
         });
 
@@ -46,10 +48,55 @@ export default function UpdateProfileInformation({
         password_confirmation: '',
     });
 
+    const validateField = (field: string, value: string): string => {
+        const trimmed = value.trim();
+
+        if (field === 'nama_lengkap' && trimmed.length === 0) {
+            return 'Nama lengkap wajib diisi.';
+        }
+
+        if (field === 'username') {
+            if (trimmed.length === 0) return 'Username wajib diisi.';
+            if (trimmed.length < 3) return 'Username minimal 3 karakter.';
+        }
+
+        if (field === 'email') {
+            if (trimmed.length === 0) return 'Email wajib diisi.';
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(trimmed)) return 'Format email tidak valid.';
+        }
+
+        return '';
+    };
+
+    const updateProfileField = (field: 'nama_lengkap' | 'username' | 'email', value: string) => {
+        setData(field, value);
+        setClientErrors((prev) => ({
+            ...prev,
+            [field]: validateField(field, value),
+        }));
+    };
+
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
 
-        patch(route('profile.update'));
+        const nextClientErrors = {
+            nama_lengkap: validateField('nama_lengkap', data.nama_lengkap),
+            username: validateField('username', data.username),
+            email: validateField('email', data.email),
+        };
+
+        setClientErrors(nextClientErrors);
+
+        if (Object.values(nextClientErrors).some((message) => message)) {
+            return;
+        }
+
+        patch(route('profile.update'), {
+            onSuccess: () => {
+                setClientErrors({});
+            },
+        });
     };
 
     const updatePassword = (e: React.FormEvent) => {
@@ -80,19 +127,40 @@ export default function UpdateProfileInformation({
 
             <form onSubmit={submit} className="mt-6 space-y-6">
                 <div>
-                    <InputLabel htmlFor="name" value="Name" />
+                    <InputLabel htmlFor="nama_lengkap" value="Nama Lengkap" />
 
                     <TextInput
-                        id="name"
+                        id="nama_lengkap"
                         className="mt-1 block w-full"
-                        value={data.name}
-                        onChange={(e) => setData('name', e.target.value)}
+                        value={data.nama_lengkap}
+                        onChange={(e) => updateProfileField('nama_lengkap', e.target.value)}
                         required
                         isFocused
                         autoComplete="name"
                     />
 
-                    <InputError className="mt-2" message={errors.name} />
+                    <InputError
+                        className="mt-2"
+                        message={clientErrors.nama_lengkap || errors.nama_lengkap}
+                    />
+                </div>
+
+                <div>
+                    <InputLabel htmlFor="username" value="Username" />
+
+                    <TextInput
+                        id="username"
+                        className="mt-1 block w-full"
+                        value={data.username}
+                        onChange={(e) => updateProfileField('username', e.target.value)}
+                        required
+                        autoComplete="username"
+                    />
+
+                    <InputError
+                        className="mt-2"
+                        message={clientErrors.username || errors.username}
+                    />
                 </div>
 
                 <div>
@@ -103,12 +171,15 @@ export default function UpdateProfileInformation({
                         type="email"
                         className="mt-1 block w-full"
                         value={data.email}
-                        onChange={(e) => setData('email', e.target.value)}
+                        onChange={(e) => updateProfileField('email', e.target.value)}
                         required
-                        autoComplete="username"
+                        autoComplete="email"
                     />
 
-                    <InputError className="mt-2" message={errors.email} />
+                    <InputError
+                        className="mt-2"
+                        message={clientErrors.email || errors.email}
+                    />
                 </div>
 
                 {mustVerifyEmail && user.email_verified_at === null && (

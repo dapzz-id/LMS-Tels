@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CourseContent;
 use App\Models\ProgressCourse;
 use App\Models\User;
 use App\Models\Kursus;
 use App\Models\QuizSubmission;
 use App\Models\StudentActivity;
+use App\Models\SubPembahasan;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
@@ -15,6 +18,17 @@ class CourseController extends Controller
 {
     public function getDataCourse($id)
     {
+        $authUser = auth()->user();
+        if (!$authUser) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
+        if ($authUser->tipe_user === 'siswa' && (int) $id !== (int) $authUser->id) {
+            return response()->json([
+                'message' => 'Anda tidak diizinkan mengakses data siswa lain.',
+            ], 403);
+        }
+
         $user = User::with(['kursus.progress'])->find($id);
 
         if (!$user || $user->kursus->isEmpty()) {
@@ -126,6 +140,12 @@ class CourseController extends Controller
                 return response()->json(['message' => 'Unauthorized'], 401);
             }
 
+            if (!$this->userCanAccessCourse($user, (int) $courseId)) {
+                return response()->json([
+                    'message' => 'Anda tidak memiliki akses ke kursus ini.',
+                ], 403);
+            }
+
             $submissions = QuizSubmission::where('user_id', $user->id)
                 ->where('course_id', $courseId)
                 ->with(['quizContent:id,title,type'])
@@ -153,6 +173,13 @@ class CourseController extends Controller
 
     public function updateProgress(Request $request)
     {
+        $user = auth()->user();
+        if (!$user || $user->tipe_user !== 'siswa') {
+            return response()->json([
+                'message' => 'Hanya siswa yang dapat memperbarui progress.',
+            ], 403);
+        }
+
         $validated = $request->validate([
             'siswa_id'=> 'required|exists:users,id',
             'kursus_id'=> 'required|exists:kursus,id',
@@ -171,30 +198,50 @@ class CourseController extends Controller
             'progress_per_subbab.integer' => 'Progress per subbab harus berupa angka.',
         ]);
 
-        if($validated){
-            $progress = ProgressCourse::updateOrCreate(
-                [
-                    'id_siswa' => $validated['siswa_id'],
-                    'id_kursus' => $validated['kursus_id'],
-                    'id_sub_pembahasan' => $validated['id_sub_pembahasan'],
-                ],
-                [
-                    'progress_per_subbab' => $validated['progress_per_subbab'] ?? null,
-                    'status' => $validated['status'],
-                ]
-            );
-
-            if ($progress->wasRecentlyCreated) {
-                return response()->json([
-                    'message' => "Let's start your first lesson 🔥",
-                ]);
-            } else {
-                return response()->json([
-                    'message' => 'Progress saved successfully',
-                    'progress' => $progress
-                ]);
-            }
+        if ((int) $validated['siswa_id'] !== (int) $user->id) {
+            return response()->json([
+                'message' => 'Anda tidak dapat mengubah progress siswa lain.',
+            ], 403);
         }
+
+        if (!$this->userCanAccessCourse($user, (int) $validated['kursus_id'])) {
+            return response()->json([
+                'message' => 'Anda tidak memiliki akses ke kursus ini.',
+            ], 403);
+        }
+
+        $subBelongsToCourse = SubPembahasan::where('id', $validated['id_sub_pembahasan'])
+            ->where('id_kursus', $validated['kursus_id'])
+            ->exists();
+
+        if (!$subBelongsToCourse) {
+            return response()->json([
+                'message' => 'Sub pembahasan tidak sesuai dengan kursus.',
+            ], 422);
+        }
+
+        $progress = ProgressCourse::updateOrCreate(
+            [
+                'id_siswa' => $validated['siswa_id'],
+                'id_kursus' => $validated['kursus_id'],
+                'id_sub_pembahasan' => $validated['id_sub_pembahasan'],
+            ],
+            [
+                'progress_per_subbab' => $validated['progress_per_subbab'] ?? null,
+                'status' => $validated['status'],
+            ]
+        );
+
+        if ($progress->wasRecentlyCreated) {
+            return response()->json([
+                'message' => 'Progress awal berhasil disimpan.',
+            ]);
+        }
+
+        return response()->json([
+            'message' => 'Progress berhasil disimpan.',
+            'progress' => $progress,
+        ]);
     }
 
     /**
@@ -209,8 +256,14 @@ class CourseController extends Controller
                 return response()->json(['message' => 'Unauthorized'], 401);
             }
 
+            if (!$this->userCanAccessCourse($user, (int) $courseId)) {
+                return response()->json([
+                    'message' => 'Anda tidak memiliki akses ke kursus ini.',
+                ], 403);
+            }
+
             // Get all video content for this course
-            $videoContents = \App\Models\CourseContent::where('kursus_id', $courseId)
+            $videoContents = CourseContent::where('kursus_id', $courseId)
                 ->where('type', 'video')
                 ->get();
 
@@ -253,8 +306,14 @@ class CourseController extends Controller
                 return response()->json(['message' => 'Unauthorized'], 401);
             }
 
+            if (!$this->userCanAccessCourse($user, (int) $courseId)) {
+                return response()->json([
+                    'message' => 'Anda tidak memiliki akses ke kursus ini.',
+                ], 403);
+            }
+
             // Get all PDF content for this course
-            $pdfContents = \App\Models\CourseContent::where('kursus_id', $courseId)
+            $pdfContents = CourseContent::where('kursus_id', $courseId)
                 ->where('type', 'pdf')
                 ->get();
 
@@ -296,7 +355,7 @@ class CourseController extends Controller
             if (!$user || $user->tipe_user !== 'siswa') {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Only students can save progress'
+                    'message' => 'Hanya siswa yang dapat menyimpan progress.'
                 ], 403);
             }
 
@@ -316,8 +375,24 @@ class CourseController extends Controller
                 'duration.integer' => 'Durasi harus berupa angka.',
             ]);
 
-            // Find the sub_pembahasan_id for this content
-            $content = \App\Models\CourseContent::find($validated['content_id']);
+            if (!$this->userCanAccessCourse($user, (int) $validated['course_id'])) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Anda tidak memiliki akses ke kursus ini.',
+                ], 403);
+            }
+
+            $content = CourseContent::where('id', $validated['content_id'])
+                ->where('kursus_id', $validated['course_id'])
+                ->where('type', 'video')
+                ->first();
+
+            if (!$content) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Konten video tidak valid untuk kursus ini.',
+                ], 422);
+            }
 
             // Save progress as completed - using progress_per_subbab = 1 for video completion
             $progress = ProgressCourse::updateOrCreate(
@@ -335,9 +410,11 @@ class CourseController extends Controller
             // Track activity
             StudentActivity::trackActivity($user->id, 'video_completion', [
                 'course_id' => $validated['course_id'],
-                'content_id' => $validated['content_id'],
-                'video_id' => $validated['video_id'],
-                'duration' => $validated['duration']
+                'metadata' => [
+                    'content_id' => $validated['content_id'],
+                    'video_id' => $validated['video_id'],
+                    'duration' => $validated['duration'],
+                ],
             ]);
 
             return response()->json([
@@ -365,7 +442,7 @@ class CourseController extends Controller
             if (!$user || $user->tipe_user !== 'siswa') {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Only students can save progress'
+                    'message' => 'Hanya siswa yang dapat menyimpan progress.'
                 ], 403);
             }
 
@@ -382,8 +459,24 @@ class CourseController extends Controller
                 'pdf_filename.string' => 'Nama file PDF harus berupa teks.',
             ]);
 
-            // Find the sub_pembahasan_id for this content
-            $content = \App\Models\CourseContent::find($validated['content_id']);
+            if (!$this->userCanAccessCourse($user, (int) $validated['course_id'])) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Anda tidak memiliki akses ke kursus ini.',
+                ], 403);
+            }
+
+            $content = CourseContent::where('id', $validated['content_id'])
+                ->where('kursus_id', $validated['course_id'])
+                ->where('type', 'pdf')
+                ->first();
+
+            if (!$content) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Konten PDF tidak valid untuk kursus ini.',
+                ], 422);
+            }
 
             // Save progress as completed - using progress_per_subbab = 2 for PDF download
             $progress = ProgressCourse::updateOrCreate(
@@ -401,8 +494,10 @@ class CourseController extends Controller
             // Track activity
             StudentActivity::trackActivity($user->id, 'pdf_download_completion', [
                 'course_id' => $validated['course_id'],
-                'content_id' => $validated['content_id'],
-                'pdf_filename' => $validated['pdf_filename']
+                'metadata' => [
+                    'content_id' => $validated['content_id'],
+                    'pdf_filename' => $validated['pdf_filename'],
+                ],
             ]);
 
             return response()->json([
@@ -430,7 +525,7 @@ class CourseController extends Controller
             if (!$user || $user->tipe_user !== 'siswa') {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Only students can save progress'
+                    'message' => 'Hanya siswa yang dapat menyimpan progress.'
                 ], 403);
             }
 
@@ -452,8 +547,29 @@ class CourseController extends Controller
                 'score.max' => 'Skor maksimal 100.',
             ]);
 
-            // Find the sub_pembahasan_id for this content
-            $content = \App\Models\CourseContent::find($validated['content_id']);
+            if (!$this->userCanAccessCourse($user, (int) $validated['course_id'])) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Anda tidak memiliki akses ke kursus ini.',
+                ], 403);
+            }
+
+            $content = CourseContent::where('id', $validated['content_id'])
+                ->where('kursus_id', $validated['course_id'])
+                ->where('type', 'quiz')
+                ->first();
+
+            $quizContent = CourseContent::where('id', $validated['quiz_id'])
+                ->where('kursus_id', $validated['course_id'])
+                ->where('type', 'quiz')
+                ->first();
+
+            if (!$content || !$quizContent) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Data kuis tidak valid untuk kursus ini.',
+                ], 422);
+            }
 
             // Save progress as completed - using progress_per_subbab = 3 for quiz completion
             $progress = ProgressCourse::updateOrCreate(
@@ -473,7 +589,7 @@ class CourseController extends Controller
                 [
                     'user_id' => $user->id,
                     'course_id' => $validated['course_id'],
-                    'quiz_content_id' => $validated['quiz_id'],
+                    'quiz_content_id' => $quizContent->id,
                 ],
                 [
                     'score' => $validated['score'],
@@ -484,9 +600,11 @@ class CourseController extends Controller
             // Track activity
             StudentActivity::trackActivity($user->id, 'quiz_completion_progress', [
                 'course_id' => $validated['course_id'],
-                'content_id' => $validated['content_id'],
-                'quiz_id' => $validated['quiz_id'],
-                'score' => $validated['score']
+                'quiz_id' => $quizContent->id,
+                'metadata' => [
+                    'content_id' => $validated['content_id'],
+                    'score' => $validated['score'],
+                ],
             ]);
 
             return response()->json([
@@ -502,6 +620,34 @@ class CourseController extends Controller
                 'message' => 'Failed to save quiz completion'
             ], 500);
         }
+    }
+
+    private function userCanAccessCourse(User $user, int $courseId): bool
+    {
+        if ($user->tipe_user !== 'siswa') {
+            return true;
+        }
+
+        $enrolled = DB::table('siswa_kursus')
+            ->where('id_siswa', $user->id)
+            ->where('id_kursus', $courseId)
+            ->exists();
+
+        if ($enrolled) {
+            return true;
+        }
+
+        $course = Kursus::select(['id', 'class'])->find($courseId);
+        if (!$course) {
+            return false;
+        }
+
+        $classes = is_array($course->class) ? $course->class : [];
+        if (empty($classes)) {
+            return false;
+        }
+
+        return $user->class !== null && in_array($user->class, $classes, true);
     }
 
     /**

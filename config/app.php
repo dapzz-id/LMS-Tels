@@ -54,6 +54,8 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
+    'v_net_link' => env('V_NET_LINK'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone
