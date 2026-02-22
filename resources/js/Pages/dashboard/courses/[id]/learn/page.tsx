@@ -86,6 +86,8 @@ const CourseLearnPage = ({ id }: { id: string }) => {
   const [completedVideos, setCompletedVideos] = useState<Set<string>>(new Set()) // Track completed videos
   const [downloadedPDFs, setDownloadedPDFs] = useState<Set<string>>(new Set()) // Track downloaded PDFs
   const [videoWatchTime, setVideoWatchTime] = useState<Map<string, number>>(new Map()) // Track watch time
+  const [videoDuration, setVideoDuration] = useState<number>(0)
+  const [videoCurrentTime, setVideoCurrentTime] = useState<number>(0)
   const [isQuizCompleted, setIsQuizCompleted] = useState(false) // Add this line
 
   const renderLayout = (content: JSX.Element) => (
@@ -101,6 +103,30 @@ const CourseLearnPage = ({ id }: { id: string }) => {
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
     const match = url.match(regExp);
     return (match && match[2].length === 11) ? match[2] : null;
+  };
+
+  const getStoredWatchProgress = (courseId: string, videoId: string): number => {
+    try {
+      const raw = localStorage.getItem(`video-watch-seconds-${courseId}`);
+      if (!raw) return 0;
+      const parsed = JSON.parse(raw) as Record<string, number>;
+      const value = parsed?.[videoId];
+      return Number.isFinite(value) ? Math.max(0, value) : 0;
+    } catch {
+      return 0;
+    }
+  };
+
+  const persistWatchProgress = (courseId: string, progress: Map<string, number>) => {
+    try {
+      const payload: Record<string, number> = {};
+      progress.forEach((value, key) => {
+        payload[key] = Math.max(0, Math.floor(value));
+      });
+      localStorage.setItem(`video-watch-seconds-${courseId}`, JSON.stringify(payload));
+    } catch {
+      // no-op
+    }
   };
 
   const fetchQuizSubmissions = async (courseId: string) => {
@@ -637,6 +663,8 @@ const CourseLearnPage = ({ id }: { id: string }) => {
   useEffect(() => {
     setQuizDialogOpen(false)
     setQuizError(null)
+    setVideoCurrentTime(0)
+    setVideoDuration(0)
   }, [activeContent])
 
   // Track video play when active content changes to a video
@@ -713,6 +741,16 @@ const CourseLearnPage = ({ id }: { id: string }) => {
         if (!(window as any).ytPlayers[activeContent.id]) {
           try {
             (window as any).ytPlayers[activeContent.id] = new (window as any).YT.Player(`youtube-player-${activeContent.id}`, {
+              playerVars: {
+                controls: 0,
+                disablekb: 1,
+                fs: 0,
+                rel: 0,
+                modestbranding: 1,
+                iv_load_policy: 3,
+                playsinline: 1,
+                origin: window.location.origin,
+              },
               events: {
                 'onReady': (window as any).onPlayerReady,
                 'onStateChange': (window as any).onPlayerStateChange
@@ -731,9 +769,28 @@ const CourseLearnPage = ({ id }: { id: string }) => {
     setTimeout(initializePlayer, 1000);
   };
 
-  // Set up player ready handler
+// Set up player ready handler
   (window as any).onPlayerReady = (event: any) => {
+    try {
+      const player = event?.target;
+      const duration = player?.getDuration ? Number(player.getDuration()) : 0;
+      if (Number.isFinite(duration) && duration > 0) {
+        setVideoDuration(duration);
+      }
 
+      if (activeContent?.url && course) {
+        const videoId = extractYouTubeVideoId(activeContent.url);
+        if (videoId) {
+          const lastWatched = videoWatchTime.get(videoId) ?? getStoredWatchProgress(course.id.toString(), videoId);
+          if (lastWatched > 0 && player?.seekTo) {
+            player.seekTo(lastWatched, true);
+            setVideoCurrentTime(lastWatched);
+          }
+        }
+      }
+    } catch {
+      // no-op
+    }
   };
 
   // Set up state change handler
@@ -810,6 +867,29 @@ const CourseLearnPage = ({ id }: { id: string }) => {
     }
   }, [id]);
 
+  // Initialize watch progress (seconds) from localStorage
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(`video-watch-seconds-${id}`);
+      if (raw) {
+        const parsed = JSON.parse(raw) as Record<string, number>;
+        const next = new Map<string, number>();
+        Object.entries(parsed || {}).forEach(([videoId, seconds]) => {
+          const safeSeconds = Number.isFinite(seconds) ? Math.max(0, Number(seconds)) : 0;
+          next.set(videoId, safeSeconds);
+        });
+        setVideoWatchTime(next);
+      }
+    } catch {
+      setVideoWatchTime(new Map());
+    }
+  }, [id]);
+
+  // Persist watch progress to localStorage
+  useEffect(() => {
+    persistWatchProgress(id, videoWatchTime);
+  }, [id, videoWatchTime]);
+
   // Initialize downloaded PDFs from localStorage
   useEffect(() => {
     const savedDownloadedPDFs = localStorage.getItem(`downloaded-pdfs-${id}`);
@@ -875,7 +955,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
     }
   }, [course, quizSubmissions, certificateChecked]);
 
-  // Periodically check video completion status for better reliability
+  // Periodically enforce anti-skip and update custom progress bar
   useEffect(() => {
     // Only run for video content
     if (activeContent?.type !== "video" || !activeContent.url) return;
@@ -885,22 +965,51 @@ const CourseLearnPage = ({ id }: { id: string }) => {
 
     // Check if video is already marked as completed
     const isAlreadyCompleted = completedVideos.has(videoId);
-    if (isAlreadyCompleted) return;
+
+    const initialWatched = videoWatchTime.get(videoId) ?? getStoredWatchProgress(id, videoId);
+    if (initialWatched > 0) {
+      setVideoCurrentTime(initialWatched);
+    } else {
+      setVideoCurrentTime(0);
+    }
 
     let intervalId: NodeJS.Timeout | null = null;
 
     // Set up interval to periodically check video progress
     intervalId = setInterval(() => {
-      // First check if we have the YouTube player API and player instance
       if ((window as any).ytPlayers && (window as any).ytPlayers[activeContent.id]) {
         try {
           const player = (window as any).ytPlayers[activeContent.id];
           if (player && player.getCurrentTime && player.getDuration) {
             const currentTime = player.getCurrentTime();
             const duration = player.getDuration();
+            const watchedLimit = videoWatchTime.get(videoId) ?? getStoredWatchProgress(id, videoId);
+
+            if (duration > 0) {
+              setVideoDuration(duration);
+            }
+
+            // Block forward seek beyond watched checkpoint + small tolerance.
+            // This still allows seeking backward or jumping forward only up to last watched second.
+            const hardLimit = watchedLimit + 1.5;
+            if (!isAlreadyCompleted && currentTime > hardLimit) {
+              player.seekTo(watchedLimit, true);
+              setVideoCurrentTime(watchedLimit);
+              return;
+            }
+
+            setVideoCurrentTime(currentTime);
+
+            if (currentTime > watchedLimit) {
+              setVideoWatchTime((prev) => {
+                const next = new Map(prev);
+                next.set(videoId, currentTime);
+                return next;
+              });
+            }
 
             // If video is near the end (within 2 seconds), mark as completed
-            if (duration > 0 && (duration - currentTime) <= 2) {
+            if (!isAlreadyCompleted && duration > 0 && (duration - currentTime) <= 2) {
               // Mark video as completed and update state immediately
               const newCompletedVideos = new Set(completedVideos);
               newCompletedVideos.add(videoId);
@@ -943,7 +1052,6 @@ const CourseLearnPage = ({ id }: { id: string }) => {
 
         }
       }
-      // If we don't have the player API yet, we still check localStorage in the render function
     }, 1000); // Check every second
 
     return () => {
@@ -951,7 +1059,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
         clearInterval(intervalId);
       }
     };
-  }, [activeContent, completedVideos, course]);
+  }, [activeContent, completedVideos, course, id, videoWatchTime]);
 
   // Periodically check PDF download status for better reliability
   useEffect(() => {
@@ -1000,6 +1108,29 @@ const CourseLearnPage = ({ id }: { id: string }) => {
     )
   }
 
+  const formatTime = (seconds: number): string => {
+    const safe = Math.max(0, Math.floor(seconds || 0));
+    const mm = Math.floor(safe / 60);
+    const ss = safe % 60;
+    return `${mm}:${ss.toString().padStart(2, "0")}`;
+  };
+
+  const handleVideoSeek = (contentId: number, nextTime: number) => {
+    if (!activeContent?.url) return;
+
+    const videoId = extractYouTubeVideoId(activeContent.url);
+    if (!videoId) return;
+
+    const player = (window as any).ytPlayers?.[contentId];
+    if (!player?.seekTo) return;
+
+    const watchedLimit = videoWatchTime.get(videoId) ?? getStoredWatchProgress(id, videoId);
+    const allowedTarget = Math.min(nextTime, watchedLimit);
+
+    player.seekTo(allowedTarget, true);
+    setVideoCurrentTime(allowedTarget);
+  };
+
   const renderContent = (content: Course["contents"][0]) => {
     switch (content.type) {
       case "video":
@@ -1008,9 +1139,8 @@ const CourseLearnPage = ({ id }: { id: string }) => {
         const youtubeId = extractYouTubeVideoId(videoUrl);
 
         if (youtubeId) {
-          // Create YouTube embed URL with parameters to disable seeking and other controls
-          // Completely hide controls to prevent any skipping
-          videoUrl = `https://www.youtube.com/embed/${youtubeId}?controls=0&disablekb=1&fs=0&rel=0&modestbranding=1&playsinline=1&autoplay=0&loop=0&enablejsapi=1&iv_load_policy=3&cc_load_policy=0&cc_lang_pref=&disable_polymer=false&end=&start=0&widget_referrer=&origin=${window.location.origin}`;
+          // Use minimal branding embed and custom controls in app.
+          videoUrl = `https://www.youtube-nocookie.com/embed/${youtubeId}?controls=0&disablekb=1&fs=0&rel=0&modestbranding=1&playsinline=1&autoplay=0&loop=0&enablejsapi=1&iv_load_policy=3&origin=${window.location.origin}`;
         }
 
         // Check if this video has been completed - check both state and localStorage
@@ -1056,31 +1186,58 @@ const CourseLearnPage = ({ id }: { id: string }) => {
         }
 
         return (
-          <div className="w-full aspect-video">
-            <iframe
-              id={`youtube-player-${content.id}`}
-              src={videoUrl}
-              className="w-full h-full rounded-lg"
-              allowFullScreen={false}
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              onLoad={() => {
-                // Track video play when iframe loads
-                if (window.studentActivityTracker && content.url) {
-                  const videoId = extractYouTubeVideoId(content.url);
-                  if (videoId && !trackedVideos.has(videoId)) {
-                    window.studentActivityTracker.trackVideoPlay(videoId, content.url);
-                    setTrackedVideos(prev => new Set(prev).add(videoId));
+          <div className="w-full">
+            <div className="aspect-video">
+              <iframe
+                id={`youtube-player-${content.id}`}
+                src={videoUrl}
+                className="w-full h-full rounded-lg"
+                allowFullScreen={false}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                onLoad={() => {
+                  // Track video play when iframe loads
+                  if (window.studentActivityTracker && content.url) {
+                    const videoId = extractYouTubeVideoId(content.url);
+                    if (videoId && !trackedVideos.has(videoId)) {
+                      window.studentActivityTracker.trackVideoPlay(videoId, content.url);
+                      setTrackedVideos(prev => new Set(prev).add(videoId));
+                    }
                   }
-                }
 
-                // Try to initialize YouTube player after iframe loads
-                setTimeout(() => {
-                  if ((window as any).YT && (window as any).YT.Player) {
-                    initializeYouTubePlayers();
-                  }
-                }, 500);
-              }}
-            />
+                  // Try to initialize YouTube player after iframe loads
+                  setTimeout(() => {
+                    if ((window as any).YT && (window as any).YT.Player) {
+                      initializeYouTubePlayers();
+                    }
+                  }, 500);
+                }}
+              />
+            </div>
+
+            <div className="mt-3 space-y-2">
+              <input
+                type="range"
+                min={0}
+                max={Math.max(0, Math.floor(videoDuration || 0))}
+                value={Math.min(Math.floor(videoCurrentTime), Math.floor(videoDuration || 0))}
+                onChange={(event) => handleVideoSeek(content.id, Number(event.target.value))}
+                className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-slate-200 accent-blue-600 dark:bg-slate-700"
+              />
+              <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-300">
+                <span>{formatTime(videoCurrentTime)}</span>
+                <span>
+                  Last unlocked: {formatTime(
+                    (() => {
+                      const vid = content.url ? extractYouTubeVideoId(content.url) : null;
+                      if (!vid) return 0;
+                      return videoWatchTime.get(vid) ?? getStoredWatchProgress(id, vid);
+                    })()
+                  )}
+                </span>
+                <span>{formatTime(videoDuration)}</span>
+              </div>
+            </div>
+
             <div className="flex items-center justify-between mt-2">
               {isVideoCompleted ? (
                 <div className="flex items-center text-sm text-green-600 dark:text-green-400">
@@ -1091,7 +1248,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
                 </div>
               ) : (
                 <div className="text-sm text-yellow-600 dark:text-yellow-400">
-                  Please watch the entire video to proceed
+                  Progress bar hanya bisa maju sampai posisi terakhir yang sudah ditonton.
                 </div>
               )}
               <div className="text-xs text-gray-500 dark:text-gray-400">
