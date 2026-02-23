@@ -42,7 +42,14 @@ class User extends Authenticatable
 
     public function kursus()
     {
-        return $this->belongsToMany(Kursus::class, 'siswa_kursus', 'id_siswa', 'id_kursus');
+        return $this->belongsToMany(Kursus::class, 'siswa_kursus', 'id_siswa', 'id_kursus')
+            ->withTimestamps();
+    }
+
+    public function courses()
+    {
+        return $this->belongsToMany(Kursus::class, 'siswa_kursus', 'id_siswa', 'id_kursus')
+            ->withTimestamps();
     }
 
     public function quizSubmissions()

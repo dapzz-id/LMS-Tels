@@ -18,6 +18,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/Com
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/Components/ui/dropdown-menu"
 import { Progress } from "@/Components/ui/progress"
 import StudentSidebar from "@/Components/StudentSidebar"
+import { toAbsoluteAssetUrl } from "@/lib/utils"
 
 type DashboardStats = {
   active_courses: number
@@ -38,11 +39,12 @@ type DashboardCourse = {
 type PageProps = BasePageProps<{
   stats?: DashboardStats
   myCourses?: DashboardCourse[]
+  recentlyAccessedCourses?: DashboardCourse[]
 }>
 
 export default function MainDashboard() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
-  const { auth, stats, myCourses } = usePage<PageProps>().props
+  const { auth, stats, myCourses, recentlyAccessedCourses } = usePage<PageProps>().props
   const user = auth.user
 
   const studentName = useMemo(() => {
@@ -61,6 +63,7 @@ export default function MainDashboard() {
   }
 
   const courses = myCourses ?? []
+  const recentCourses = recentlyAccessedCourses ?? []
 
   return (
     <div className="flex min-h-screen">
@@ -208,8 +211,15 @@ export default function MainDashboard() {
                           key={course.id}
                           className="flex items-center gap-4 rounded-lg border border-slate-200 p-4 transition-colors hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800/50"
                         >
-                          <div className="rounded-lg bg-blue-100 p-3 dark:bg-blue-900">
-                            <BookOpen className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                          <div className="h-14 w-20 overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700">
+                            <img
+                              src={toAbsoluteAssetUrl(course.thumbnail, "/placeholder.svg")}
+                              alt={course.title}
+                              className="h-full w-full object-cover"
+                              onError={(event) => {
+                                event.currentTarget.src = "/placeholder.svg"
+                              }}
+                            />
                           </div>
                           <div className="flex-1">
                             <h3 className="font-medium text-slate-900 dark:text-slate-100">{course.title}</h3>
@@ -256,6 +266,33 @@ export default function MainDashboard() {
                         Assignments
                       </Link>
                     </Button> */}
+                  </CardContent>
+                </Card>
+                <Card className="rounded-xl border-0 bg-white shadow-sm dark:bg-slate-900">
+                  <CardHeader>
+                    <CardTitle className="text-xl">Recently Accessed</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {recentCourses.length === 0 ? (
+                      <p className="text-sm text-slate-500 dark:text-slate-400">
+                        Belum ada aktivitas course terbaru.
+                      </p>
+                    ) : (
+                      <div className="space-y-3">
+                        {recentCourses.map((course) => (
+                          <Link
+                            key={course.id}
+                            href={`/dashboard/courses/${course.id}`}
+                            className="block rounded-lg border border-slate-200 p-3 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800/50"
+                          >
+                            <p className="text-sm font-medium text-slate-900 dark:text-slate-100 line-clamp-1">{course.title}</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                              Last access: {course.last_activity_at ? new Date(course.last_activity_at).toLocaleString() : "-"}
+                            </p>
+                          </Link>
+                        ))}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
 

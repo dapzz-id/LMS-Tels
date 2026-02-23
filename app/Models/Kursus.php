@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class Kursus extends Model
 {
@@ -115,5 +117,39 @@ class Kursus extends Model
             5 => 'Expert',
             default => 'Not Specified'
         };
+    }
+
+    public function getUrlThumbnailAttribute($value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        $thumbnail = trim((string) $value);
+
+        if ($thumbnail === '') {
+            return null;
+        }
+
+        if (
+            Str::startsWith($thumbnail, ['http://', 'https://', '//', 'data:', 'blob:'])
+        ) {
+            return $thumbnail;
+        }
+
+        if (Str::startsWith($thumbnail, '/storage/')) {
+            return url($thumbnail);
+        }
+
+        if (Str::startsWith($thumbnail, 'storage/')) {
+            $relativePath = Str::after($thumbnail, 'storage/');
+            return url(Storage::url($relativePath));
+        }
+
+        if (Str::startsWith($thumbnail, '/')) {
+            return url($thumbnail);
+        }
+
+        return url(Storage::url($thumbnail));
     }
 }

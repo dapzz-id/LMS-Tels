@@ -5,6 +5,43 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+export function toAbsoluteAssetUrl(path?: string | null, fallback = ""): string {
+  if (!path) {
+    return fallback
+  }
+
+  const normalizedPath = path.trim()
+
+  if (!normalizedPath) {
+    return fallback
+  }
+
+  if (
+    normalizedPath.startsWith("http://") ||
+    normalizedPath.startsWith("https://") ||
+    normalizedPath.startsWith("//") ||
+    normalizedPath.startsWith("data:") ||
+    normalizedPath.startsWith("blob:")
+  ) {
+    return normalizedPath
+  }
+
+  const withLeadingSlash = normalizedPath.startsWith("/")
+    ? normalizedPath
+    : `/${normalizedPath}`
+
+  if (typeof window !== "undefined" && window.location?.origin) {
+    return `${window.location.origin}${withLeadingSlash}`
+  }
+
+  const appUrl = (import.meta.env.VITE_APP_URL || "").replace(/\/+$/, "")
+  if (appUrl) {
+    return `${appUrl}${withLeadingSlash}`
+  }
+
+  return withLeadingSlash
+}
+
 /**
  * Render mathematical equations using MathJax
  * @param element - The DOM element containing LaTeX equations

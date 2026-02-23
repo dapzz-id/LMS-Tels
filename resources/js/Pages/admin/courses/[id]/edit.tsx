@@ -20,7 +20,7 @@ import axios from "axios"
 import { getFirstMessage } from "@/lib/api-messages"
 import { RadioGroup, RadioGroupItem } from "@/Components/ui/radio-group"
 import { Badge } from "@/Components/ui/badge"
-import { cn } from "@/lib/utils"
+import { cn, toAbsoluteAssetUrl } from "@/lib/utils"
 
 interface Mapel {
   id: number
@@ -357,7 +357,6 @@ function mapCourseToFormValues(course: Props["course"]): CourseFormValues {
 }
 
 export default function EditCoursePage({ course, mapel, availableClasses = [] }: Props) {
-  const API_BASE_URL = import.meta.env.VITE_APP_URL;
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [activeTab, setActiveTab] = useState<EditTab>("details")
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null)
@@ -370,20 +369,7 @@ export default function EditCoursePage({ course, mapel, availableClasses = [] }:
 
   // Helper function to get thumbnail URL
   const getThumbnailUrl = (course: Course) => {
-    if (!course.url_thumbnail) return '/placeholder.svg?height=128&width=192'
-
-    // If it's already a full URL, return as is
-    if (course.url_thumbnail.startsWith('http')) {
-      return course.url_thumbnail
-    }
-
-    // If it's a storage path, convert to full URL
-    if (course.url_thumbnail.startsWith('storage/')) {
-      return `${API_BASE_URL}${course.url_thumbnail}`
-    }
-
-    // Otherwise, assume it's a relative path
-    return `${API_BASE_URL}${course.url_thumbnail}`
+    return toAbsoluteAssetUrl(course.url_thumbnail, '/placeholder.svg?height=128&width=192')
   }
 
   // Handle thumbnail change
@@ -430,7 +416,7 @@ export default function EditCoursePage({ course, mapel, availableClasses = [] }:
 
       if (response.data.status === 'success') {
         // Convert the storage path to a full URL
-        const fullUrl = `${API_BASE_URL}${response.data.url}`
+        const fullUrl = toAbsoluteAssetUrl(response.data.url)
         form.setValue(`pembahasan.${pembahasanIndex}.contents.${contentIndex}.url`, fullUrl)
         toast.success(getFirstMessage(response.data, 'PDF uploaded successfully'))
       } else {
@@ -1187,7 +1173,7 @@ export default function EditCoursePage({ course, mapel, availableClasses = [] }:
                                                             });
 
                                                             if (response.data.status === 'success') {
-                                                              const fullUrl = `${API_BASE_URL}${response.data.url}`;
+                                                              const fullUrl = toAbsoluteAssetUrl(response.data.url);
                                                               const currentQuizData = form.getValues(`pembahasan.${pembahasanIndex}.contents.${contentIndex}.quiz_data`);
                                                               if (currentQuizData) {
                                                                 const updatedQuestions = [...currentQuizData.questions];

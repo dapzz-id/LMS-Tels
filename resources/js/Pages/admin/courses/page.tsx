@@ -41,6 +41,7 @@ import { toast } from "sonner"
 import { getFirstMessage } from "@/lib/api-messages"
 import { Link } from "@inertiajs/react"
 import { Toaster } from "sonner"
+import { toAbsoluteAssetUrl } from "@/lib/utils"
 
 interface Course {
   id: number;
@@ -62,8 +63,6 @@ interface Props {
 }
 
 export default function CoursesPage({ courses = [], availableClasses = [] }: Props) {
-  // Use the same approach as the student dashboard
-  const API_BASE_URL = import.meta.env.VITE_APP_URL || '';
   const [searchQuery, setSearchQuery] = useState("")
   const [departmentFilter, setDepartmentFilter] = useState("all")
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
@@ -250,7 +249,7 @@ export default function CoursesPage({ courses = [], availableClasses = [] }: Pro
                           <div className="flex items-center gap-3">
                             <Avatar className="h-9 w-9">
                               <AvatarImage
-                                src={API_BASE_URL + course.url_thumbnail || 'https://placehold.co/600x400/e2e8f0/64748b?text=No+Image'}
+                                src={toAbsoluteAssetUrl(course.url_thumbnail, 'https://placehold.co/600x400/e2e8f0/64748b?text=No+Image')}
                                 alt={course.judul_kursus}
                                 onError={(e) => {
                                   e.currentTarget.src = 'https://placehold.co/600x400/e2e8f0/64748b?text=No+Image';

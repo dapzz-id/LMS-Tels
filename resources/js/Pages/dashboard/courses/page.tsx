@@ -33,6 +33,7 @@ import { Progress } from "@/Components/ui/progress"
 import { Badge } from "@/Components/ui/badge"
 import StudentSidebar from "@/Components/StudentSidebar"
 import { toast } from "sonner"
+import { toAbsoluteAssetUrl } from "@/lib/utils"
 
 import Swal from "sweetalert2"
 import axios from "axios"
@@ -68,7 +69,6 @@ interface Department {
 const StudentCoursesPage = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
-  const API_BASE_URL = import.meta.env.VITE_APP_URL || ''
   const FALLBACK_THUMBNAIL = 'https://placehold.co/600x400/e2e8f0/64748b?text=No+Image'
   const { auth } = usePage().props as any
   const user = auth.user
@@ -167,10 +167,7 @@ const StudentCoursesPage = () => {
   }
 
   const getCourseThumbnail = (thumbnail?: string) => {
-    if (!thumbnail) return FALLBACK_THUMBNAIL
-    if (thumbnail.startsWith('http://') || thumbnail.startsWith('https://')) return thumbnail
-    if (thumbnail.startsWith('/')) return `${API_BASE_URL}${thumbnail}`
-    return `${API_BASE_URL}/${thumbnail}`.replace(/([^:]\/)\/+/g, '$1')
+    return toAbsoluteAssetUrl(thumbnail, FALLBACK_THUMBNAIL)
   }
 
   if (loading) {

@@ -5,6 +5,7 @@ import { Head, router, usePage } from "@inertiajs/react"
 import axios from "axios"
 import { toast } from "sonner"
 import { getFirstMessage } from "@/lib/api-messages"
+import { toAbsoluteAssetUrl } from "@/lib/utils"
 import { Button } from "@/Components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/Components/ui/card"
 import { Badge } from "@/Components/ui/badge"
@@ -576,8 +577,6 @@ const CourseLearnPage = ({ id }: { id: string }) => {
       router.get(route("student.courses"))
     }
   }
-
-  const BASE_URL = import.meta.env.BASE_URL;
 
   // Update the useEffect for quiz completion
   useEffect(() => {
@@ -1489,7 +1488,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
               <div className="flex items-center gap-3">
                 <div className="relative">
                   <img
-                    src={BASE_URL + course.url_thumbnail || "/placeholder.svg"}
+                    src={toAbsoluteAssetUrl(course.url_thumbnail, "/placeholder.svg")}
                     alt={course.judul_kursus}
                     className="object-cover w-10 h-10 rounded-lg ring-2 ring-blue-100 dark:ring-blue-800"
                   />

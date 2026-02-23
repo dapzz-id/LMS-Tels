@@ -40,7 +40,6 @@ import {
   DropdownMenuTrigger,
 } from "@/Components/ui/dropdown-menu"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/Components/ui/table"
-import { toast } from "sonner"
 
 interface Grade {
   id: number
@@ -137,25 +136,6 @@ export default function GradesPage() {
         return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
       default:
         return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
-    }
-  }
-
-  // Function to download certificate
-  const handleDownloadCertificate = async (certificateId: number) => {
-    try {
-      // Create a temporary link element
-      const link = document.createElement('a');
-      link.href = route('student.certificates.download', certificateId);
-      link.target = '_blank';
-      link.style.display = 'none';
-
-      // Append to the body, click and remove
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch (error) {
-      
-      toast.error('Failed to download certificate. Please try again.');
     }
   }
 
@@ -390,11 +370,13 @@ export default function GradesPage() {
                                   </Button>
                                   <Button
                                     size="sm"
-                                    onClick={() => handleDownloadCertificate(certificate.id)}
+                                    asChild
                                     className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white"
                                   >
-                                    <Download className="h-4 w-4 mr-1" />
-                                    Download
+                                    <a href={route('student.certificates.download', certificate.id)}>
+                                      <Download className="h-4 w-4 mr-1" />
+                                      Download
+                                    </a>
                                   </Button>
                                 </div>
                               </div>

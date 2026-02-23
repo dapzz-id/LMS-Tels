@@ -3,10 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\CourseContent;
-use App\Models\Kursus;
 use App\Models\ProgressCourse;
 use App\Models\QuizSubmission;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -18,24 +18,33 @@ class StudentDashboardController extends Controller
 
         abort_unless($user && $user->tipe_user === 'siswa', 403);
 
-        $courses = Kursus::query()
+        $latestProgressSubquery = ProgressCourse::query()
+            ->select('id_kursus', DB::raw('MAX(updated_at) as last_activity_at'))
+            ->where('id_siswa', $user->id)
+            ->groupBy('id_kursus');
+
+        $courses = $user->courses()
             ->with([
                 'teacher:id,nama_lengkap',
                 'mapel:id,nama_mapel',
             ])
-            ->whereHas('siswa', function ($query) use ($user) {
-                $query->where('users.id', $user->id);
+            ->leftJoinSub($latestProgressSubquery, 'latest_progress', function ($join) {
+                $join->on('kursus.id', '=', 'latest_progress.id_kursus');
             })
-            ->latest()
-            ->get([
-                'id',
-                'teacher_id',
-                'id_mapel',
-                'judul_kursus',
-                'deskripsi_kursus',
-                'url_thumbnail',
-                'created_at',
-            ]);
+            ->select([
+                'kursus.id',
+                'kursus.teacher_id',
+                'kursus.id_mapel',
+                'kursus.judul_kursus',
+                'kursus.deskripsi_kursus',
+                'kursus.url_thumbnail',
+                'kursus.created_at',
+                'kursus.updated_at',
+                'latest_progress.last_activity_at',
+            ])
+            ->orderByDesc('latest_progress.last_activity_at')
+            ->orderByDesc('kursus.updated_at')
+            ->get();
 
         if ($courses->isEmpty()) {
             return Inertia::render('dashboard/page', [
@@ -46,6 +55,7 @@ class StudentDashboardController extends Controller
                     'average_grade' => 0,
                 ],
                 'myCourses' => [],
+                'recentlyAccessedCourses' => [],
             ]);
         }
 
@@ -81,9 +91,25 @@ class StudentDashboardController extends Controller
             }
 
             $courseKey = (string) $row->id_kursus;
-            $updatedAt = (string) $row->updated_at;
-            if (!isset($latestProgressAt[$courseKey]) || $updatedAt > $latestProgressAt[$courseKey]) {
+            $updatedAt = strtotime((string) $row->updated_at) ?: null;
+            if ($updatedAt !== null && (!isset($latestProgressAt[$courseKey]) || $updatedAt > $latestProgressAt[$courseKey])) {
                 $latestProgressAt[$courseKey] = $updatedAt;
+            }
+        }
+
+        $quizSubmissions = QuizSubmission::query()
+            ->where('user_id', $user->id)
+            ->whereIn('course_id', $courseIds)
+            ->get(['course_id', 'score', 'total_questions', 'submitted_at', 'updated_at', 'created_at']);
+
+        $latestQuizAt = [];
+        foreach ($quizSubmissions as $submission) {
+            $courseKey = (string) $submission->course_id;
+            $candidate = $submission->submitted_at ?? $submission->updated_at ?? $submission->created_at;
+            $timestamp = $candidate ? (strtotime((string) $candidate) ?: null) : null;
+
+            if ($timestamp !== null && (!isset($latestQuizAt[$courseKey]) || $timestamp > $latestQuizAt[$courseKey])) {
+                $latestQuizAt[$courseKey] = $timestamp;
             }
         }
 
@@ -95,7 +121,7 @@ class StudentDashboardController extends Controller
 
         $contentsByCourse = $courseContents->groupBy('kursus_id');
 
-        $myCourses = $courses->map(function ($course) use ($contentsByCourse, $progressBySub, $progressThresholds, $latestProgressAt) {
+        $myCourses = $courses->map(function ($course) use ($contentsByCourse, $progressBySub, $progressThresholds, $latestProgressAt, $latestQuizAt) {
             $contents = $contentsByCourse->get($course->id, collect());
             $totalContent = $contents->count();
 
@@ -111,20 +137,37 @@ class StudentDashboardController extends Controller
                 ? (int) round(($completedContent / $totalContent) * 100)
                 : 0;
 
+            $courseKey = (string) $course->id;
+            $progressTimestamp = $latestProgressAt[$courseKey] ?? null;
+            $quizTimestamp = $latestQuizAt[$courseKey] ?? null;
+            $queryTimestamp = $course->last_activity_at ? (strtotime((string) $course->last_activity_at) ?: null) : null;
+
+            $lastActivityTimestamp = collect([$progressTimestamp, $quizTimestamp, $queryTimestamp])
+                ->filter(fn ($value) => is_int($value))
+                ->max();
+
+            $lastActivityAt = $lastActivityTimestamp
+                ? now()->setTimestamp((int) $lastActivityTimestamp)->toIso8601String()
+                : null;
+
             return [
                 'id' => $course->id,
                 'title' => $course->judul_kursus,
                 'teacher_name' => $course->teacher?->nama_lengkap ?? 'Teacher',
                 'progress' => $progressPercentage,
                 'thumbnail' => $course->url_thumbnail,
-                'last_activity_at' => $latestProgressAt[(string) $course->id] ?? null,
+                'last_activity_at' => $lastActivityAt,
             ];
-        })->values();
+        })
+            ->sortByDesc(function (array $course) {
+                return strtotime((string) ($course['last_activity_at'] ?? '1970-01-01T00:00:00Z')) ?: 0;
+            })
+            ->values();
 
-        $quizSubmissions = QuizSubmission::query()
-            ->where('user_id', $user->id)
-            ->whereIn('course_id', $courseIds)
-            ->get(['score', 'total_questions']);
+        $recentlyAccessedCourses = $myCourses
+            ->filter(fn (array $course) => !empty($course['last_activity_at']))
+            ->take(5)
+            ->values();
 
         $assignmentDone = (int) $quizSubmissions->count();
         $averageGrade = $quizSubmissions->count() > 0
@@ -143,7 +186,7 @@ class StudentDashboardController extends Controller
                 'average_grade' => $averageGrade,
             ],
             'myCourses' => $myCourses,
+            'recentlyAccessedCourses' => $recentlyAccessedCourses,
         ]);
     }
 }
-

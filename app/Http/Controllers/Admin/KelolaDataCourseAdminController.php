@@ -577,12 +577,13 @@ class KelolaDataCourseAdminController extends Controller
             }
 
             // Handle thumbnail upload
-            $thumbnailUrl = $kursus->url_thumbnail; // Default to existing thumbnail
+            $existingThumbnail = $kursus->getRawOriginal('url_thumbnail');
+            $thumbnailUrl = $existingThumbnail; // Default to existing thumbnail
 
             if ($request->hasFile('thumbnail')) {
                 // Delete old thumbnail if it exists and is stored locally
-                if ($kursus->url_thumbnail && str_starts_with($kursus->url_thumbnail, '/storage/')) {
-                    $oldPath = ltrim(str_replace('/storage/', '', $kursus->url_thumbnail), '/');
+                if ($existingThumbnail && str_starts_with($existingThumbnail, '/storage/')) {
+                    $oldPath = ltrim(str_replace('/storage/', '', $existingThumbnail), '/');
                     Storage::disk('public')->delete($oldPath);
                 }
 
@@ -594,8 +595,8 @@ class KelolaDataCourseAdminController extends Controller
                 }
             } elseif (isset($input['keep_existing_thumbnail']) && !$input['keep_existing_thumbnail']) {
                 // User wants to remove thumbnail
-                if ($kursus->url_thumbnail && str_starts_with($kursus->url_thumbnail, '/storage/')) {
-                    $oldPath = ltrim(str_replace('/storage/', '', $kursus->url_thumbnail), '/');
+                if ($existingThumbnail && str_starts_with($existingThumbnail, '/storage/')) {
+                    $oldPath = ltrim(str_replace('/storage/', '', $existingThumbnail), '/');
                     Storage::disk('public')->delete($oldPath);
                 }
                 $thumbnailUrl = null;
@@ -877,8 +878,9 @@ class KelolaDataCourseAdminController extends Controller
     {
         try {
             // Delete associated files before deleting the course
-            if ($kursus->url_thumbnail && str_starts_with($kursus->url_thumbnail, '/storage/')) {
-                $thumbnailPath = ltrim(str_replace('/storage/', '', $kursus->url_thumbnail), '/');
+            $thumbnail = $kursus->getRawOriginal('url_thumbnail');
+            if ($thumbnail && str_starts_with($thumbnail, '/storage/')) {
+                $thumbnailPath = ltrim(str_replace('/storage/', '', $thumbnail), '/');
                 Storage::disk('public')->delete($thumbnailPath);
             }
 

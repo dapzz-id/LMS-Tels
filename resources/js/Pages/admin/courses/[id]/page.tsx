@@ -17,6 +17,7 @@ import {
   ChevronRight,
 } from "lucide-react"
 import { useState } from "react"
+import { toAbsoluteAssetUrl } from "@/lib/utils"
 
 interface Mapel {
   id: number
@@ -74,34 +75,12 @@ interface Props {
 }
 
 export default function ViewCoursePage({ course }: Props) {
-  // Use the same approach as the student dashboard
-  const API_BASE_URL = import.meta.env.VITE_APP_URL || '';
   const [expandedSections, setExpandedSections] = useState<Record<number, boolean>>({})
 
   // Helper function to construct thumbnail URL safely
   const getThumbnailUrl = (course: Course) => {
-    if (!course.url_thumbnail) {
-      return '/placeholder.svg?height=192&width=384';
-    }
-
-    // If the URL already starts with http/https, use it as is
-    if (course.url_thumbnail.startsWith('http://') || course.url_thumbnail.startsWith('https://')) {
-      return course.url_thumbnail;
-    }
-
-    // If it starts with storage/, add the API_BASE_URL
-    if (course.url_thumbnail.startsWith('storage/')) {
-      return API_BASE_URL + course.url_thumbnail;
-    }
-
-    // If it's a relative path, add the API_BASE_URL
-    if (course.url_thumbnail.startsWith('/')) {
-      return API_BASE_URL + course.url_thumbnail;
-    }
-
-    // Default case: add API_BASE_URL
-    return API_BASE_URL + course.url_thumbnail;
-  };
+    return toAbsoluteAssetUrl(course.url_thumbnail, '/placeholder.svg?height=192&width=384')
+  }
 
 
 

@@ -28,10 +28,6 @@ interface Certificate {
 export default function CertificateDetailsPage({ certificate }: { certificate: Certificate }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  const handleDownload = () => {
-    router.get(route('student.certificates.download', certificate.id));
-  };
-
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800">
       <StudentSidebar
@@ -154,12 +150,14 @@ export default function CertificateDetailsPage({ certificate }: { certificate: C
                 </div>
 
                 <Button
+                  asChild
                   className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white py-6 text-lg shadow-lg hover:shadow-xl transition-all duration-300"
                   size="lg"
-                  onClick={handleDownload}
                 >
-                  <DownloadIcon className="mr-3 h-6 w-6" />
-                  Download Official Certificate
+                  <a href={route('student.certificates.download', certificate.id)}>
+                    <DownloadIcon className="mr-3 h-6 w-6" />
+                    Download Official Certificate
+                  </a>
                 </Button>
               </div>
             </div>

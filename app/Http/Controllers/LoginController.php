@@ -80,10 +80,8 @@ class LoginController extends Controller
     {
         Auth::logout();
         $request->session()->invalidate();
-        $request->session()->regenerate();
-
         $request->session()->regenerateToken();
 
-        return redirect('/login');
+        return Inertia::location('/login');
     }
 }
