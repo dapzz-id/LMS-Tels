@@ -68,7 +68,7 @@ class CourseController extends Controller
                 'mapel:id,nama_mapel',
                 'contents' => function($query) {
                     $query->orderBy('order')
-                          ->select(['id', 'kursus_id', 'sub_pembahasan_id', 'type', 'title', 'description', 'url', 'duration', 'quiz_data', 'one_submission_only', 'order']);
+                          ->select(['id', 'kursus_id', 'sub_pembahasan_id', 'type', 'title', 'description', 'url', 'quiz_data', 'one_submission_only', 'order']);
                 },
                 'sub_pembahasan'
             ])

@@ -244,7 +244,7 @@ class KelolaDataCourseAdminController extends Controller
                 'pembahasan.*.contents.*.title' => 'required|string|min:3',
                 'pembahasan.*.contents.*.description' => 'required|string|min:10',
                 'pembahasan.*.contents.*.url' => 'required_if:pembahasan.*.contents.*.type,video',
-                'pembahasan.*.contents.*.duration' => 'required_if:pembahasan.*.contents.*.type,video|integer|min:0',
+                'pembahasan.*.contents.*.duration' => 'nullable|integer|min:0',
                 'pembahasan.*.contents.*.is_required' => 'boolean',
                 'pembahasan.*.contents.*.points' => 'integer|min:0',
                 'pembahasan.*.contents.*.passing_score' => 'nullable|integer|min:0',

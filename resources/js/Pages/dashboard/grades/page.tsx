@@ -211,15 +211,15 @@ export default function GradesPage() {
           </div>
         </header>
 
-        <main className="flex-1 overflow-auto bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 p-6">
+        <main className="flex-1 overflow-auto bg-slate-50 dark:bg-slate-950 p-6">
           <div className="space-y-6 max-w-6xl mx-auto">
             {/* Header */}
             <div className="flex flex-col gap-4">
               <div>
-                <h1 className="text-4xl font-bold tracking-tight text-transparent bg-gradient-to-r from-blue-700 to-blue-500 bg-clip-text">
+                <h1 className="text-3xl font-bold tracking-tight text-transparent bg-gradient-to-r from-blue-700 to-blue-500 bg-clip-text">
                   My Grades & Certificates
                 </h1>
-                <p className="text-slate-600 dark:text-slate-400 text-lg mt-2">Track your academic performance and download your certificates</p>
+                <p className="text-slate-500 dark:text-slate-400">Track your academic performance and download your certificates</p>
               </div>
             </div>
 
@@ -315,7 +315,7 @@ export default function GradesPage() {
             {/* Certificates Section */}
             {activeTab === 'overview' || activeTab === 'certificates' ? (
               <div className="space-y-6">
-                <Card className="border-0 shadow-lg rounded-2xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-blue-100 dark:border-gray-700">
+                <Card className="border-0 shadow-sm rounded-xl bg-white dark:bg-slate-900">
                   <CardHeader>
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
@@ -418,65 +418,65 @@ export default function GradesPage() {
                 </Card>
               </div>
             ) : null
-          }
+            }
 
-          {/* Recent Quiz Results */}
-          <Card className="border-0 shadow-sm rounded-xl bg-white dark:bg-slate-900">
-            <CardHeader>
-              <CardTitle className="text-xl">Recent Quiz Results</CardTitle>
-              <CardDescription>Your most recent quiz submissions</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {grades.length === 0 ? (
-                <div className="text-center py-8">
-                  <FileText className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-                  <p className="text-slate-500 dark:text-slate-400">
-                    No quiz results yet. Complete some quizzes to see your results here.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {paginatedGrades.map((grade: Grade) => (
-                    <div key={grade.id} className="flex items-center justify-between p-4 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between">
-                          <h3 className="font-medium text-slate-900 dark:text-slate-100">{grade.quiz_title}</h3>
-                          <Badge className={getGradeBadgeColor(grade.letter_grade)}>
-                            {grade.letter_grade}
-                          </Badge>
+            {/* Recent Quiz Results */}
+            <Card className="border-0 shadow-sm rounded-xl bg-white dark:bg-slate-900">
+              <CardHeader>
+                <CardTitle className="text-xl">Recent Quiz Results</CardTitle>
+                <CardDescription>Your most recent quiz submissions</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {grades.length === 0 ? (
+                  <div className="text-center py-8">
+                    <FileText className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+                    <p className="text-slate-500 dark:text-slate-400">
+                      No quiz results yet. Complete some quizzes to see your results here.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {paginatedGrades.map((grade: Grade) => (
+                      <div key={grade.id} className="flex items-center justify-between p-4 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <h3 className="font-medium text-slate-900 dark:text-slate-100">{grade.quiz_title}</h3>
+                            <Badge className={getGradeBadgeColor(grade.letter_grade)}>
+                              {grade.letter_grade}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{grade.course_name}</p>
                         </div>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{grade.course_name}</p>
+                        <div className="ml-4 text-right">
+                          <p className="text-lg font-bold">{grade.score}%</p>
+                          <p className="text-sm text-slate-500 dark:text-slate-400">
+                            {new Date(grade.submitted_at).toLocaleDateString()}
+                          </p>
+                        </div>
                       </div>
-                      <div className="ml-4 text-right">
-                        <p className="text-lg font-bold">{grade.score}%</p>
-                        <p className="text-sm text-slate-500 dark:text-slate-400">
-                          {new Date(grade.submitted_at).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {grades.length > 0 && (
-                <div className="mt-4">
-                  <ClientPagination
-                    totalItems={grades.length}
-                    currentPage={quizPage}
-                    perPage={quizPerPage}
-                    onPageChange={setQuizPage}
-                    onPerPageChange={(value) => {
-                      setQuizPerPage(value)
-                      setQuizPage(1)
-                    }}
-                    itemLabel="quiz results"
-                  />
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </main>
-    </div>
+                    ))}
+                  </div>
+                )}
+                {grades.length > 0 && (
+                  <div className="mt-4">
+                    <ClientPagination
+                      totalItems={grades.length}
+                      currentPage={quizPage}
+                      perPage={quizPerPage}
+                      onPageChange={setQuizPage}
+                      onPerPageChange={(value) => {
+                        setQuizPerPage(value)
+                        setQuizPage(1)
+                      }}
+                      itemLabel="quiz results"
+                    />
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </main>
+      </div>
     </div>
   )
 }

@@ -32,7 +32,7 @@ export default function CertificatesPage({ certificates }: { certificates: Certi
   );
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800">
+    <div className="flex min-h-screen">
       <StudentSidebar
         active="certificates"
         isOpen={isSidebarOpen}
@@ -42,7 +42,7 @@ export default function CertificatesPage({ certificates }: { certificates: Certi
       <div className="flex-1 lg:pl-64">
         <Head title="My Certificates" />
 
-        <header className="sticky top-0 z-40 flex h-16 items-center border-b bg-white/80 px-4 backdrop-blur-sm dark:border-gray-800 dark:bg-gray-900/80 lg:px-6">
+        <header className="sticky top-0 z-40 flex h-16 items-center border-b bg-white px-4 dark:border-slate-800 dark:bg-slate-950 lg:px-6">
           <Button
             variant="ghost"
             size="icon"
@@ -55,20 +55,19 @@ export default function CertificatesPage({ certificates }: { certificates: Certi
           <h1 className="text-lg font-semibold text-gray-900 dark:text-white">My Certificates</h1>
         </header>
 
-        <main className="flex-1 overflow-auto">
-          <div className="container mx-auto px-4 py-8">
-            <div className="mb-8 text-center">
-              <div className="inline-flex items-center justify-center p-4 bg-blue-100 dark:bg-blue-900/30 rounded-full mb-6">
-                <Award className="h-12 w-12 text-blue-600 dark:text-blue-400" />
+        <main className="flex-1 overflow-auto bg-slate-50 dark:bg-slate-950 p-6">
+          <div className="space-y-6 max-w-6xl mx-auto">
+            <div className="flex flex-col gap-4">
+              <div>
+                <h1 className="text-3xl font-bold tracking-tight text-transparent bg-gradient-to-r from-blue-700 to-blue-500 bg-clip-text">
+                  My Certificates
+                </h1>
+                <p className="text-slate-500 dark:text-slate-400">View and download your course completion certificates</p>
               </div>
-              <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">My Certificates</h1>
-              <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-                View and download your course completion certificates. These certificates verify your achievements and can be shared with employers or added to your professional profiles.
-              </p>
             </div>
 
             {certificates.length === 0 ? (
-              <Card className="max-w-2xl mx-auto bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-blue-100 dark:border-gray-700">
+              <Card className="border-0 shadow-sm rounded-xl">
                 <CardHeader>
                   <div className="flex justify-center mb-4">
                     <div className="p-4 bg-gray-100 dark:bg-gray-700 rounded-full">
@@ -94,7 +93,7 @@ export default function CertificatesPage({ certificates }: { certificates: Certi
                 {paginatedCertificates.map((certificate) => (
                   <Card
                     key={certificate.id}
-                    className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-blue-100 dark:border-gray-700 hover:shadow-xl transition-all duration-300 rounded-2xl overflow-hidden"
+                    className="overflow-hidden transition-shadow hover:shadow-lg bg-white dark:bg-slate-900"
                   >
                     <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-4 text-white">
                       <div className="flex justify-between items-start">

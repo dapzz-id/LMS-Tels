@@ -418,7 +418,7 @@ export default function CalendarPage() {
   }
 
   return (
-    <div className="flex w-full h-screen overflow-hidden bg-blue-50/30 dark:bg-blue-950/90">
+    <div className="flex min-h-screen">
       <StudentSidebar
         active="courses"
         isOpen={isSidebarOpen}
@@ -426,35 +426,35 @@ export default function CalendarPage() {
       />
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto lg:pl-64">
-        {/* Header */}
-        <header className="sticky top-0 z-30 flex items-center px-4 bg-white border-b border-blue-100 h-14 dark:border-blue-800/30 dark:bg-blue-900/90 lg:px-6">
-          <Button variant="ghost" size="icon" className="mr-2 lg:hidden" onClick={() => setIsSidebarOpen(true)}>
-            <Menu className="w-5 h-5" />
-            <span className="sr-only">Toggle sidebar</span>
-          </Button>
+      <header className="sticky top-0 z-40 flex h-16 items-center border-b bg-white px-4 dark:border-slate-800 dark:bg-slate-950 lg:px-6">
+        <Button variant="ghost" size="icon" className="mr-2 lg:hidden" onClick={() => setIsSidebarOpen(true)}>
+          <Menu className="w-5 h-5" />
+          <span className="sr-only">Toggle sidebar</span>
+        </Button>
 
-          <div className="flex items-center w-full gap-2 md:ml-auto md:gap-4 lg:ml-0">
-            <form className="flex-1 ml-auto md:flex-initial">
-              <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500 dark:text-blue-300/70" />
-                <Input
-                  type="search"
-                  placeholder="Search events..."
-                  className="w-full rounded-lg bg-blue-50 pl-8 md:w-[240px] lg:w-[280px] dark:bg-blue-800/50"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
-            </form>
-          </div>
-        </header>
+        <div className="flex items-center w-full gap-2 md:ml-auto md:gap-4 lg:ml-0">
+          <form className="flex-1 ml-auto md:flex-initial">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500 dark:text-blue-300/70" />
+              <Input
+                type="search"
+                placeholder="Search events..."
+                className="w-full rounded-lg bg-blue-50 pl-8 md:w-[240px] lg:w-[280px] dark:bg-blue-800/50"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+          </form>
+        </div>
+      </header>
 
-        {/* Calendar Content */}
-        <div className="container p-4 mx-auto lg:p-6">
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold tracking-tight">Calendar</h1>
-            <p className="text-gray-500 dark:text-blue-300/70">Manage your schedule and upcoming events</p>
+      <main className="flex-1 overflow-auto bg-slate-50 dark:bg-slate-950 p-6">
+        <div className="space-y-6 max-w-6xl mx-auto">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-transparent bg-gradient-to-r from-blue-700 to-blue-500 bg-clip-text">
+              Calendar
+            </h1>
+            <p className="text-slate-500 dark:text-slate-400">Manage your schedule and upcoming events</p>
           </div>
 
           {/* Calendar Controls */}
@@ -573,24 +573,22 @@ export default function CalendarPage() {
                     return (
                       <div
                         key={index}
-                        className={`min-h-[100px] p-1 transition-colors ${
-                          !day.isCurrentMonth
-                            ? "bg-gray-50/50 text-gray-400 dark:bg-gray-900/10 dark:text-gray-600"
-                            : isSelected
-                              ? "bg-blue-50 dark:bg-blue-900/30"
-                              : "hover:bg-blue-50/50 dark:hover:bg-blue-900/10"
-                        } ${isToday ? "ring-2 ring-inset ring-blue-500" : ""}`}
+                        className={`min-h-[100px] p-1 transition-colors ${!day.isCurrentMonth
+                          ? "bg-gray-50/50 text-gray-400 dark:bg-gray-900/10 dark:text-gray-600"
+                          : isSelected
+                            ? "bg-blue-50 dark:bg-blue-900/30"
+                            : "hover:bg-blue-50/50 dark:hover:bg-blue-900/10"
+                          } ${isToday ? "ring-2 ring-inset ring-blue-500" : ""}`}
                         onClick={() => day.isCurrentMonth && setSelectedDay(day.day === selectedDay ? null : day.day)}
                       >
                         {day.isCurrentMonth ? (
                           <>
                             <div className="flex justify-between p-1">
                               <span
-                                className={`flex h-6 w-6 items-center justify-center rounded-full text-sm ${
-                                  isToday
-                                    ? "bg-blue-600 font-medium text-white"
-                                    : "font-medium text-gray-700 dark:text-gray-300"
-                                }`}
+                                className={`flex h-6 w-6 items-center justify-center rounded-full text-sm ${isToday
+                                  ? "bg-blue-600 font-medium text-white"
+                                  : "font-medium text-gray-700 dark:text-gray-300"
+                                  }`}
                               >
                                 {day.day}
                               </span>
@@ -604,25 +602,24 @@ export default function CalendarPage() {
                               {dayEvents.slice(0, 2).map((event, eventIndex) => (
                                 <div
                                   key={eventIndex}
-                                  className={`truncate rounded px-1 py-0.5 text-xs ${
-                                    event.courseColor === "blue"
-                                      ? "bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200"
-                                      : event.courseColor === "green"
-                                        ? "bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200"
-                                        : event.courseColor === "purple"
-                                          ? "bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-200"
-                                          : event.courseColor === "amber"
-                                            ? "bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200"
-                                            : event.courseColor === "indigo"
-                                              ? "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-200"
-                                              : event.courseColor === "pink"
-                                                ? "bg-pink-100 text-pink-800 dark:bg-pink-900/50 dark:text-pink-200"
-                                                : event.courseColor === "red"
-                                                  ? "bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-200"
-                                                  : event.courseColor === "yellow"
-                                                    ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-200"
-                                                    : "bg-gray-100 text-gray-800 dark:bg-gray-900/50 dark:text-gray-200"
-                                  }`}
+                                  className={`truncate rounded px-1 py-0.5 text-xs ${event.courseColor === "blue"
+                                    ? "bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200"
+                                    : event.courseColor === "green"
+                                      ? "bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200"
+                                      : event.courseColor === "purple"
+                                        ? "bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-200"
+                                        : event.courseColor === "amber"
+                                          ? "bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200"
+                                          : event.courseColor === "indigo"
+                                            ? "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-200"
+                                            : event.courseColor === "pink"
+                                              ? "bg-pink-100 text-pink-800 dark:bg-pink-900/50 dark:text-pink-200"
+                                              : event.courseColor === "red"
+                                                ? "bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-200"
+                                                : event.courseColor === "yellow"
+                                                  ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-200"
+                                                  : "bg-gray-100 text-gray-800 dark:bg-gray-900/50 dark:text-gray-200"
+                                    }`}
                                 >
                                   {event.title}
                                 </div>
@@ -691,25 +688,24 @@ export default function CalendarPage() {
                   <Card key={event.id} className="overflow-hidden transition-all duration-300 hover:shadow-md">
                     <div className="flex flex-col md:flex-row">
                       <div
-                        className={`w-full md:w-2 ${
-                          event.courseColor === "blue"
-                            ? "bg-blue-600"
-                            : event.courseColor === "green"
-                              ? "bg-green-600"
-                              : event.courseColor === "purple"
-                                ? "bg-purple-600"
-                                : event.courseColor === "amber"
-                                  ? "bg-amber-600"
-                                  : event.courseColor === "indigo"
-                                    ? "bg-indigo-600"
-                                    : event.courseColor === "pink"
-                                      ? "bg-pink-600"
-                                      : event.courseColor === "red"
-                                        ? "bg-red-600"
-                                        : event.courseColor === "yellow"
-                                          ? "bg-yellow-600"
-                                          : "bg-gray-600"
-                        }`}
+                        className={`w-full md:w-2 ${event.courseColor === "blue"
+                          ? "bg-blue-600"
+                          : event.courseColor === "green"
+                            ? "bg-green-600"
+                            : event.courseColor === "purple"
+                              ? "bg-purple-600"
+                              : event.courseColor === "amber"
+                                ? "bg-amber-600"
+                                : event.courseColor === "indigo"
+                                  ? "bg-indigo-600"
+                                  : event.courseColor === "pink"
+                                    ? "bg-pink-600"
+                                    : event.courseColor === "red"
+                                      ? "bg-red-600"
+                                      : event.courseColor === "yellow"
+                                        ? "bg-yellow-600"
+                                        : "bg-gray-600"
+                          }`}
                       ></div>
                       <div className="flex flex-col flex-1">
                         <CardHeader>
@@ -808,11 +804,10 @@ export default function CalendarPage() {
                     >
                       <div className="flex items-center gap-4">
                         <div
-                          className={`flex h-12 w-12 items-center justify-center rounded-full ${
-                            event.type === "assignment"
-                              ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
-                              : "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"
-                          }`}
+                          className={`flex h-12 w-12 items-center justify-center rounded-full ${event.type === "assignment"
+                            ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
+                            : "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"
+                            }`}
                         >
                           {event.type === "assignment" ? (
                             <FileText className="w-6 h-6" />

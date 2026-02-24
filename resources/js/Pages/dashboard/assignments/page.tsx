@@ -319,7 +319,7 @@ export default function AssignmentsPage() {
   }
 
   return (
-    <div className="flex w-full h-screen overflow-hidden bg-blue-50/30 dark:bg-blue-950/90">
+    <div className="flex min-h-screen">
       <StudentSidebar
         active="courses"
         isOpen={isSidebarOpen}
@@ -327,35 +327,35 @@ export default function AssignmentsPage() {
       />
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto lg:pl-64">
-        {/* Header */}
-        <header className="sticky top-0 z-30 flex items-center px-4 bg-white border-b border-blue-100 h-14 dark:border-blue-800/30 dark:bg-blue-900/90 lg:px-6">
-          <Button variant="ghost" size="icon" className="mr-2 lg:hidden" onClick={() => setIsSidebarOpen(true)}>
-            <Menu className="w-5 h-5" />
-            <span className="sr-only">Toggle sidebar</span>
-          </Button>
+      <header className="sticky top-0 z-40 flex h-16 items-center border-b bg-white px-4 dark:border-slate-800 dark:bg-slate-950 lg:px-6">
+        <Button variant="ghost" size="icon" className="mr-2 lg:hidden" onClick={() => setIsSidebarOpen(true)}>
+          <Menu className="w-5 h-5" />
+          <span className="sr-only">Toggle sidebar</span>
+        </Button>
 
-          <div className="flex items-center w-full gap-2 md:ml-auto md:gap-4 lg:ml-0">
-            <form className="flex-1 ml-auto md:flex-initial">
-              <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500 dark:text-blue-300/70" />
-                <Input
-                  type="search"
-                  placeholder="Search assignments..."
-                  className="w-full rounded-lg bg-blue-50 pl-8 md:w-[240px] lg:w-[280px] dark:bg-blue-800/50"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
-            </form>
-          </div>
-        </header>
+        <div className="flex items-center w-full gap-2 md:ml-auto md:gap-4 lg:ml-0">
+          <form className="flex-1 ml-auto md:flex-initial">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500 dark:text-blue-300/70" />
+              <Input
+                type="search"
+                placeholder="Search assignments..."
+                className="w-full rounded-lg bg-blue-50 pl-8 md:w-[240px] lg:w-[280px] dark:bg-blue-800/50"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+          </form>
+        </div>
+      </header>
 
-        {/* Assignments Content */}
-        <div className="container p-4 mx-auto lg:p-6">
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold tracking-tight">Assignments</h1>
-            <p className="text-gray-500 dark:text-blue-300/70">Manage and track all your assignments</p>
+      <main className="flex-1 overflow-auto bg-slate-50 dark:bg-slate-950 p-6">
+        <div className="space-y-6 max-w-6xl mx-auto">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-transparent bg-gradient-to-r from-blue-700 to-blue-500 bg-clip-text">
+              Assignments
+            </h1>
+            <p className="text-slate-500 dark:text-slate-400">Manage and track all your assignments</p>
           </div>
 
           {/* Tabs */}
