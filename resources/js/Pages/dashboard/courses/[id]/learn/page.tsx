@@ -1729,34 +1729,6 @@ const CourseLearnPage = ({ id }: { id: string }) => {
                         </div>
                       )}
 
-                      {/* Certificate Claiming Section */}
-                      {courseCompleted && (
-                        <div className="border border-gray-100 rounded-lg dark:border-gray-800 mt-4">
-                          <div className="p-3 bg-green-50 dark:bg-green-900/30 rounded-lg">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <Award className="w-5 h-5 text-green-600 dark:text-green-400" />
-                                <div>
-                                  <p className="text-sm font-medium text-green-800 dark:text-green-200">
-                                    Course Completed!
-                                  </p>
-                                  <p className="text-xs text-green-600 dark:text-green-400">
-                                    You're eligible for a certificate
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-                            <Button
-                              onClick={handleClaimCertificate}
-                              className="w-full mt-3 bg-green-600 hover:bg-green-700 text-white"
-                              disabled={certificateChecked && !certificateEligible}
-                            >
-                              <Award className="w-4 h-4 mr-2" />
-                              Claim Certificate
-                            </Button>
-                          </div>
-                        </div>
-                      )}
                     </div>
                   ))}
 
