@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Head, Link, router, usePage } from "@inertiajs/react"
 import {
   BookOpen,
@@ -34,6 +34,7 @@ import { Badge } from "@/Components/ui/badge"
 import StudentSidebar from "@/Components/StudentSidebar"
 import { toast } from "sonner"
 import { toAbsoluteAssetUrl } from "@/lib/utils"
+import ClientPagination from "@/Components/ui/client-pagination"
 
 import Swal from "sweetalert2"
 import axios from "axios"
@@ -77,6 +78,8 @@ const StudentCoursesPage = () => {
   const [departments, setDepartments] = useState<Department[]>([])
   const [loading, setLoading] = useState(true)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [perPage, setPerPage] = useState(6)
 
   useEffect(() => {
     const checkIfMobile = () => {
@@ -92,6 +95,10 @@ const StudentCoursesPage = () => {
       window.removeEventListener("resize", checkIfMobile)
     }
   }, [])
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [departments.length])
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -169,6 +176,14 @@ const StudentCoursesPage = () => {
   const getCourseThumbnail = (thumbnail?: string) => {
     return toAbsoluteAssetUrl(thumbnail, FALLBACK_THUMBNAIL)
   }
+
+  const flatCourses = useMemo(() => departments.flatMap((department) => department.courses), [departments])
+
+  const paginatedCourses = useMemo(() => {
+    return flatCourses.slice((currentPage - 1) * perPage, currentPage * perPage)
+  }, [flatCourses, currentPage, perPage])
+
+  const visibleDepartments = useMemo(() => groupCoursesByDepartment(paginatedCourses), [paginatedCourses])
 
   if (loading) {
     return (
@@ -279,7 +294,7 @@ const StudentCoursesPage = () => {
               </Card>
             ) : (
               <div className="space-y-8">
-                {departments.map((department) => (
+                {visibleDepartments.map((department) => (
                   <div key={department.id} className="space-y-4">
                     <div className="flex items-center justify-between">
                       <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
@@ -391,6 +406,19 @@ const StudentCoursesPage = () => {
                     )}
                   </div>
                 ))}
+                {flatCourses.length > 0 && (
+                  <ClientPagination
+                    totalItems={flatCourses.length}
+                    currentPage={currentPage}
+                    perPage={perPage}
+                    onPageChange={setCurrentPage}
+                    onPerPageChange={(value) => {
+                      setPerPage(value)
+                      setCurrentPage(1)
+                    }}
+                    itemLabel="courses"
+                  />
+                )}
               </div>
             )}
           </div>

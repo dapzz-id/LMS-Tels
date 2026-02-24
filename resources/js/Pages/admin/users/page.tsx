@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import {
   Users,
   Search,
@@ -35,6 +35,7 @@ import { Link, router } from "@inertiajs/react"
 import { Label } from "@/Components/ui/label"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/Components/ui/dialog"
 import { getFieldErrorMessage } from "@/lib/api-messages"
+import ClientPagination from "@/Components/ui/client-pagination"
 
 interface User {
   id: number
@@ -137,6 +138,8 @@ const normalizeImportError = (payload: any) => {
 export default function UsersPage({ users = [] }: Props) {
   const [searchQuery, setSearchQuery] = useState("")
   const [roleFilter, setRoleFilter] = useState<string>("all")
+  const [currentPage, setCurrentPage] = useState(1)
+  const [perPage, setPerPage] = useState(10)
 
   // Edit user modal state
   const [editUser, setEditUser] = useState<User | null>(null)
@@ -178,6 +181,15 @@ export default function UsersPage({ users = [] }: Props) {
 
     return matchesSearch && matchesRole
   })
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchQuery, roleFilter])
+
+  const paginatedUsers = filteredUsers.slice(
+    (currentPage - 1) * perPage,
+    currentPage * perPage,
+  )
 
   const openDeleteModal = (user: User, event?: React.MouseEvent) => {
     setOpenDropdownUserId(null);
@@ -490,11 +502,11 @@ export default function UsersPage({ users = [] }: Props) {
               <div className="p-4 border border-blue-200 rounded-lg bg-blue-50 dark:bg-blue-900/20 dark:border-blue-800">
                 <h4 className="mb-2 font-medium text-blue-800 dark:text-blue-200">Import Instructions</h4>
                 <ul className="space-y-1 text-xs text-blue-700 dark:text-blue-300">
-                  <li>• Download and use the template for best results</li>
-                  <li>• Required columns: nama_lengkap, username, email, tipe_user, password</li>
-                  <li>• User types: admin, siswa, guru</li>
-                  <li>• Class field is optional (for students only)</li>
-                  <li>• Duplicate usernames or emails will be skipped</li>
+                  <li>- Download and use the template for best results</li>
+                  <li>- Required columns: nama_lengkap, username, email, password, and one of: tipe_user/role/user_type</li>
+                  <li>- User types accepted: admin, guru or teacher, siswa or student</li>
+                  <li>- Class field is optional (for students only)</li>
+                  <li>- Duplicate usernames or emails will be skipped</li>
                 </ul>
                 <Button
                   type="button"
@@ -584,7 +596,7 @@ export default function UsersPage({ users = [] }: Props) {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filteredUsers.map((user) => (
+                    paginatedUsers.map((user) => (
                       <TableRow key={user.id}>
                         <TableCell>
                           <div className="flex items-center gap-3">
@@ -646,6 +658,21 @@ export default function UsersPage({ users = [] }: Props) {
                 </TableBody>
               </Table>
             </div>
+            {filteredUsers.length > 0 && (
+              <div className="mt-4">
+                <ClientPagination
+                  totalItems={filteredUsers.length}
+                  currentPage={currentPage}
+                  perPage={perPage}
+                  onPageChange={setCurrentPage}
+                  onPerPageChange={(value) => {
+                    setPerPage(value)
+                    setCurrentPage(1)
+                  }}
+                  itemLabel="users"
+                />
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

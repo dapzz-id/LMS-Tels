@@ -40,6 +40,7 @@ import {
   DropdownMenuTrigger,
 } from "@/Components/ui/dropdown-menu"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/Components/ui/table"
+import ClientPagination from "@/Components/ui/client-pagination"
 
 interface Grade {
   id: number
@@ -97,11 +98,24 @@ interface Props {
 export default function GradesPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('overview')
+  const [certificatePage, setCertificatePage] = useState(1)
+  const [certificatePerPage, setCertificatePerPage] = useState(6)
+  const [quizPage, setQuizPage] = useState(1)
+  const [quizPerPage, setQuizPerPage] = useState(5)
 
   const { auth } = usePage().props as any
   const user = auth.user
   const props = usePage().props as any
   const { grades, courseGrades, certificates, statistics } = props
+
+  const paginatedCertificates = certificates.slice(
+    (certificatePage - 1) * certificatePerPage,
+    certificatePage * certificatePerPage,
+  )
+  const paginatedGrades = grades.slice(
+    (quizPage - 1) * quizPerPage,
+    quizPage * quizPerPage,
+  )
 
   // Helper function to get grade color
   const getGradeColor = (grade: string) => {
@@ -332,7 +346,7 @@ export default function GradesPage() {
                       </div>
                     ) : (
                       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                        {certificates.map((certificate: Certificate) => (
+                        {paginatedCertificates.map((certificate: Certificate) => (
                           <Card
                             key={certificate.id}
                             className="bg-white dark:bg-gray-700/50 border border-blue-100 dark:border-gray-600 hover:shadow-lg transition-all duration-300 rounded-xl overflow-hidden"
@@ -385,6 +399,21 @@ export default function GradesPage() {
                         ))}
                       </div>
                     )}
+                    {certificates.length > 0 && (
+                      <div className="mt-4">
+                        <ClientPagination
+                          totalItems={certificates.length}
+                          currentPage={certificatePage}
+                          perPage={certificatePerPage}
+                          onPageChange={setCertificatePage}
+                          onPerPageChange={(value) => {
+                            setCertificatePerPage(value)
+                            setCertificatePage(1)
+                          }}
+                          itemLabel="certificates"
+                        />
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </div>
@@ -407,7 +436,7 @@ export default function GradesPage() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {grades.slice(0, 5).map((grade: Grade) => (
+                  {paginatedGrades.map((grade: Grade) => (
                     <div key={grade.id} className="flex items-center justify-between p-4 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                       <div className="flex-1">
                         <div className="flex items-center justify-between">
@@ -426,6 +455,21 @@ export default function GradesPage() {
                       </div>
                     </div>
                   ))}
+                </div>
+              )}
+              {grades.length > 0 && (
+                <div className="mt-4">
+                  <ClientPagination
+                    totalItems={grades.length}
+                    currentPage={quizPage}
+                    perPage={quizPerPage}
+                    onPageChange={setQuizPage}
+                    onPerPageChange={(value) => {
+                      setQuizPerPage(value)
+                      setQuizPage(1)
+                    }}
+                    itemLabel="quiz results"
+                  />
                 </div>
               )}
             </CardContent>

@@ -11,7 +11,7 @@ import {
 } from "lucide-react"
 import { Button } from "@/Components/ui/button"
 
-type StudentSidebarActive = "dashboard" | "courses" | "grades" | "settings"
+type StudentSidebarActive = "dashboard" | "courses" | "grades" | "certificates" | "settings"
 
 type StudentSidebarProps = {
   active: StudentSidebarActive
@@ -28,7 +28,7 @@ const navItems: Array<{
   { key: "dashboard", label: "Dashboard", href: "/", icon: LayoutDashboard },
   { key: "courses", label: "My Courses", href: "/dashboard/courses", icon: BookOpen },
   { key: "grades", label: "Grades", href: "/dashboard/grades", icon: Award },
-//   { key: "certificates", label: "Certificates", href: "/dashboard/certificates", icon: FileText },
+  { key: "certificates", label: "Certificates", href: "/dashboard/certificates", icon: FileText },
   { key: "settings", label: "Settings", href: "/dashboard/settings", icon: Settings },
 ]
 

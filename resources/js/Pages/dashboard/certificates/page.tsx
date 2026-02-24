@@ -8,6 +8,7 @@ import { Award, DownloadIcon, Calendar, Menu } from "lucide-react";
 import { router } from "@inertiajs/react";
 import { useState } from "react";
 import StudentSidebar from "@/Components/StudentSidebar";
+import ClientPagination from "@/Components/ui/client-pagination";
 
 interface Certificate {
   id: number;
@@ -22,6 +23,13 @@ interface Certificate {
 
 export default function CertificatesPage({ certificates }: { certificates: Certificate[] }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [perPage, setPerPage] = useState(6);
+
+  const paginatedCertificates = certificates.slice(
+    (currentPage - 1) * perPage,
+    currentPage * perPage,
+  );
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800">
@@ -83,7 +91,7 @@ export default function CertificatesPage({ certificates }: { certificates: Certi
               </Card>
             ) : (
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {certificates.map((certificate) => (
+                {paginatedCertificates.map((certificate) => (
                   <Card
                     key={certificate.id}
                     className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-blue-100 dark:border-gray-700 hover:shadow-xl transition-all duration-300 rounded-2xl overflow-hidden"
@@ -129,6 +137,21 @@ export default function CertificatesPage({ certificates }: { certificates: Certi
                     </CardContent>
                   </Card>
                 ))}
+              </div>
+            )}
+            {certificates.length > 0 && (
+              <div className="mt-6">
+                <ClientPagination
+                  totalItems={certificates.length}
+                  currentPage={currentPage}
+                  perPage={perPage}
+                  onPageChange={setCurrentPage}
+                  onPerPageChange={(value) => {
+                    setPerPage(value);
+                    setCurrentPage(1);
+                  }}
+                  itemLabel="certificates"
+                />
               </div>
             )}
           </div>

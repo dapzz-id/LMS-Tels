@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Head, router } from '@inertiajs/react'
 import {
   BookOpen,
@@ -41,6 +41,8 @@ import { toast } from "sonner"
 import { getFirstMessage } from "@/lib/api-messages"
 import { Link } from "@inertiajs/react"
 import { Toaster } from "sonner"
+import ClientPagination from "@/Components/ui/client-pagination"
+import { toAbsoluteAssetUrl } from "@/lib/utils"
 
 interface Course {
   id: number;
@@ -67,6 +69,8 @@ export default function CoursesPage({ courses = [] }: Props) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [perPage, setPerPage] = useState(10)
 
   // Filter courses based on search query and filters
   const filteredCourses = courses.filter((course) => {
@@ -79,6 +83,15 @@ export default function CoursesPage({ courses = [] }: Props) {
 
     return matchesSearch && matchesDepartment
   })
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchQuery, departmentFilter])
+
+  const paginatedCourses = filteredCourses.slice(
+    (currentPage - 1) * perPage,
+    currentPage * perPage,
+  )
 
   const handleDeleteCourse = async (course: Course) => {
     if (isDeleting) {
@@ -207,12 +220,12 @@ export default function CoursesPage({ courses = [] }: Props) {
                       <TableCell colSpan={6} className="text-center">No courses found</TableCell>
                     </TableRow>
                   ) : (
-                    filteredCourses.map((course) => (
+                    paginatedCourses.map((course) => (
                       <TableRow key={course.id}>
                         <TableCell>
                           <div className="flex items-center gap-3">
                             <Avatar className="h-9 w-9">
-                              <AvatarImage src={course.url_thumbnail} alt={course.judul_kursus} />
+                              <AvatarImage src={toAbsoluteAssetUrl(course.url_thumbnail, "/placeholder.svg")} alt={course.judul_kursus} />
                               <AvatarFallback>{course.judul_kursus.charAt(0)}</AvatarFallback>
                             </Avatar>
                             <div>
@@ -267,6 +280,21 @@ export default function CoursesPage({ courses = [] }: Props) {
                 </TableBody>
               </Table>
             </div>
+            {filteredCourses.length > 0 && (
+              <div className="mt-4">
+                <ClientPagination
+                  totalItems={filteredCourses.length}
+                  currentPage={currentPage}
+                  perPage={perPage}
+                  onPageChange={setCurrentPage}
+                  onPerPageChange={(value) => {
+                    setPerPage(value)
+                    setCurrentPage(1)
+                  }}
+                  itemLabel="courses"
+                />
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

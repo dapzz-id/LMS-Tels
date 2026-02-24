@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Head } from '@inertiajs/react'
 import {
   Users,
@@ -29,6 +29,7 @@ import {
   DropdownMenuTrigger,
 } from "@/Components/ui/dropdown-menu"
 import TeacherLayout from "../layout"
+import ClientPagination from "@/Components/ui/client-pagination"
 
 interface Student {
   id: number;
@@ -55,6 +56,8 @@ export default function TeacherStudentsPage({ students, totalStudents, totalCour
   const [searchQuery, setSearchQuery] = useState("")
   const [courseFilter, setCourseFilter] = useState("all")
   const [statusFilter, setStatusFilter] = useState("all")
+  const [currentPage, setCurrentPage] = useState(1)
+  const [perPage, setPerPage] = useState(10)
 
   // Filter students based on search query and filters
   const filteredStudents = students.filter((student) => {
@@ -72,6 +75,15 @@ export default function TeacherStudentsPage({ students, totalStudents, totalCour
 
     return matchesSearch && matchesCourse && matchesStatus
   })
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchQuery, courseFilter, statusFilter])
+
+  const paginatedStudents = filteredStudents.slice(
+    (currentPage - 1) * perPage,
+    currentPage * perPage,
+  )
 
   const getStatusBadge = (student: Student) => {
     if (student.completed_at) {
@@ -232,7 +244,7 @@ export default function TeacherStudentsPage({ students, totalStudents, totalCour
                       <TableCell colSpan={8} className="text-center">No students found</TableCell>
                     </TableRow>
                   ) : (
-                    filteredStudents.map((student) => (
+                    paginatedStudents.map((student) => (
                       <TableRow key={student.id}>
                         <TableCell>
                           <div className="flex items-center gap-3">
@@ -311,10 +323,24 @@ export default function TeacherStudentsPage({ students, totalStudents, totalCour
                 </TableBody>
               </Table>
             </div>
+            {filteredStudents.length > 0 && (
+              <div className="mt-4">
+                <ClientPagination
+                  totalItems={filteredStudents.length}
+                  currentPage={currentPage}
+                  perPage={perPage}
+                  onPageChange={setCurrentPage}
+                  onPerPageChange={(value) => {
+                    setPerPage(value)
+                    setCurrentPage(1)
+                  }}
+                  itemLabel="students"
+                />
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
     </TeacherLayout>
   )
 }
-

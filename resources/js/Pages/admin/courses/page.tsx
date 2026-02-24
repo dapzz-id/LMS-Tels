@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Head, router } from '@inertiajs/react'
 import {
   BookOpen,
@@ -42,6 +42,7 @@ import { getFirstMessage } from "@/lib/api-messages"
 import { Link } from "@inertiajs/react"
 import { Toaster } from "sonner"
 import { toAbsoluteAssetUrl } from "@/lib/utils"
+import ClientPagination from "@/Components/ui/client-pagination"
 
 interface Course {
   id: number;
@@ -70,6 +71,8 @@ export default function CoursesPage({ courses = [], availableClasses = [] }: Pro
   const [editingClass, setEditingClass] = useState<{ id: number; class: string[] } | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const [isSavingClass, setIsSavingClass] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [perPage, setPerPage] = useState(10)
 
   // Filter courses based on search query and filters
   const filteredCourses = courses.filter((course) => {
@@ -82,6 +85,15 @@ export default function CoursesPage({ courses = [], availableClasses = [] }: Pro
 
     return matchesSearch && matchesDepartment
   })
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchQuery, departmentFilter])
+
+  const paginatedCourses = filteredCourses.slice(
+    (currentPage - 1) * perPage,
+    currentPage * perPage,
+  )
 
   const handleDeleteCourse = async (course: Course) => {
     if (isDeleting) {
@@ -243,7 +255,7 @@ export default function CoursesPage({ courses = [], availableClasses = [] }: Pro
                       <TableCell colSpan={5} className="text-center">No courses found</TableCell>
                     </TableRow>
                   ) : (
-                    filteredCourses.map((course) => (
+                    paginatedCourses.map((course) => (
                       <TableRow key={course.id}>
                         <TableCell>
                           <div className="flex items-center gap-3">
@@ -358,6 +370,21 @@ export default function CoursesPage({ courses = [], availableClasses = [] }: Pro
                 </TableBody>
               </Table>
             </div>
+            {filteredCourses.length > 0 && (
+              <div className="mt-4">
+                <ClientPagination
+                  totalItems={filteredCourses.length}
+                  currentPage={currentPage}
+                  perPage={perPage}
+                  onPageChange={setCurrentPage}
+                  onPerPageChange={(value) => {
+                    setPerPage(value)
+                    setCurrentPage(1)
+                  }}
+                  itemLabel="courses"
+                />
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
