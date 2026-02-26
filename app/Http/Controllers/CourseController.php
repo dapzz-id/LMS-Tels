@@ -220,16 +220,12 @@ class CourseController extends Controller
             ], 422);
         }
 
-        $progress = ProgressCourse::updateOrCreate(
-            [
-                'id_siswa' => $validated['siswa_id'],
-                'id_kursus' => $validated['kursus_id'],
-                'id_sub_pembahasan' => $validated['id_sub_pembahasan'],
-            ],
-            [
-                'progress_per_subbab' => $validated['progress_per_subbab'] ?? null,
-                'status' => $validated['status'],
-            ]
+        $progress = $this->upsertProgressWithoutDowngrade(
+            (int) $validated['siswa_id'],
+            (int) $validated['kursus_id'],
+            (int) $validated['id_sub_pembahasan'],
+            (int) ($validated['progress_per_subbab'] ?? 0),
+            (string) $validated['status']
         );
 
         if ($progress->wasRecentlyCreated) {
@@ -267,14 +263,16 @@ class CourseController extends Controller
                 ->where('type', 'video')
                 ->get();
 
+            $quizCompletedSubLookup = $this->getQuizCompletedSubLookup((int) $user->id, (int) $courseId);
             $completedVideoIds = [];
             foreach ($videoContents as $content) {
-                // Check if this video has been completed
-                $isCompleted = ProgressCourse::where('id_siswa', $user->id)
-                    ->where('id_kursus', $courseId)
-                    ->where('id_sub_pembahasan', $content->sub_pembahasan_id)
-                    ->where('progress_per_subbab', 1) // 1 indicates video completion
-                    ->exists();
+                $effectiveProgress = $this->getEffectiveProgressValueForSub(
+                    (int) $user->id,
+                    (int) $courseId,
+                    (int) $content->sub_pembahasan_id,
+                    $quizCompletedSubLookup
+                );
+                $isCompleted = $effectiveProgress >= 1;
 
                 if ($isCompleted) {
                     // Extract YouTube video ID from URL
@@ -317,14 +315,16 @@ class CourseController extends Controller
                 ->where('type', 'pdf')
                 ->get();
 
+            $quizCompletedSubLookup = $this->getQuizCompletedSubLookup((int) $user->id, (int) $courseId);
             $downloadedPDFs = [];
             foreach ($pdfContents as $content) {
-                // Check if this PDF has been downloaded
-                $isDownloaded = ProgressCourse::where('id_siswa', $user->id)
-                    ->where('id_kursus', $courseId)
-                    ->where('id_sub_pembahasan', $content->sub_pembahasan_id)
-                    ->where('progress_per_subbab', 2) // 2 indicates PDF download
-                    ->exists();
+                $effectiveProgress = $this->getEffectiveProgressValueForSub(
+                    (int) $user->id,
+                    (int) $courseId,
+                    (int) $content->sub_pembahasan_id,
+                    $quizCompletedSubLookup
+                );
+                $isDownloaded = $effectiveProgress >= 2;
 
                 if ($isDownloaded) {
                     // Extract PDF filename from URL
@@ -395,16 +395,12 @@ class CourseController extends Controller
             }
 
             // Save progress as completed - using progress_per_subbab = 1 for video completion
-            $progress = ProgressCourse::updateOrCreate(
-                [
-                    'id_siswa' => $user->id,
-                    'id_kursus' => $validated['course_id'],
-                    'id_sub_pembahasan' => $content->sub_pembahasan_id,
-                ],
-                [
-                    'progress_per_subbab' => 1, // 1 for video completion
-                    'status' => 'selesai',
-                ]
+            $progress = $this->upsertProgressWithoutDowngrade(
+                (int) $user->id,
+                (int) $validated['course_id'],
+                (int) $content->sub_pembahasan_id,
+                1,
+                'selesai'
             );
 
             // Track activity
@@ -479,16 +475,12 @@ class CourseController extends Controller
             }
 
             // Save progress as completed - using progress_per_subbab = 2 for PDF download
-            $progress = ProgressCourse::updateOrCreate(
-                [
-                    'id_siswa' => $user->id,
-                    'id_kursus' => $validated['course_id'],
-                    'id_sub_pembahasan' => $content->sub_pembahasan_id,
-                ],
-                [
-                    'progress_per_subbab' => 2, // 2 for PDF download
-                    'status' => 'selesai',
-                ]
+            $progress = $this->upsertProgressWithoutDowngrade(
+                (int) $user->id,
+                (int) $validated['course_id'],
+                (int) $content->sub_pembahasan_id,
+                2,
+                'selesai'
             );
 
             // Track activity
@@ -572,16 +564,12 @@ class CourseController extends Controller
             }
 
             // Save progress as completed - using progress_per_subbab = 3 for quiz completion
-            $progress = ProgressCourse::updateOrCreate(
-                [
-                    'id_siswa' => $user->id,
-                    'id_kursus' => $validated['course_id'],
-                    'id_sub_pembahasan' => $content->sub_pembahasan_id,
-                ],
-                [
-                    'progress_per_subbab' => 3, // 3 for quiz completion
-                    'status' => 'selesai',
-                ]
+            $progress = $this->upsertProgressWithoutDowngrade(
+                (int) $user->id,
+                (int) $validated['course_id'],
+                (int) $content->sub_pembahasan_id,
+                3,
+                'selesai'
             );
 
             // Also save the quiz submission
@@ -622,6 +610,89 @@ class CourseController extends Controller
         }
     }
 
+    private function upsertProgressWithoutDowngrade(
+        int $studentId,
+        int $courseId,
+        int $subPembahasanId,
+        int $requestedProgress,
+        string $requestedStatus
+    ): ProgressCourse {
+        $requestedProgress = max(0, min(3, $requestedProgress));
+
+        $progressQuery = ProgressCourse::where('id_siswa', $studentId)
+            ->where('id_kursus', $courseId)
+            ->where('id_sub_pembahasan', $subPembahasanId);
+
+        $maxSavedProgress = (int) ((clone $progressQuery)->max('progress_per_subbab') ?? 0);
+        $resolvedProgress = max($maxSavedProgress, $requestedProgress);
+
+        $resolvedStatus = $requestedStatus;
+        if ($resolvedProgress >= 3) {
+            $resolvedStatus = 'selesai';
+        } elseif ($resolvedProgress > 0 && $resolvedStatus === 'belum dimulai') {
+            $resolvedStatus = 'sedang berlangsung';
+        }
+
+        $latestProgress = (clone $progressQuery)->latest('id')->first();
+        if ($latestProgress) {
+            (clone $progressQuery)->update([
+                'progress_per_subbab' => $resolvedProgress,
+                'status' => $resolvedStatus,
+            ]);
+
+            return $latestProgress->refresh();
+        }
+
+        return ProgressCourse::create([
+            'id_siswa' => $studentId,
+            'id_kursus' => $courseId,
+            'id_sub_pembahasan' => $subPembahasanId,
+            'progress_per_subbab' => $resolvedProgress,
+            'status' => $resolvedStatus,
+        ]);
+    }
+
+    /**
+     * @return array<int, bool>
+     */
+    private function getQuizCompletedSubLookup(int $studentId, int $courseId): array
+    {
+        $subIds = QuizSubmission::query()
+            ->where('user_id', $studentId)
+            ->where('course_id', $courseId)
+            ->join('course_contents', 'quiz_submissions.quiz_content_id', '=', 'course_contents.id')
+            ->pluck('course_contents.sub_pembahasan_id')
+            ->filter()
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+
+        return array_fill_keys($subIds, true);
+    }
+
+    /**
+     * @param array<int, bool> $quizCompletedSubLookup
+     */
+    private function getEffectiveProgressValueForSub(
+        int $studentId,
+        int $courseId,
+        int $subPembahasanId,
+        array $quizCompletedSubLookup
+    ): int {
+        $progressValue = (int) (ProgressCourse::query()
+            ->where('id_siswa', $studentId)
+            ->where('id_kursus', $courseId)
+            ->where('id_sub_pembahasan', $subPembahasanId)
+            ->max('progress_per_subbab') ?? 0);
+
+        if (isset($quizCompletedSubLookup[$subPembahasanId])) {
+            $progressValue = max($progressValue, 3);
+        }
+
+        return $progressValue;
+    }
+
     private function userCanAccessCourse(User $user, int $courseId): bool
     {
         if ($user->tipe_user !== 'siswa') {
@@ -648,6 +719,24 @@ class CourseController extends Controller
         }
 
         return $user->class !== null && in_array($user->class, $classes, true);
+    }
+
+    public function openLearnPage($id)
+    {
+        $user = auth()->user();
+        if (!$user || $user->tipe_user !== 'siswa') {
+            abort(403);
+        }
+
+        $courseId = (int) $id;
+        if (!$this->userCanAccessCourse($user, $courseId)) {
+            abort(403);
+        }
+
+        // Ensure student-course relation exists once student starts learning.
+        $user->kursus()->syncWithoutDetaching([$courseId]);
+
+        return Inertia::render('dashboard/courses/[id]/learn/page', ['id' => $courseId]);
     }
 
     /**

@@ -100,7 +100,7 @@ class StudentDashboardController extends Controller
         $quizSubmissions = QuizSubmission::query()
             ->where('user_id', $user->id)
             ->whereIn('course_id', $courseIds)
-            ->get(['course_id', 'score', 'total_questions', 'submitted_at', 'updated_at', 'created_at']);
+            ->get(['course_id', 'score', 'submitted_at', 'updated_at', 'created_at']);
 
         $latestQuizAt = [];
         foreach ($quizSubmissions as $submission) {
@@ -171,11 +171,7 @@ class StudentDashboardController extends Controller
 
         $assignmentDone = (int) $quizSubmissions->count();
         $averageGrade = $quizSubmissions->count() > 0
-            ? (int) round($quizSubmissions->avg(function ($submission) {
-                return $submission->total_questions > 0
-                    ? ($submission->score / $submission->total_questions) * 100
-                    : 0;
-            }))
+            ? (int) round((float) $quizSubmissions->avg('score'))
             : 0;
 
         return Inertia::render('dashboard/page', [

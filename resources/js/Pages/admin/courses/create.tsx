@@ -80,7 +80,7 @@ const courseFormSchema = z.object({
         timeLimit: z.number().optional(),
         passingScore: z.number().optional(),
         questions: z.array(z.object({
-          question: z.string().min(1, { message: "Question must be at least 1 character." }),
+          question: z.string().optional(),
           options: z.array(z.string()).length(4, { message: "Quiz must have exactly 4 options." }),
           correctAnswer: z.number().min(0).max(3),
           imageUrl: z.string().optional(), // Keep this line for image support
@@ -458,7 +458,9 @@ export default function CreateCoursePage({ mapel }: Props) {
               questions: [{
                 question: '',
                 options: ['', '', '', ''],
-                correctAnswer: 0
+                correctAnswer: 0,
+                imageUrl: undefined,
+                optionImages: [null, null, null, null]
               }]
             }
           }
@@ -474,27 +476,72 @@ export default function CreateCoursePage({ mapel }: Props) {
   };
 
   const addQuizQuestion = (pembahasanIndex: number) => {
-    const currentPembahasan = form.getValues('pembahasan') ?? [];
-    const quizContent = currentPembahasan[pembahasanIndex].contents.find(c => c.type === 'quiz');
-    if (quizContent && quizContent.quiz_data) {
-      quizContent.quiz_data.questions.push({
-        question: '',
-        options: ['', '', '', ''],
-        correctAnswer: 0,
-        imageUrl: undefined,
-        optionImages: [null, null, null, null] // Add this line
-      });
-      form.setValue('pembahasan', currentPembahasan);
-    }
+    const currentPembahasan = form.getValues('pembahasan') ?? []
+    const updatedPembahasan = currentPembahasan.map((section, index) => {
+      if (index !== pembahasanIndex) {
+        return section
+      }
+
+      return {
+        ...section,
+        contents: section.contents.map((content) => {
+          if (content.type !== 'quiz' || !content.quiz_data) {
+            return content
+          }
+
+          return {
+            ...content,
+            quiz_data: {
+              ...content.quiz_data,
+              questions: [
+                ...(content.quiz_data.questions || []),
+                {
+                  question: '',
+                  options: ['', '', '', ''],
+                  correctAnswer: 0,
+                  imageUrl: undefined,
+                  optionImages: [null, null, null, null]
+                }
+              ]
+            }
+          }
+        })
+      }
+    })
+
+    form.setValue('pembahasan', updatedPembahasan, { shouldDirty: true, shouldTouch: true })
   };
 
   const removeQuizQuestion = (pembahasanIndex: number, questionIndex: number) => {
-    const currentPembahasan = form.getValues('pembahasan') ?? [];
-    const quizContent = currentPembahasan[pembahasanIndex].contents.find(c => c.type === 'quiz');
-    if (quizContent && quizContent.quiz_data && quizContent.quiz_data.questions.length > 1) {
-      quizContent.quiz_data.questions = quizContent.quiz_data.questions.filter((_: any, i: number) => i !== questionIndex);
-      form.setValue('pembahasan', currentPembahasan);
-    }
+    const currentPembahasan = form.getValues('pembahasan') ?? []
+    const updatedPembahasan = currentPembahasan.map((section, index) => {
+      if (index !== pembahasanIndex) {
+        return section
+      }
+
+      return {
+        ...section,
+        contents: section.contents.map((content) => {
+          if (content.type !== 'quiz' || !content.quiz_data) {
+            return content
+          }
+
+          if ((content.quiz_data.questions || []).length <= 1) {
+            return content
+          }
+
+          return {
+            ...content,
+            quiz_data: {
+              ...content.quiz_data,
+              questions: content.quiz_data.questions.filter((_: any, i: number) => i !== questionIndex),
+            }
+          }
+        })
+      }
+    })
+
+    form.setValue('pembahasan', updatedPembahasan, { shouldDirty: true, shouldTouch: true })
   };
 
   const canProceedToNext = (tab: string) => {
@@ -579,8 +626,10 @@ export default function CreateCoursePage({ mapel }: Props) {
 
             // Validate quiz questions
             const questionsValid = content.quiz_data.questions.every((question: any, qIndex: number) => {
-              if (!question.question) {
-                toast.error(`Section ${index + 1}, Quiz ${contentIndex + 1}, Question ${qIndex + 1}: Question is required`);
+              const questionText = (question.question ?? "").toString().trim();
+              const questionImage = (question.imageUrl ?? "").toString().trim();
+              if (!questionText && !questionImage) {
+                toast.error(`Section ${index + 1}, Quiz ${contentIndex + 1}, Question ${qIndex + 1}: Question text or image is required`);
                 return false;
               }
 
@@ -589,9 +638,13 @@ export default function CreateCoursePage({ mapel }: Props) {
                 return false;
               }
 
-              if (question.options.some((option: any) => !option)) {
-                toast.error(`Section ${index + 1}, Quiz ${contentIndex + 1}, Question ${qIndex + 1}: All options must be filled`);
-                return false;
+              for (let optionIndex = 0; optionIndex < 4; optionIndex++) {
+                const optionText = (question.options?.[optionIndex] ?? "").toString().trim();
+                const optionImage = (question.optionImages?.[optionIndex] ?? "").toString().trim();
+                if (!optionText && !optionImage) {
+                  toast.error(`Section ${index + 1}, Quiz ${contentIndex + 1}, Question ${qIndex + 1}, Option ${optionIndex + 1}: Option text or image is required`);
+                  return false;
+                }
               }
 
               if (question.correctAnswer === undefined || question.correctAnswer < 0 || question.correctAnswer > 3) {

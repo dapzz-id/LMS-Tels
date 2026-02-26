@@ -10,7 +10,7 @@ import { Textarea } from "@/Components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/Components/ui/select"
 import TeacherLayout from "../../layout"
 import { toast } from "sonner"
-import { ArrowLeft, Loader2, SaveIcon, Trash2, Plus, Video, FileText, Brain, BookOpen, X, Check } from "lucide-react"
+import { ArrowLeft, Loader2, SaveIcon, Trash2, Plus, Video, FileText, Brain, BookOpen, X, Check, Upload } from "lucide-react"
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/Components/ui/form"
 import { useForm, type FieldErrors } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -40,6 +40,8 @@ interface CourseContent {
       question: string;
       options: string[];
       correctAnswer: number;
+      imageUrl?: string;
+      optionImages?: (string | null)[];
     }>;
   };
   one_submission_only?: boolean;
@@ -86,6 +88,8 @@ interface QuizQuestion {
   question: string;
   options: string[];
   correctAnswer: number;
+  imageUrl?: string;
+  optionImages?: (string | null)[];
 }
 
 interface QuizData {
@@ -151,13 +155,13 @@ const courseFormSchema = z.object({
               passingScore: z.number().optional(),
               questions: z.array(
                 z.object({
-                  question: z.string().min(1, {
-                    message: "Question must be at least 1 character.",
-                  }),
+                  question: z.string().optional(),
                   options: z.array(z.string()).length(4, {
                     message: "Quiz must have exactly 4 options.",
                   }),
                   correctAnswer: z.number().min(0).max(3),
+                  imageUrl: z.string().optional(),
+                  optionImages: z.array(z.string().nullable()).optional(),
                 }),
               )
             }).optional(),
@@ -202,17 +206,22 @@ function mapCourseToFormValues(course: Props["course"]): CourseFormValues {
                       question: q.question || "",
                       options: q.options || ["", "", "", ""],
                       correctAnswer: q.correctAnswer !== undefined ? q.correctAnswer : 0,
+                      imageUrl: q.imageUrl || undefined,
+                      optionImages: q.optionImages || [null, null, null, null],
                     }))
                   }
                 } else {
                   // Handle legacy format
+                  const legacyQuestions = Array.isArray(parsedData) ? parsedData : [parsedData]
                   quiz_data = {
                     timeLimit: 30,
                     passingScore: 70,
-                    questions: parsedData.map((q: any) => ({
+                    questions: legacyQuestions.map((q: any) => ({
                       question: q.question || "",
                       options: q.options || ["", "", "", ""],
                       correctAnswer: q.correctAnswer !== undefined ? q.correctAnswer : 0,
+                      imageUrl: q.imageUrl || undefined,
+                      optionImages: q.optionImages || [null, null, null, null],
                     }))
                   }
                 }
@@ -226,17 +235,22 @@ function mapCourseToFormValues(course: Props["course"]): CourseFormValues {
                       question: q.question || "",
                       options: q.options || ["", "", "", ""],
                       correctAnswer: q.correctAnswer !== undefined ? q.correctAnswer : 0,
+                      imageUrl: q.imageUrl || undefined,
+                      optionImages: q.optionImages || [null, null, null, null],
                     }))
                   }
                 } else {
                   // Handle legacy format
+                  const legacyQuestions = Array.isArray(content.quiz_data) ? content.quiz_data : [content.quiz_data]
                   quiz_data = {
                     timeLimit: 30,
                     passingScore: 70,
-                    questions: [content.quiz_data].map((q: any) => ({
+                    questions: legacyQuestions.map((q: any) => ({
                       question: q.question || "",
                       options: q.options || ["", "", "", ""],
                       correctAnswer: q.correctAnswer !== undefined ? q.correctAnswer : 0,
+                      imageUrl: q.imageUrl || undefined,
+                      optionImages: q.optionImages || [null, null, null, null],
                     }))
                   }
                 }
@@ -251,6 +265,8 @@ function mapCourseToFormValues(course: Props["course"]): CourseFormValues {
                     question: "",
                     options: ["", "", "", ""],
                     correctAnswer: 0,
+                    imageUrl: undefined,
+                    optionImages: [null, null, null, null],
                   },
                 ]
               }
@@ -312,6 +328,8 @@ function mapCourseToFormValues(course: Props["course"]): CourseFormValues {
                   question: "",
                   options: ["", "", "", ""],
                   correctAnswer: 0,
+                  imageUrl: undefined,
+                  optionImages: [null, null, null, null],
                 },
               ],
             },
@@ -448,6 +466,8 @@ export default function EditCoursePage({ course, mapel, availableClasses = [] }:
                   question: q.question,
                   options: q.options,
                   correctAnswer: q.correctAnswer,
+                  imageUrl: q.imageUrl || undefined,
+                  optionImages: q.optionImages || [null, null, null, null],
                 }))
               }
             }
@@ -1044,6 +1064,102 @@ export default function EditCoursePage({ course, mapel, availableClasses = [] }:
                                               </Button>
                                             </div>
                                             <div className="space-y-4">
+                                              <div className="space-y-2">
+                                                <FormLabel>Question Image (Optional)</FormLabel>
+                                                {question.imageUrl ? (
+                                                  <div className="relative">
+                                                    <img
+                                                      src={question.imageUrl}
+                                                      alt="Question"
+                                                      className="object-contain max-h-48 rounded-lg"
+                                                    />
+                                                    <Button
+                                                      type="button"
+                                                      variant="destructive"
+                                                      size="sm"
+                                                      className="absolute top-2 right-2"
+                                                      onClick={() => {
+                                                        const currentQuizData = form.getValues(`pembahasan.${pembahasanIndex}.contents.${contentIndex}.quiz_data`)
+                                                        if (currentQuizData) {
+                                                          const updatedQuestions = [...currentQuizData.questions]
+                                                          updatedQuestions[questionIndex] = {
+                                                            ...updatedQuestions[questionIndex],
+                                                            imageUrl: undefined
+                                                          } as QuizQuestion
+                                                          form.setValue(`pembahasan.${pembahasanIndex}.contents.${contentIndex}.quiz_data`, {
+                                                            ...currentQuizData,
+                                                            questions: updatedQuestions
+                                                          })
+                                                        }
+                                                      }}
+                                                    >
+                                                      Remove
+                                                    </Button>
+                                                  </div>
+                                                ) : (
+                                                  <div className="flex items-center justify-center w-full">
+                                                    <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer border-slate-300 hover:border-blue-500">
+                                                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                                        <Upload className="w-8 h-8 mb-2 text-slate-500" />
+                                                        <p className="text-sm text-slate-500">
+                                                          <span className="font-semibold">Click to upload</span> an image
+                                                        </p>
+                                                      </div>
+                                                      <input
+                                                        type="file"
+                                                        className="hidden"
+                                                        accept="image/*"
+                                                        onChange={async (e) => {
+                                                          const file = e.target.files?.[0]
+                                                          if (!file) return
+
+                                                          if (!file.type.startsWith('image/')) {
+                                                            toast.error("Please upload an image file (JPEG, PNG, GIF, or WebP)")
+                                                            return
+                                                          }
+
+                                                          if (file.size > 5 * 1024 * 1024) {
+                                                            toast.error("Image size must be less than 5MB")
+                                                            return
+                                                          }
+
+                                                          try {
+                                                            const formData = new FormData()
+                                                            formData.append('file', file)
+                                                            const response = await axios.post('/teacher/courses/upload-image', formData, {
+                                                              headers: {
+                                                                'Content-Type': 'multipart/form-data',
+                                                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                                                              }
+                                                            })
+
+                                                            if (response.data.status === 'success') {
+                                                              const fullUrl = toAbsoluteAssetUrl(response.data.url)
+                                                              const currentQuizData = form.getValues(`pembahasan.${pembahasanIndex}.contents.${contentIndex}.quiz_data`)
+                                                              if (currentQuizData) {
+                                                                const updatedQuestions = [...currentQuizData.questions]
+                                                                updatedQuestions[questionIndex] = {
+                                                                  ...updatedQuestions[questionIndex],
+                                                                  imageUrl: fullUrl
+                                                                }
+                                                                form.setValue(`pembahasan.${pembahasanIndex}.contents.${contentIndex}.quiz_data`, {
+                                                                  ...currentQuizData,
+                                                                  questions: updatedQuestions
+                                                                })
+                                                              }
+                                                              toast.success(getFirstMessage(response.data, 'Image uploaded successfully'))
+                                                            } else {
+                                                              toast.error(getFirstMessage(response.data, 'Failed to upload image'))
+                                                            }
+                                                          } catch (error: any) {
+                                                            toast.error(getFirstMessage(error.response?.data, 'Failed to upload image'))
+                                                          }
+                                                        }}
+                                                      />
+                                                    </label>
+                                                  </div>
+                                                )}
+                                              </div>
                                               <FormField
                                                 control={form.control}
                                                 name={`pembahasan.${pembahasanIndex}.contents.${contentIndex}.quiz_data.questions.${questionIndex}.question`}
@@ -1064,41 +1180,144 @@ export default function EditCoursePage({ course, mapel, availableClasses = [] }:
                                               <div className="space-y-2">
                                                 <FormLabel>Options</FormLabel>
                                                 {(question.options || []).map((_: any, optionIndex: number) => (
-                                                  <div key={optionIndex} className="flex items-center gap-2">
-                                                    <FormField
-                                                      control={form.control}
-                                                      name={`pembahasan.${pembahasanIndex}.contents.${contentIndex}.quiz_data.questions.${questionIndex}.options.${optionIndex}`}
-                                                      render={({ field }) => (
-                                                        <FormItem className="flex-1">
-                                                          <FormControl>
-                                                            <Input
-                                                              placeholder={`Option ${optionIndex + 1}`}
-                                                              {...field}
-                                                            />
-                                                          </FormControl>
-                                                          <FormMessage />
-                                                        </FormItem>
-                                                      )}
-                                                    />
-                                                    <FormField
-                                                      control={form.control}
-                                                      name={`pembahasan.${pembahasanIndex}.contents.${contentIndex}.quiz_data.questions.${questionIndex}.correctAnswer`}
-                                                      render={({ field }) => (
-                                                        <FormItem>
-                                                          <FormControl>
-                                                            <RadioGroup
-                                                              value={field.value.toString()}
-                                                              onValueChange={(value) =>
-                                                                field.onChange(Number.parseInt(value))
+                                                  <div key={optionIndex}>
+                                                    <div className="flex items-center gap-2">
+                                                      <FormField
+                                                        control={form.control}
+                                                        name={`pembahasan.${pembahasanIndex}.contents.${contentIndex}.quiz_data.questions.${questionIndex}.options.${optionIndex}`}
+                                                        render={({ field }) => (
+                                                          <FormItem className="flex-1">
+                                                            <FormControl>
+                                                              <Input
+                                                                placeholder={`Option ${optionIndex + 1}`}
+                                                                {...field}
+                                                              />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                          </FormItem>
+                                                        )}
+                                                      />
+                                                      <FormField
+                                                        control={form.control}
+                                                        name={`pembahasan.${pembahasanIndex}.contents.${contentIndex}.quiz_data.questions.${questionIndex}.correctAnswer`}
+                                                        render={({ field }) => (
+                                                          <FormItem>
+                                                            <FormControl>
+                                                              <RadioGroup
+                                                                value={field.value.toString()}
+                                                                onValueChange={(value) =>
+                                                                  field.onChange(Number.parseInt(value))
+                                                                }
+                                                                className="flex items-center"
+                                                              >
+                                                                <RadioGroupItem value={optionIndex.toString()} />
+                                                              </RadioGroup>
+                                                            </FormControl>
+                                                          </FormItem>
+                                                        )}
+                                                      />
+                                                    </div>
+                                                    <div className="ml-8 mt-2">
+                                                      <FormLabel className="text-xs">Option Image (Optional)</FormLabel>
+                                                      {question.optionImages?.[optionIndex] ? (
+                                                        <div className="relative mt-1">
+                                                          <img
+                                                            src={question.optionImages[optionIndex] || ""}
+                                                            alt={`Option ${optionIndex + 1}`}
+                                                            className="object-contain max-h-32 rounded-lg"
+                                                          />
+                                                          <Button
+                                                            type="button"
+                                                            variant="destructive"
+                                                            size="sm"
+                                                            className="absolute top-1 right-1"
+                                                            onClick={() => {
+                                                              const currentQuizData = form.getValues(`pembahasan.${pembahasanIndex}.contents.${contentIndex}.quiz_data`)
+                                                              if (currentQuizData) {
+                                                                const updatedQuestions = [...currentQuizData.questions]
+                                                                const updatedOptionImages = [...(updatedQuestions[questionIndex].optionImages || [null, null, null, null])]
+                                                                updatedOptionImages[optionIndex] = null
+                                                                updatedQuestions[questionIndex] = {
+                                                                  ...updatedQuestions[questionIndex],
+                                                                  optionImages: updatedOptionImages
+                                                                }
+                                                                form.setValue(`pembahasan.${pembahasanIndex}.contents.${contentIndex}.quiz_data`, {
+                                                                  ...currentQuizData,
+                                                                  questions: updatedQuestions
+                                                                })
                                                               }
-                                                              className="flex items-center"
-                                                            >
-                                                              <RadioGroupItem value={optionIndex.toString()} />
-                                                            </RadioGroup>
-                                                          </FormControl>
-                                                        </FormItem>
+                                                            }}
+                                                          >
+                                                            Remove
+                                                          </Button>
+                                                        </div>
+                                                      ) : (
+                                                        <div className="flex items-center justify-center w-full mt-1">
+                                                          <label className="flex flex-col items-center justify-center w-full h-24 border border-dashed rounded-lg cursor-pointer border-slate-300 hover:border-blue-500">
+                                                            <div className="flex flex-col items-center justify-center pt-2 pb-2">
+                                                              <Upload className="w-6 h-6 text-slate-500" />
+                                                              <p className="text-xs text-slate-500">
+                                                                <span className="font-semibold">Upload</span> image
+                                                              </p>
+                                                            </div>
+                                                            <input
+                                                              type="file"
+                                                              className="hidden"
+                                                              accept="image/*"
+                                                              onChange={async (e) => {
+                                                                const file = e.target.files?.[0]
+                                                                if (!file) return
+
+                                                                if (!file.type.startsWith('image/')) {
+                                                                  toast.error("Please upload an image file (JPEG, PNG, GIF, or WebP)")
+                                                                  return
+                                                                }
+
+                                                                if (file.size > 5 * 1024 * 1024) {
+                                                                  toast.error("Image size must be less than 5MB")
+                                                                  return
+                                                                }
+
+                                                                try {
+                                                                  const formData = new FormData()
+                                                                  formData.append('file', file)
+
+                                                                  const response = await axios.post('/teacher/courses/upload-image', formData, {
+                                                                    headers: {
+                                                                      'Content-Type': 'multipart/form-data',
+                                                                      'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                                                                    }
+                                                                  })
+
+                                                                  if (response.data.status === 'success') {
+                                                                    const fullUrl = toAbsoluteAssetUrl(response.data.url)
+                                                                    const currentQuizData = form.getValues(`pembahasan.${pembahasanIndex}.contents.${contentIndex}.quiz_data`)
+                                                                    if (currentQuizData) {
+                                                                      const updatedQuestions = [...currentQuizData.questions]
+                                                                      const updatedOptionImages = [...(updatedQuestions[questionIndex].optionImages || [null, null, null, null])]
+                                                                      updatedOptionImages[optionIndex] = fullUrl
+                                                                      updatedQuestions[questionIndex] = {
+                                                                        ...updatedQuestions[questionIndex],
+                                                                        optionImages: updatedOptionImages
+                                                                      }
+                                                                      form.setValue(`pembahasan.${pembahasanIndex}.contents.${contentIndex}.quiz_data`, {
+                                                                        ...currentQuizData,
+                                                                        questions: updatedQuestions
+                                                                      })
+                                                                    }
+                                                                    toast.success(getFirstMessage(response.data, 'Image uploaded successfully'))
+                                                                  } else {
+                                                                    toast.error(getFirstMessage(response.data, 'Failed to upload image'))
+                                                                  }
+                                                                } catch (error: any) {
+                                                                  toast.error(getFirstMessage(error.response?.data, 'Failed to upload image'))
+                                                                }
+                                                              }}
+                                                            />
+                                                          </label>
+                                                        </div>
                                                       )}
-                                                    />
+                                                    </div>
                                                   </div>
                                                 ))}
                                               </div>
@@ -1122,6 +1341,8 @@ export default function EditCoursePage({ course, mapel, availableClasses = [] }:
                                               question: "",
                                               options: ["", "", "", ""],
                                               correctAnswer: 0,
+                                              imageUrl: undefined,
+                                              optionImages: [null, null, null, null],
                                             })
 
                                             const updatedQuizData = {
@@ -1304,6 +1525,8 @@ export default function EditCoursePage({ course, mapel, availableClasses = [] }:
                                       question: "",
                                       options: ["", "", "", ""],
                                       correctAnswer: 0,
+                                      imageUrl: undefined,
+                                      optionImages: [null, null, null, null],
                                     },
                                   ],
                                 },

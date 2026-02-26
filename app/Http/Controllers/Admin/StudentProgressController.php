@@ -314,6 +314,15 @@ class StudentProgressController extends Controller
             $courseContents = $course->contents ?? CourseContent::where('kursus_id', $course->id)->get();
 
             $completedCount = 0;
+            $quizCompletedSubLookup = QuizSubmission::query()
+                ->where('user_id', $student->id)
+                ->where('course_id', $course->id)
+                ->join('course_contents', 'quiz_submissions.quiz_content_id', '=', 'course_contents.id')
+                ->pluck('course_contents.sub_pembahasan_id')
+                ->filter()
+                ->map(fn ($id) => (int) $id)
+                ->unique()
+                ->flip();
 
             foreach ($courseContents as $content) {
                 // Only count content that has a valid type
@@ -324,13 +333,13 @@ class StudentProgressController extends Controller
                     $progressValue = 0;
 
                     // Get the actual progress_per_subbab value
-                    $progressRecord = ProgressCourse::where('id_siswa', $student->id)
+                    $progressValue = (int) (ProgressCourse::where('id_siswa', $student->id)
                         ->where('id_kursus', $course->id)
                         ->where('id_sub_pembahasan', $content->sub_pembahasan_id)
-                        ->first();
+                        ->max('progress_per_subbab') ?? 0);
 
-                    if ($progressRecord) {
-                        $progressValue = $progressRecord->progress_per_subbab;
+                    if ($quizCompletedSubLookup->has((int) $content->sub_pembahasan_id)) {
+                        $progressValue = max($progressValue, 3);
                     }
 
                     // Debug information
@@ -339,7 +348,7 @@ class StudentProgressController extends Controller
                         'course_id' => $course->id,
                         'sub_pembahasan_id' => $content->sub_pembahasan_id,
                         'progress_value' => $progressValue,
-                        'progress_record_exists' => $progressRecord ? true : false
+                        'progress_record_exists' => $progressValue > 0
                     ]);
 
                     // Check if the progress value meets or exceeds the expected value for completion

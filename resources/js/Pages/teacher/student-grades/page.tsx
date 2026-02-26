@@ -40,6 +40,9 @@ interface Submission {
   course_name: string;
   quiz_title: string;
   score: number;
+  normalized_score?: number;
+  total_questions?: number;
+  letter_grade?: string;
   submitted_at: string;
   user: {
     id: number;
@@ -190,9 +193,7 @@ export default function TeacherGradesPage({
     return 0
   }
 
-  const getGrade = (score: number, totalQuestions: number) => {
-    if (totalQuestions === 0) return "N/A"
-    const percentage = (score / totalQuestions) * 100
+  const getGrade = (percentage: number) => {
     if (percentage >= 90) return "A"
     if (percentage >= 80) return "B"
     if (percentage >= 70) return "C"
@@ -391,10 +392,17 @@ export default function TeacherGradesPage({
                     </TableRow>
                   ) : (
                     submissionItems.map((submission) => {
-                      const totalQuestions = calculateTotalQuestions(submission);
-                      const percentage = totalQuestions > 0
-                        ? Math.round((submission.score / totalQuestions) * 100)
-                        : 0;
+                      const totalQuestions = submission.total_questions ?? calculateTotalQuestions(submission);
+                      const percentage = Math.round(
+                        typeof submission.normalized_score === "number"
+                          ? submission.normalized_score
+                          : (
+                              totalQuestions > 0
+                                ? (submission.score / totalQuestions) * 100
+                                : submission.score
+                            ),
+                      );
+                      const letterGrade = submission.letter_grade || getGrade(percentage);
 
                       return (
                         <TableRow key={submission.id}>
@@ -421,7 +429,7 @@ export default function TeacherGradesPage({
                               {getStatusIcon(percentage)}
                               <div>
                                 <div className="font-medium">
-                                  Score: {submission.score} | Questions: {totalQuestions}
+                                  Score: {percentage}% | Questions: {totalQuestions}
                                 </div>
                                 <div className="text-sm text-slate-500">{percentage}%</div>
                               </div>
@@ -432,7 +440,7 @@ export default function TeacherGradesPage({
                               variant="outline"
                               className={getGradeColor(percentage)}
                             >
-                              {getGrade(submission.score, totalQuestions)}
+                              {letterGrade}
                             </Badge>
                           </TableCell>
                           <TableCell>

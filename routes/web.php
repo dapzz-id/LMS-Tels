@@ -153,9 +153,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return Inertia::render('dashboard/courses/[id]/page', ['id' => $id]);
     })->name('student.courses.show')->middleware('role:siswa');
 
-    Route::get('/dashboard/courses/{id}/learn', function ($id) {
-        return Inertia::render('dashboard/courses/[id]/learn/page', ['id' => $id]);
-    })->name('student.courses.learn')->middleware('role:siswa');
+    Route::get('/dashboard/courses/{id}/learn', [App\Http\Controllers\CourseController::class, 'openLearnPage'])
+        ->name('student.courses.learn')
+        ->middleware('role:siswa');
 
     Route::get('/dashboard/courses/{courseId}/quiz/{id}', [QuizController::class, 'show'])
         ->name('student.quiz.course')

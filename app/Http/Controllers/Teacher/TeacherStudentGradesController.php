@@ -75,6 +75,16 @@ class TeacherStudentGradesController extends Controller
             $query->orderBy($sortBy, $sortOrder);
 
             $submissions = $query->paginate(20);
+            $submissions->getCollection()->transform(function ($submission) {
+                $totalQuestions = $this->extractTotalQuestions($submission->quiz_data ?? null);
+                $normalizedScore = $this->normalizeScore((float) $submission->score, $totalQuestions);
+
+                $submission->total_questions = $totalQuestions;
+                $submission->normalized_score = $normalizedScore;
+                $submission->letter_grade = $this->calculateGrade($normalizedScore);
+
+                return $submission;
+            });
 
             // Calculate statistics for teacher's courses only
             $totalSubmissions = QuizSubmission::join('kursus', 'quiz_submissions.course_id', '=', 'kursus.id')
@@ -88,47 +98,35 @@ class TeacherStudentGradesController extends Controller
 
             $totalCourses = $courses->count();
 
-            // Calculate average score for teacher's courses
-            $allSubmissions = QuizSubmission::with('quizContent')
+            // Calculate average score and grade distribution with normalized percentage scores.
+            $allSubmissions = QuizSubmission::query()
                 ->join('kursus', 'quiz_submissions.course_id', '=', 'kursus.id')
+                ->join('course_contents', 'quiz_submissions.quiz_content_id', '=', 'course_contents.id')
                 ->where('kursus.teacher_id', $teacherId)
+                ->where('course_contents.type', 'quiz')
+                ->select([
+                    'quiz_submissions.score',
+                    'course_contents.quiz_data',
+                ])
                 ->get();
 
-            $totalScore = 0;
-            $totalQuestions = 0;
-            $validSubmissions = 0;
+            $normalizedScores = $allSubmissions->map(function ($submission) {
+                $totalQuestions = $this->extractTotalQuestions($submission->quiz_data ?? null);
+                return $this->normalizeScore((float) $submission->score, $totalQuestions);
+            });
 
-            foreach ($allSubmissions as $submission) {
-                if ($submission->quizContent && $submission->quizContent->quiz_data) {
-                    $quizData = json_decode($submission->quizContent->quiz_data, true);
-                    if (is_array($quizData) && count($quizData) > 0) {
-                        $totalQuestions += count($quizData);
-                        $totalScore += $submission->score;
-                        $validSubmissions++;
-                    }
-                }
-            }
+            $averageScore = $normalizedScores->count() > 0
+                ? round((float) $normalizedScores->avg(), 2)
+                : 0;
 
-            // Calculate average score as percentage
-            $averageScore = $totalQuestions > 0 ? ($totalScore / $totalQuestions) * 100 : 0;
-
-            // Get grade distribution for teacher's courses
             $gradeDistribution = [];
             $gradeCounts = ['A (90-100)' => 0, 'B (80-89)' => 0, 'C (70-79)' => 0, 'D (60-69)' => 0, 'F (0-59)' => 0];
-
-            foreach ($allSubmissions as $submission) {
-                if ($submission->quizContent && $submission->quizContent->quiz_data) {
-                    $quizData = json_decode($submission->quizContent->quiz_data, true);
-                    if (is_array($quizData) && count($quizData) > 0) {
-                        $percentage = ($submission->score / count($quizData)) * 100;
-
-                        if ($percentage >= 90) $gradeCounts['A (90-100)']++;
-                        elseif ($percentage >= 80) $gradeCounts['B (80-89)']++;
-                        elseif ($percentage >= 70) $gradeCounts['C (70-79)']++;
-                        elseif ($percentage >= 60) $gradeCounts['D (60-69)']++;
-                        else $gradeCounts['F (0-59)']++;
-                    }
-                }
+            foreach ($normalizedScores as $percentage) {
+                if ($percentage >= 90) $gradeCounts['A (90-100)']++;
+                elseif ($percentage >= 80) $gradeCounts['B (80-89)']++;
+                elseif ($percentage >= 70) $gradeCounts['C (70-79)']++;
+                elseif ($percentage >= 60) $gradeCounts['D (60-69)']++;
+                else $gradeCounts['F (0-59)']++;
             }
 
             foreach ($gradeCounts as $grade => $count) {
@@ -264,39 +262,37 @@ class TeacherStudentGradesController extends Controller
                 'quizContent_id' => $submission->quiz_content_id,
             ]);
 
-            // Parse quiz data to get questions and answers - handle double-escaped JSON
-            $quizData = [];
-            $totalQuestions = 0;
-
-            if ($submission->quizContent && $submission->quizContent->quiz_data) {
-                $quizDataString = $submission->quizContent->quiz_data;
-                if (is_string($quizDataString) && str_starts_with($quizDataString, '"')) {
-                    $quizDataString = json_decode($quizDataString, true);
-                }
-                $quizData = json_decode($quizDataString, true);
-                $totalQuestions = is_array($quizData) ? count($quizData) : 0;
-            }
+            // Parse quiz data to get questions and answers (supports legacy and new structures).
+            $quizData = $this->extractQuizQuestions($submission->quizContent?->quiz_data);
+            $totalQuestions = count($quizData);
 
             $studentAnswers = $submission->answers ?? [];
 
             $detailedResults = [];
-            if (is_array($quizData)) {
+            if (!empty($quizData)) {
                 foreach ($quizData as $index => $question) {
-                    $studentAnswer = $studentAnswers[$index] ?? null;
-                    $isCorrect = $studentAnswer === $question['correctAnswer'];
+                    $studentAnswer = isset($studentAnswers[$index]) ? (int) $studentAnswers[$index] : null;
+                    $correctAnswer = isset($question['correctAnswer']) ? (int) $question['correctAnswer'] : null;
+                    $isCorrect = $studentAnswer !== null && $correctAnswer !== null && $studentAnswer === $correctAnswer;
 
                     $detailedResults[] = [
-                        'question' => $question['question'],
-                        'options' => $question['options'],
-                        'correct_answer' => $question['correctAnswer'],
+                        'question' => $question['question'] ?? '',
+                        'options' => $question['options'] ?? [],
+                        'correct_answer' => $correctAnswer ?? 0,
                         'student_answer' => $studentAnswer,
                         'is_correct' => $isCorrect
                     ];
                 }
             }
 
-            // Add total_questions to submission data
+            $correctAnswers = collect($detailedResults)->where('is_correct', true)->count();
+            $normalizedScore = $this->normalizeScore((float) $submission->score, $totalQuestions);
+
+            // Add computed fields for consistent grading display.
             $submission->total_questions = $totalQuestions;
+            $submission->correct_answers = $correctAnswers;
+            $submission->normalized_score = $normalizedScore;
+            $submission->letter_grade = $this->calculateGrade($normalizedScore);
 
             return Inertia::render('teacher/student-grades/show', [
                 'submission' => $submission,
@@ -310,6 +306,55 @@ class TeacherStudentGradesController extends Controller
                 'message' => 'Terjadi kesalahan teknis: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    private function extractQuizQuestions($quizData): array
+    {
+        if (empty($quizData)) {
+            return [];
+        }
+
+        $parsed = $quizData;
+        for ($attempt = 0; $attempt < 2; $attempt++) {
+            if (!is_string($parsed)) {
+                break;
+            }
+
+            $decoded = json_decode($parsed, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                break;
+            }
+
+            $parsed = $decoded;
+        }
+
+        if (!is_array($parsed)) {
+            return [];
+        }
+
+        if (array_key_exists('questions', $parsed) && is_array($parsed['questions'])) {
+            return $parsed['questions'];
+        }
+
+        return $parsed;
+    }
+
+    private function extractTotalQuestions($quizData): int
+    {
+        return count($this->extractQuizQuestions($quizData));
+    }
+
+    private function normalizeScore(float $storedScore, int $totalQuestions): float
+    {
+        $score = max(0, $storedScore);
+
+        // Backward compatibility for legacy submissions that stored raw correct-answer counts.
+        $isLikelyRawCount = $totalQuestions > 0 && floor($score) === $score && $score <= $totalQuestions;
+        if ($isLikelyRawCount) {
+            return round(($score / $totalQuestions) * 100, 2);
+        }
+
+        return round(min($score, 100), 2);
     }
 
     private function calculateGrade($percentage)

@@ -12,8 +12,6 @@ import {
   Edit,
   FileText,
   MessageSquare,
-  MoreHorizontal,
-  Plus,
   Users,
   Video,
 } from "lucide-react"
@@ -145,10 +143,6 @@ export default function TeacherCourseDetailPage({ course }: Props) {
                   <div key={sub.id} className="space-y-3">
                     <div className="flex items-center justify-between">
                       <h3 className="text-lg font-medium">{sub.title}</h3>
-                      <Button variant="ghost" size="sm">
-                        <Edit className="w-4 h-4 mr-2" />
-                        Edit Module
-                      </Button>
                     </div>
                     <p className="text-sm text-slate-500 dark:text-slate-400">{sub.description}</p>
                     {sub.contents && sub.contents.length > 0 ? (
@@ -176,9 +170,6 @@ export default function TeacherCourseDetailPage({ course }: Props) {
                               <Badge variant="default">
                                 {content.type}
                               </Badge>
-                              <Button variant="ghost" size="icon">
-                                <MoreHorizontal className="w-4 h-4" />
-                              </Button>
                             </div>
                           </div>
                         ))}
@@ -186,29 +177,13 @@ export default function TeacherCourseDetailPage({ course }: Props) {
                     ) : (
                       <p className="text-sm text-slate-500 dark:text-slate-400">No content in this module</p>
                     )}
-                    <div className="flex justify-center">
-                      <Button variant="outline" size="sm">
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add Lesson
-                      </Button>
-                    </div>
                   </div>
                 ))
               ) : (
                 <div className="text-center py-8">
                   <p className="text-slate-500 dark:text-slate-400">No modules found for this course</p>
-                  <Button className="mt-4">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Module
-                  </Button>
                 </div>
               )}
-              <div className="flex justify-center">
-                <Button>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Module
-                </Button>
-              </div>
             </div>
           </CardContent>
         </Card>

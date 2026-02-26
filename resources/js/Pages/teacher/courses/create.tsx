@@ -75,7 +75,7 @@ const courseFormSchema = z.object({
         timeLimit: z.number().optional(),
         passingScore: z.number().optional(),
         questions: z.array(z.object({
-          question: z.string().min(1, { message: "Question must be at least 1 character." }),
+          question: z.string().optional(),
           options: z.array(z.string()).length(4, { message: "Quiz must have exactly 4 options." }),
           correctAnswer: z.number().min(0).max(3),
           imageUrl: z.string().optional(), // Add this line for question image support
@@ -531,8 +531,10 @@ export default function CreateCoursePage({ mapel, availableClasses = [] }: Props
 
             // Validate quiz questions
             const questionsValid = content.quiz_data.questions.every((question: any, qIndex: number) => {
-              if (!question.question) {
-                toast.error(`Section ${index + 1}, Quiz ${contentIndex + 1}, Question ${qIndex + 1}: Question is required`);
+              const questionText = (question.question ?? "").toString().trim();
+              const questionImage = (question.imageUrl ?? "").toString().trim();
+              if (!questionText && !questionImage) {
+                toast.error(`Section ${index + 1}, Quiz ${contentIndex + 1}, Question ${qIndex + 1}: Question text or image is required`);
                 return false;
               }
 
@@ -541,9 +543,13 @@ export default function CreateCoursePage({ mapel, availableClasses = [] }: Props
                 return false;
               }
 
-              if (question.options.some((option: any) => !option)) {
-                toast.error(`Section ${index + 1}, Quiz ${contentIndex + 1}, Question ${qIndex + 1}: All options must be filled`);
-                return false;
+              for (let optionIndex = 0; optionIndex < 4; optionIndex++) {
+                const optionText = (question.options?.[optionIndex] ?? "").toString().trim();
+                const optionImage = (question.optionImages?.[optionIndex] ?? "").toString().trim();
+                if (!optionText && !optionImage) {
+                  toast.error(`Section ${index + 1}, Quiz ${contentIndex + 1}, Question ${qIndex + 1}, Option ${optionIndex + 1}: Option text or image is required`);
+                  return false;
+                }
               }
 
               if (question.correctAnswer === undefined || question.correctAnswer < 0 || question.correctAnswer > 3) {

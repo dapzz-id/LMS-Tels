@@ -253,9 +253,9 @@ class KelolaDataCourseAdminController extends Controller
                 'pembahasan.*.contents.*.quiz_data.passingScore' => 'nullable|integer|min:0|max:100',
                 'pembahasan.*.contents.*.quiz_data.totalPoints' => 'nullable|integer|min:0',
                 'pembahasan.*.contents.*.quiz_data.questions' => 'required_if:pembahasan.*.contents.*.type,quiz|array|min:1',
-                'pembahasan.*.contents.*.quiz_data.questions.*.question' => 'required|string|min:1',
+                'pembahasan.*.contents.*.quiz_data.questions.*.question' => 'nullable|string',
                 'pembahasan.*.contents.*.quiz_data.questions.*.options' => 'required|array|size:4',
-                'pembahasan.*.contents.*.quiz_data.questions.*.options.*' => 'required|string|min:1',
+                'pembahasan.*.contents.*.quiz_data.questions.*.options.*' => 'nullable|string',
                 'pembahasan.*.contents.*.quiz_data.questions.*.correctAnswer' => 'required|integer|min:0|max:3',
                 'pembahasan.*.contents.*.quiz_data.questions.*.points' => 'nullable|integer|min:0',
                 'pembahasan.*.contents.*.quiz_data.questions.*.imageUrl' => 'nullable|string', // Add this line for image support
@@ -282,6 +282,8 @@ class KelolaDataCourseAdminController extends Controller
             ];
 
             $validator = Validator::make($input, $rules, $messages);
+            $this->setCourseValidationAttributes($validator);
+            $this->attachQuizConditionalValidation($validator, $input);
 
             if ($validator->fails()) {
                 Log::error('Validation failed:', $validator->errors()->toArray());
@@ -529,9 +531,9 @@ class KelolaDataCourseAdminController extends Controller
                 'pembahasan.*.contents.*.quiz_data.timeLimit' => 'nullable|integer|min:1|max:60',
                 'pembahasan.*.contents.*.quiz_data.passingScore' => 'nullable|integer|min:0|max:100',
                 'pembahasan.*.contents.*.quiz_data.questions' => 'required_if:pembahasan.*.contents.*.type,quiz|array|min:1',
-                'pembahasan.*.contents.*.quiz_data.questions.*.question' => 'required|string|min:1',
+                'pembahasan.*.contents.*.quiz_data.questions.*.question' => 'nullable|string',
                 'pembahasan.*.contents.*.quiz_data.questions.*.options' => 'required|array|size:4',
-                'pembahasan.*.contents.*.quiz_data.questions.*.options.*' => 'required|string|min:1',
+                'pembahasan.*.contents.*.quiz_data.questions.*.options.*' => 'nullable|string',
                 'pembahasan.*.contents.*.quiz_data.questions.*.correctAnswer' => 'required|integer|min:0|max:3',
                 'pembahasan.*.contents.*.quiz_data.questions.*.imageUrl' => 'nullable|string', // Add this line for image support
                 'pembahasan.*.contents.*.quiz_data.questions.*.optionImages' => 'nullable|array', // Add this line for option images support
@@ -556,6 +558,8 @@ class KelolaDataCourseAdminController extends Controller
             ];
 
             $validator = Validator::make($input, $rules, $messages);
+            $this->setCourseValidationAttributes($validator);
+            $this->attachQuizConditionalValidation($validator, $input);
 
             if ($validator->fails()) {
                 Log::error('Validation failed:', $validator->errors()->toArray());
@@ -748,6 +752,86 @@ class KelolaDataCourseAdminController extends Controller
                 'debug' => env('APP_DEBUG') ? $e->getMessage() : null
             ], 500);
         }
+    }
+
+    private function setCourseValidationAttributes($validator): void
+    {
+        $validator->setAttributeNames([
+            'id_mapel' => 'mata pelajaran',
+            'judul_kursus' => 'judul kursus',
+            'deskripsi_kursus' => 'deskripsi kursus',
+            'url_thumbnail' => 'thumbnail kursus',
+            'pembahasan' => 'pembahasan',
+            'pembahasan.*.title' => 'judul pembahasan',
+            'pembahasan.*.description' => 'deskripsi pembahasan',
+            'pembahasan.*.contents' => 'konten pembahasan',
+            'pembahasan.*.contents.*.type' => 'tipe konten',
+            'pembahasan.*.contents.*.title' => 'judul konten',
+            'pembahasan.*.contents.*.description' => 'deskripsi konten',
+            'pembahasan.*.contents.*.url' => 'URL konten',
+            'pembahasan.*.contents.*.duration' => 'durasi konten',
+            'pembahasan.*.contents.*.quiz_data.questions' => 'daftar soal quiz',
+            'pembahasan.*.contents.*.quiz_data.questions.*.question' => 'teks pertanyaan quiz',
+            'pembahasan.*.contents.*.quiz_data.questions.*.options' => 'pilihan jawaban quiz',
+            'pembahasan.*.contents.*.quiz_data.questions.*.correctAnswer' => 'jawaban benar quiz',
+        ]);
+    }
+
+    private function attachQuizConditionalValidation($validator, array $input): void
+    {
+        $validator->after(function ($validator) use ($input) {
+            $pembahasanList = $input['pembahasan'] ?? [];
+            if (!is_array($pembahasanList)) {
+                return;
+            }
+
+            foreach ($pembahasanList as $pIndex => $pembahasan) {
+                $contents = $pembahasan['contents'] ?? null;
+                if (!is_array($contents)) {
+                    continue;
+                }
+
+                foreach ($contents as $cIndex => $content) {
+                    $contentType = $content['type'] ?? null;
+                    if ($contentType !== 'quiz') {
+                        continue;
+                    }
+
+                    $questions = $content['quiz_data']['questions'] ?? null;
+                    if (!is_array($questions)) {
+                        continue;
+                    }
+
+                    foreach ($questions as $qIndex => $question) {
+                        $questionText = trim((string) ($question['question'] ?? ''));
+                        $questionImage = trim((string) ($question['imageUrl'] ?? ''));
+
+                        if ($questionText === '' && $questionImage === '') {
+                            $validator->errors()->add(
+                                "pembahasan.$pIndex.contents.$cIndex.quiz_data.questions.$qIndex.question",
+                                'Pertanyaan quiz wajib diisi: tulis pertanyaan atau unggah gambar pertanyaan.'
+                            );
+                        }
+
+                        $options = $question['options'] ?? [];
+                        $optionImages = $question['optionImages'] ?? [];
+
+                        for ($optionIndex = 0; $optionIndex < 4; $optionIndex++) {
+                            $optionText = trim((string) ($options[$optionIndex] ?? ''));
+                            $optionImage = trim((string) ($optionImages[$optionIndex] ?? ''));
+
+                            if ($optionText === '' && $optionImage === '') {
+                                $humanIndex = $optionIndex + 1;
+                                $validator->errors()->add(
+                                    "pembahasan.$pIndex.contents.$cIndex.quiz_data.questions.$qIndex.options.$optionIndex",
+                                    "Pilihan jawaban ke-$humanIndex wajib diisi: teks atau gambar."
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+        });
     }
 
     /**

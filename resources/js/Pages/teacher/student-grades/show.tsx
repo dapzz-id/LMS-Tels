@@ -42,6 +42,9 @@ interface Submission {
     title: string;
   };
   score: number;
+  normalized_score?: number;
+  letter_grade?: string;
+  correct_answers?: number;
   total_questions: number;
   submitted_at: string;
   time_taken: number;
@@ -58,9 +61,15 @@ export default function TeacherGradesShowPage({ submission, detailedResults }: P
   
   
 
-  const percentage = submission.total_questions > 0
-    ? Math.round((submission.score / submission.total_questions) * 100)
-    : 0;
+  const percentage = Math.round(
+    typeof submission.normalized_score === "number"
+      ? submission.normalized_score
+      : (
+          submission.total_questions > 0
+            ? (submission.score / submission.total_questions) * 100
+            : submission.score
+        ),
+  );
 
   const getGrade = (percentage: number) => {
     if (percentage >= 90) return "A"
@@ -69,6 +78,8 @@ export default function TeacherGradesShowPage({ submission, detailedResults }: P
     if (percentage >= 60) return "D"
     return "F"
   }
+
+  const letterGrade = submission.letter_grade || getGrade(percentage);
 
   const getGradeColor = (percentage: number) => {
     if (percentage >= 90) return "bg-green-100 text-green-700 border-green-200 dark:bg-green-900 dark:text-green-300 dark:border-green-800"
@@ -142,7 +153,7 @@ export default function TeacherGradesShowPage({ submission, detailedResults }: P
                 <div>
                   <div className="text-2xl font-bold">{percentage}%</div>
                   <Badge variant="outline" className={getGradeColor(percentage)}>
-                    {getGrade(percentage)}
+                    {letterGrade}
                   </Badge>
                 </div>
               </div>
@@ -177,7 +188,7 @@ export default function TeacherGradesShowPage({ submission, detailedResults }: P
           <CardContent>
             <div className="grid gap-6 md:grid-cols-3">
               <div className="text-center">
-                <div className="text-3xl font-bold text-blue-600">{submission.score}</div>
+                <div className="text-3xl font-bold text-blue-600">{submission.correct_answers ?? '-'}</div>
                 <div className="text-sm text-slate-500">Correct Answers</div>
               </div>
               <div className="text-center">

@@ -233,7 +233,7 @@ export default function MainDashboard() {
                             </div>
                           </div>
                           <Button variant="outline" size="sm" asChild>
-                            <Link href={`/dashboard/courses/${course.id}`}>Continue</Link>
+                            <Link href={route('student.courses.learn', { id: course.id })}>Continue</Link>
                           </Button>
                         </div>
                       ))}
@@ -282,7 +282,7 @@ export default function MainDashboard() {
                         {recentCourses.map((course) => (
                           <Link
                             key={course.id}
-                            href={`/dashboard/courses/${course.id}`}
+                            href={route('student.courses.learn', { id: course.id })}
                             className="block rounded-lg border border-slate-200 p-3 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800/50"
                           >
                             <p className="text-sm font-medium text-slate-900 dark:text-slate-100 line-clamp-1">{course.title}</p>

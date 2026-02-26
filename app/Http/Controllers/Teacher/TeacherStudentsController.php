@@ -135,7 +135,7 @@ class TeacherStudentsController extends Controller
             $quizSubmissions = QuizSubmission::query()
                 ->whereIn('course_id', $courseIds)
                 ->whereIn('user_id', $studentIds)
-                ->select(['user_id', 'course_id', 'score', 'total_questions'])
+                ->select(['user_id', 'course_id', 'score'])
                 ->get();
 
             $progressThresholds = [
@@ -171,11 +171,7 @@ class TeacherStudentsController extends Controller
 
                 // Calculate average score
                 $averageScore = $studentQuizSubmissions->count() > 0
-                    ? round($studentQuizSubmissions->avg(function($submission) {
-                        return $submission->total_questions > 0
-                            ? ($submission->score / $submission->total_questions) * 100
-                            : 0;
-                    }), 2)
+                    ? round((float) $studentQuizSubmissions->avg('score'), 2)
                     : 0;
 
                 $enrollmentKey = "{$enrollment->student_id}:{$enrollment->course_id}";
@@ -352,18 +348,29 @@ class TeacherStudentsController extends Controller
     {
         try {
             $completedCount = 0;
+            $quizCompletedSubLookup = QuizSubmission::query()
+                ->where('user_id', $student->id)
+                ->where('course_id', $course->id)
+                ->join('course_contents', 'quiz_submissions.quiz_content_id', '=', 'course_contents.id')
+                ->pluck('course_contents.sub_pembahasan_id')
+                ->filter()
+                ->map(fn ($id) => (int) $id)
+                ->unique()
+                ->flip();
 
             foreach ($course->sub_pembahasan as $sub) {
                 foreach ($sub->contents as $content) {
                     // Only count content that has a valid type
                     if (in_array($content->type, ['video', 'pdf', 'quiz'])) {
                         // Get the actual progress_per_subbab value
-                        $progressRecord = ProgressCourse::where('id_siswa', $student->id)
+                        $progressValue = (int) (ProgressCourse::where('id_siswa', $student->id)
                             ->where('id_kursus', $course->id)
                             ->where('id_sub_pembahasan', $sub->id)
-                            ->first();
+                            ->max('progress_per_subbab') ?? 0);
 
-                        $progressValue = $progressRecord ? $progressRecord->progress_per_subbab : 0;
+                        if ($quizCompletedSubLookup->has((int) $sub->id)) {
+                            $progressValue = max($progressValue, 3);
+                        }
 
                         // Map content types to minimum required progress_per_subbab values
                         $minRequiredProgressValues = [

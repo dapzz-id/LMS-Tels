@@ -25,15 +25,18 @@ class StudentGradesController extends Controller
 
         // Transform the data for the frontend
         $grades = $quizSubmissions->map(function ($submission) {
+            $totalQuestions = $this->extractTotalQuestions($submission->quizContent?->quiz_data);
+            $normalizedScore = $this->normalizeScore((float) $submission->score, $totalQuestions);
+
             return [
                 'id' => $submission->id,
                 'course_name' => $submission->course->judul_kursus ?? 'Unknown Course',
                 'course_code' => 'COURSE-' . $submission->course_id,
                 'quiz_title' => $submission->quizContent->title ?? 'Quiz',
-                'score' => $submission->score,
-                'max_score' => 100, // Assuming max score is 100
-                'percentage' => $submission->score,
-                'letter_grade' => $this->getLetterGrade($submission->score),
+                'score' => $normalizedScore,
+                'max_score' => 100,
+                'percentage' => $normalizedScore,
+                'letter_grade' => $this->getLetterGrade($normalizedScore),
                 'submitted_at' => $submission->submitted_at,
                 'created_at' => $submission->created_at,
             ];
@@ -127,6 +130,50 @@ class StudentGradesController extends Controller
         if ($score >= 70) return 'C';
         if ($score >= 60) return 'D';
         return 'F';
+    }
+
+    private function extractTotalQuestions($quizData): int
+    {
+        if (empty($quizData)) {
+            return 0;
+        }
+
+        $parsed = $quizData;
+        for ($attempt = 0; $attempt < 2; $attempt++) {
+            if (!is_string($parsed)) {
+                break;
+            }
+
+            $decoded = json_decode($parsed, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                break;
+            }
+
+            $parsed = $decoded;
+        }
+
+        if (is_array($parsed)) {
+            if (array_key_exists('questions', $parsed) && is_array($parsed['questions'])) {
+                return count($parsed['questions']);
+            }
+
+            return count($parsed);
+        }
+
+        return 0;
+    }
+
+    private function normalizeScore(float $storedScore, int $totalQuestions): float
+    {
+        $score = max(0, $storedScore);
+
+        // Backward compatibility for legacy submissions that stored raw correct-answer counts.
+        $isLikelyRawCount = $totalQuestions > 0 && floor($score) === $score && $score <= $totalQuestions;
+        if ($isLikelyRawCount) {
+            return round(($score / $totalQuestions) * 100, 2);
+        }
+
+        return round(min($score, 100), 2);
     }
 
     private function isCourseCompleted($userId, $courseId)
