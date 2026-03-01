@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Head, router, usePage } from "@inertiajs/react"
 import axios from "axios"
 import { toast } from "sonner"
@@ -20,7 +20,9 @@ import {
   Clock,
   ChevronDown,
   ChevronRight,
-  Award
+  Award,
+  Maximize2,
+  Minimize2
 } from "lucide-react"
 import { Dialog } from "@/Components/ui/dialog"
 import { DialogContent } from "@radix-ui/react-dialog"
@@ -69,6 +71,11 @@ interface GroupedContent {
   contents: Course["contents"]
 }
 
+interface ParsedQuizData {
+  questions: any[]
+  timeLimit?: number
+}
+
 const CourseLearnPage = ({ id }: { id: string }) => {
   const { auth } = usePage().props as any;
   const user = auth?.user;
@@ -90,6 +97,9 @@ const CourseLearnPage = ({ id }: { id: string }) => {
   const [videoDuration, setVideoDuration] = useState<number>(0)
   const [videoCurrentTime, setVideoCurrentTime] = useState<number>(0)
   const [isQuizCompleted, setIsQuizCompleted] = useState(false) // Add this line
+  const [isVideoZoomed, setIsVideoZoomed] = useState(false)
+  const completedVideosRef = useRef<Set<string>>(new Set())
+  const completingVideosRef = useRef<Set<string>>(new Set())
 
   const renderLayout = (content: JSX.Element) => (
     <div className="flex min-h-screen bg-gray-50 dark:bg-blue-950/90">
@@ -271,6 +281,35 @@ const CourseLearnPage = ({ id }: { id: string }) => {
     }
   };
 
+  const markVideoAsCompleted = (videoId: string, content: Course["contents"][0]) => {
+    if (!course || content.type !== "video") return;
+    if (completedVideosRef.current.has(videoId) || completingVideosRef.current.has(videoId)) return;
+
+    completingVideosRef.current.add(videoId);
+
+    const newCompletedVideos = new Set(completedVideosRef.current);
+    newCompletedVideos.add(videoId);
+    completedVideosRef.current = newCompletedVideos;
+    setCompletedVideos(newCompletedVideos);
+    localStorage.setItem(`completed-videos-${course.id}`, JSON.stringify(Array.from(newCompletedVideos)));
+
+    if (window.studentActivityTracker) {
+      window.studentActivityTracker.trackVideoPlay(videoId, content.url || "");
+    }
+
+    saveVideoCompletion(course.id.toString(), content.id, videoId, content.duration || 0)
+      .then((data) => {
+        if (data?.status === "success") {
+          toast.success(getFirstMessage(data, "Video completed! You can now navigate to the next content."));
+        } else {
+          toast.error(getFirstMessage(data, "Failed to save video completion. Please try again."));
+        }
+      })
+      .finally(() => {
+        completingVideosRef.current.delete(videoId);
+      });
+  };
+
   useEffect(() => {
     const fetchCourseDetails = async () => {
       try {
@@ -395,6 +434,31 @@ const CourseLearnPage = ({ id }: { id: string }) => {
     setExpandedSections(newExpanded)
   }
 
+  const parseQuizData = (rawQuizData: Course["contents"][0]["quiz_data"]): ParsedQuizData => {
+    try {
+      const parsed = typeof rawQuizData === "string" ? JSON.parse(rawQuizData) : rawQuizData
+
+      if (Array.isArray(parsed)) {
+        return { questions: parsed }
+      }
+
+      if (parsed && typeof parsed === "object") {
+        const structured = parsed as { questions?: any[]; timeLimit?: number; question?: string }
+        const questions = Array.isArray(structured.questions)
+          ? structured.questions
+          : (structured.question !== undefined ? [structured] : [])
+        const parsedTimeLimit = Number(structured.timeLimit)
+        const timeLimit = Number.isFinite(parsedTimeLimit) && parsedTimeLimit > 0 ? parsedTimeLimit : undefined
+
+        return { questions, timeLimit }
+      }
+
+      return { questions: [] }
+    } catch {
+      return { questions: [] }
+    }
+  }
+
   // Update the handleQuizStart function
   const handleQuizStart = async (content: Course["contents"][0]) => {
     setQuizLoading(true)
@@ -403,43 +467,20 @@ const CourseLearnPage = ({ id }: { id: string }) => {
 
 
       // Parse quiz data - handle different possible formats
-      let quizData: any[] = []
-      try {
-        if (typeof content.quiz_data === "string") {
-          const parsed = JSON.parse(content.quiz_data)
-          // Handle the new structure with timeLimit, passingScore, and questions
-          if (parsed.questions) {
-            quizData = parsed.questions
-          } else {
-            // Handle legacy format
-            quizData = Array.isArray(parsed) ? parsed : [parsed]
-          }
-        } else if (typeof content.quiz_data === "object" && content.quiz_data !== null) {
-          // Handle the new structure with timeLimit, passingScore, and questions
-          if ((content.quiz_data as any).questions) {
-            quizData = (content.quiz_data as any).questions
-          } else {
-            // Handle legacy format
-            quizData = Array.isArray(content.quiz_data) ? content.quiz_data : [content.quiz_data]
-          }
-        } else {
-          quizData = []
-        }
-
-      } catch (e) {
-
-        quizData = []
-      }
+      const parsedQuizData = parseQuizData(content.quiz_data)
+      const quizTimeLimit = content.duration && content.duration > 0
+        ? content.duration
+        : (parsedQuizData.timeLimit ?? 30)
 
       // Prepare quiz object with proper structure
       const quiz = {
         id: content.id,
         title: content.title,
         description: content.description || "",
-        time_limit: content.duration || 30,
+        time_limit: quizTimeLimit,
         passing_score: 70, // Default passing score
-        questions: Array.isArray(quizData)
-          ? quizData.map((q, index) => ({
+        questions: parsedQuizData.questions
+          .map((q, index) => ({
             id: index + 1,
             question: q.question || "",
             options: q.options || ["", "", "", ""],
@@ -447,8 +488,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
             explanation: q.explanation || "",
             points: q.points || 10,
             timeLimit: q.timeLimit || 60,
-          }))
-          : [],
+          })),
       }
 
 
@@ -719,6 +759,36 @@ const CourseLearnPage = ({ id }: { id: string }) => {
     };
   }, [activeContent]);
 
+  const getAttachedYouTubePlayer = (contentId: number) => {
+    const players = (window as any).ytPlayers;
+    const player = players?.[contentId];
+    if (!player) return null;
+
+    try {
+      const iframe = typeof player.getIframe === "function" ? player.getIframe() : null;
+      if (!iframe || !document.body.contains(iframe)) {
+        if (typeof player.destroy === "function") {
+          player.destroy();
+        }
+        delete players[contentId];
+        return null;
+      }
+      return player;
+    } catch {
+      try {
+        if (typeof player.destroy === "function") {
+          player.destroy();
+        }
+      } catch {
+        // no-op
+      }
+      if (players) {
+        delete players[contentId];
+      }
+      return null;
+    }
+  };
+
   // Function to initialize YouTube players
   const initializeYouTubePlayers = () => {
     // Only initialize for video content
@@ -736,8 +806,10 @@ const CourseLearnPage = ({ id }: { id: string }) => {
           (window as any).ytPlayers = {};
         }
 
-        // Only initialize if not already initialized
-        if (!(window as any).ytPlayers[activeContent.id]) {
+        const currentPlayer = getAttachedYouTubePlayer(activeContent.id);
+
+        // Only initialize if not already initialized and attached
+        if (!currentPlayer) {
           try {
             (window as any).ytPlayers[activeContent.id] = new (window as any).YT.Player(`youtube-player-${activeContent.id}`, {
               playerVars: {
@@ -782,8 +854,10 @@ const CourseLearnPage = ({ id }: { id: string }) => {
         if (videoId) {
           const lastWatched = videoWatchTime.get(videoId) ?? getStoredWatchProgress(course.id.toString(), videoId);
           if (lastWatched > 0 && player?.seekTo) {
-            player.seekTo(lastWatched, true);
-            setVideoCurrentTime(lastWatched);
+            const isCompleted = completedVideosRef.current.has(videoId);
+            const resumeAt = isCompleted ? 0 : lastWatched;
+            player.seekTo(resumeAt, true);
+            setVideoCurrentTime(resumeAt);
           }
         }
       }
@@ -801,38 +875,9 @@ const CourseLearnPage = ({ id }: { id: string }) => {
 
     // Video has ended
     if (event.data === 0) {
-
-
-      // Mark video as completed and update state immediately
-      const newCompletedVideos = new Set(completedVideos);
-      newCompletedVideos.add(videoId);
-      setCompletedVideos(newCompletedVideos);
-
-      // Also update localStorage immediately for UI consistency
-      if (course) {
-        localStorage.setItem(`completed-videos-${course.id}`, JSON.stringify(Array.from(newCompletedVideos)));
+      if (activeContent) {
+        markVideoAsCompleted(videoId, activeContent);
       }
-
-      // Track video completion using existing trackVideoPlay method
-      if (window.studentActivityTracker) {
-        window.studentActivityTracker.trackVideoPlay(videoId, activeContent?.url || '');
-      }
-
-      // Save video completion to database and show feedback based on backend response
-      if (activeContent && course) {
-        saveVideoCompletion(course.id.toString(), activeContent.id, videoId, activeContent.duration || 0)
-          .then((data) => {
-            if (data?.status === 'success') {
-              toast.success(getFirstMessage(data, 'Video completed! You can now navigate to the next content.'));
-            } else {
-              toast.error(getFirstMessage(data, 'Failed to save video completion. Please try again.'));
-            }
-          });
-      } else {
-        toast.error('Failed to save video completion. Please try again.');
-      }
-
-
     }
 
     // Video is playing
@@ -850,6 +895,26 @@ const CourseLearnPage = ({ id }: { id: string }) => {
       }
     }
   }, [completedVideos, activeContent]);
+
+  useEffect(() => {
+    completedVideosRef.current = completedVideos;
+  }, [completedVideos]);
+
+  useEffect(() => {
+    if (activeContent?.type !== "video" && isVideoZoomed) {
+      setIsVideoZoomed(false);
+    }
+  }, [activeContent, isVideoZoomed]);
+
+  useEffect(() => {
+    if (!isVideoZoomed) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isVideoZoomed]);
 
   // Initialize completed videos from localStorage
   useEffect(() => {
@@ -962,12 +1027,10 @@ const CourseLearnPage = ({ id }: { id: string }) => {
     const videoId = extractYouTubeVideoId(activeContent.url);
     if (!videoId) return;
 
-    // Check if video is already marked as completed
-    const isAlreadyCompleted = completedVideos.has(videoId);
-
     const initialWatched = videoWatchTime.get(videoId) ?? getStoredWatchProgress(id, videoId);
     if (initialWatched > 0) {
-      setVideoCurrentTime(initialWatched);
+      const isCompleted = completedVideosRef.current.has(videoId);
+      setVideoCurrentTime(isCompleted ? 0 : initialWatched);
     } else {
       setVideoCurrentTime(0);
     }
@@ -976,80 +1039,49 @@ const CourseLearnPage = ({ id }: { id: string }) => {
 
     // Set up interval to periodically check video progress
     intervalId = setInterval(() => {
-      if ((window as any).ytPlayers && (window as any).ytPlayers[activeContent.id]) {
-        try {
-          const player = (window as any).ytPlayers[activeContent.id];
-          if (player && player.getCurrentTime && player.getDuration) {
-            const currentTime = player.getCurrentTime();
-            const duration = player.getDuration();
-            const watchedLimit = videoWatchTime.get(videoId) ?? getStoredWatchProgress(id, videoId);
+      const player = getAttachedYouTubePlayer(activeContent.id);
+      if (!player) {
+        initializeYouTubePlayers();
+        return;
+      }
 
-            if (duration > 0) {
-              setVideoDuration(duration);
-            }
+      try {
+        if (player.getCurrentTime && player.getDuration) {
+          const currentTime = player.getCurrentTime();
+          const duration = player.getDuration();
+          const watchedLimit = videoWatchTime.get(videoId) ?? getStoredWatchProgress(id, videoId);
+          const isAlreadyCompleted = completedVideosRef.current.has(videoId);
 
-            // Block forward seek beyond watched checkpoint + small tolerance.
-            // This still allows seeking backward or jumping forward only up to last watched second.
-            const hardLimit = watchedLimit + 1.5;
-            if (!isAlreadyCompleted && currentTime > hardLimit) {
-              player.seekTo(watchedLimit, true);
-              setVideoCurrentTime(watchedLimit);
-              return;
-            }
-
-            setVideoCurrentTime(currentTime);
-
-            if (currentTime > watchedLimit) {
-              setVideoWatchTime((prev) => {
-                const next = new Map(prev);
-                next.set(videoId, currentTime);
-                return next;
-              });
-            }
-
-            // If video is near the end (within 2 seconds), mark as completed
-            if (!isAlreadyCompleted && duration > 0 && (duration - currentTime) <= 2) {
-              // Mark video as completed and update state immediately
-              const newCompletedVideos = new Set(completedVideos);
-              newCompletedVideos.add(videoId);
-              setCompletedVideos(newCompletedVideos);
-
-              // Also update localStorage immediately for UI consistency
-              if (course) {
-                localStorage.setItem(`completed-videos-${course.id}`, JSON.stringify(Array.from(newCompletedVideos)));
-              }
-
-              // Track video completion
-              if (window.studentActivityTracker) {
-                window.studentActivityTracker.trackVideoPlay(videoId, activeContent.url || '');
-              }
-
-              // Save video completion to database and show feedback based on backend response
-              if (activeContent && course) {
-                saveVideoCompletion(course.id.toString(), activeContent.id, videoId, activeContent.duration || 0)
-                  .then((data) => {
-                    if (data?.status === 'success') {
-                      toast.success(getFirstMessage(data, 'Video completed! You can now navigate to the next content.'));
-                    } else {
-                      toast.error(getFirstMessage(data, 'Failed to save video completion. Please try again.'));
-                    }
-                  });
-              } else {
-                toast.error('Failed to save video completion. Please try again.');
-              }
-
-
-
-              // Clear interval since we've completed the video
-              if (intervalId) {
-                clearInterval(intervalId);
-                intervalId = null;
-              }
-            }
+          if (duration > 0) {
+            setVideoDuration(duration);
           }
-        } catch (error) {
 
+          // Block forward seek beyond watched checkpoint + small tolerance.
+          // This still allows seeking backward or jumping forward only up to last watched second.
+          const hardLimit = watchedLimit + 1.5;
+          if (!isAlreadyCompleted && currentTime > hardLimit) {
+            player.seekTo(watchedLimit, true);
+            setVideoCurrentTime(watchedLimit);
+            return;
+          }
+
+          setVideoCurrentTime(currentTime);
+
+          if (currentTime > watchedLimit) {
+            setVideoWatchTime((prev) => {
+              const next = new Map(prev);
+              next.set(videoId, currentTime);
+              return next;
+            });
+          }
+
+          // If video is near the end (within 2 seconds), mark as completed
+          if (!isAlreadyCompleted && duration > 0 && (duration - currentTime) <= 2) {
+            markVideoAsCompleted(videoId, activeContent);
+          }
         }
+      } catch {
+        initializeYouTubePlayers();
       }
     }, 1000); // Check every second
 
@@ -1120,14 +1152,22 @@ const CourseLearnPage = ({ id }: { id: string }) => {
     const videoId = extractYouTubeVideoId(activeContent.url);
     if (!videoId) return;
 
-    const player = (window as any).ytPlayers?.[contentId];
-    if (!player?.seekTo) return;
+    const player = getAttachedYouTubePlayer(contentId);
+    if (!player?.seekTo) {
+      initializeYouTubePlayers();
+      return;
+    }
 
     const watchedLimit = videoWatchTime.get(videoId) ?? getStoredWatchProgress(id, videoId);
-    const allowedTarget = Math.min(nextTime, watchedLimit);
+    const isCompleted = completedVideosRef.current.has(videoId);
+    const allowedTarget = isCompleted ? Math.max(0, nextTime) : Math.min(nextTime, watchedLimit);
 
-    player.seekTo(allowedTarget, true);
-    setVideoCurrentTime(allowedTarget);
+    try {
+      player.seekTo(allowedTarget, true);
+      setVideoCurrentTime(allowedTarget);
+    } catch {
+      initializeYouTubePlayers();
+    }
   };
 
   const renderContent = (content: Course["contents"][0]) => {
@@ -1167,10 +1207,10 @@ const CourseLearnPage = ({ id }: { id: string }) => {
 
           // Additional check: If we have the YouTube player API, we can check if the video is actually completed
           // This is a more reliable check than just localStorage
-          if ((window as any).ytPlayers && (window as any).ytPlayers[content.id]) {
+          const player = getAttachedYouTubePlayer(content.id);
+          if (player) {
             try {
               // Get current time and duration to check if video is near the end
-              const player = (window as any).ytPlayers[content.id];
               const currentTime = player.getCurrentTime ? player.getCurrentTime() : 0;
               const duration = player.getDuration ? player.getDuration() : 0;
 
@@ -1184,74 +1224,109 @@ const CourseLearnPage = ({ id }: { id: string }) => {
           }
         }
 
+        const isZoomed = isVideoZoomed && activeContent?.id === content.id;
+        const sliderInfoClass = isZoomed
+          ? "flex flex-wrap items-center justify-between gap-1 text-xs text-slate-200 sm:gap-2"
+          : "flex flex-wrap items-center justify-between gap-1 text-xs text-slate-600 dark:text-slate-300 sm:gap-2";
+        const unlockedTime = (() => {
+          const vid = content.url ? extractYouTubeVideoId(content.url) : null;
+          if (!vid) return 0;
+          return videoWatchTime.get(vid) ?? getStoredWatchProgress(id, vid);
+        })();
+        const sliderMax = isVideoCompleted
+          ? Math.max(0, Math.floor(videoDuration || 0))
+          : Math.max(0, Math.floor(unlockedTime));
+
         return (
-          <div className="w-full">
-            <div className="aspect-video">
-              <iframe
-                id={`youtube-player-${content.id}`}
-                src={videoUrl}
-                className="w-full h-full rounded-lg"
-                allowFullScreen={false}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                onLoad={() => {
-                  // Track video play when iframe loads
-                  if (window.studentActivityTracker && content.url) {
-                    const videoId = extractYouTubeVideoId(content.url);
-                    if (videoId && !trackedVideos.has(videoId)) {
-                      window.studentActivityTracker.trackVideoPlay(videoId, content.url);
-                      setTrackedVideos(prev => new Set(prev).add(videoId));
-                    }
-                  }
-
-                  // Try to initialize YouTube player after iframe loads
-                  setTimeout(() => {
-                    if ((window as any).YT && (window as any).YT.Player) {
-                      initializeYouTubePlayers();
-                    }
-                  }, 500);
-                }}
-              />
-            </div>
-
-            <div className="mt-3 space-y-2">
-              <input
-                type="range"
-                min={0}
-                max={Math.max(0, Math.floor(videoDuration || 0))}
-                value={Math.min(Math.floor(videoCurrentTime), Math.floor(videoDuration || 0))}
-                onChange={(event) => handleVideoSeek(content.id, Number(event.target.value))}
-                className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-slate-200 accent-blue-600 dark:bg-slate-700"
-              />
-              <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-300">
-                <span>{formatTime(videoCurrentTime)}</span>
-                <span>
-                  Last unlocked: {formatTime(
-                    (() => {
-                      const vid = content.url ? extractYouTubeVideoId(content.url) : null;
-                      if (!vid) return 0;
-                      return videoWatchTime.get(vid) ?? getStoredWatchProgress(id, vid);
-                    })()
-                  )}
-                </span>
-                <span>{formatTime(videoDuration)}</span>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between mt-2">
-              {isVideoCompleted ? (
-                <div className="flex items-center text-sm text-green-600 dark:text-green-400">
-                  <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                  </svg>
-                  Video completed
-                </div>
-              ) : (
-                <div className="text-sm text-yellow-600 dark:text-yellow-400">
-                  Progress bar hanya bisa maju sampai posisi terakhir yang sudah ditonton.
+          <div className={isZoomed ? "fixed inset-0 z-[70] overflow-y-auto bg-black/95 p-3 sm:p-4" : "w-full"}>
+            <div className={isZoomed ? "mx-auto flex w-full max-w-6xl flex-col gap-3" : "w-full"}>
+              {isZoomed && (
+                <div className="flex items-center justify-between gap-2 rounded-lg border border-white/15 bg-black/60 px-3 py-2 text-white">
+                  <p className="truncate text-sm font-medium">{content.title}</p>
+                  <Button
+                    variant="outline"
+                    className="h-8 border-white/30 bg-transparent px-2 text-white hover:bg-white/10"
+                    onClick={() => setIsVideoZoomed(false)}
+                  >
+                    <Minimize2 className="mr-1 h-4 w-4" />
+                    Exit Zoom
+                  </Button>
                 </div>
               )}
-              <div className="text-xs text-gray-500 dark:text-gray-400">
-                Status: {isVideoCompleted ? 'Completed' : 'In Progress'}
+
+              <div className={isZoomed ? "rounded-lg border border-white/15 bg-black/60 p-2" : ""}>
+                <div className="aspect-video">
+                  <iframe
+                    id={`youtube-player-${content.id}`}
+                    src={videoUrl}
+                    className="w-full h-full rounded-lg"
+                    allowFullScreen={true}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    onLoad={() => {
+                      // Track video play when iframe loads
+                      if (window.studentActivityTracker && content.url) {
+                        const videoId = extractYouTubeVideoId(content.url);
+                        if (videoId && !trackedVideos.has(videoId)) {
+                          window.studentActivityTracker.trackVideoPlay(videoId, content.url);
+                          setTrackedVideos(prev => new Set(prev).add(videoId));
+                        }
+                      }
+
+                      // Try to initialize YouTube player after iframe loads
+                      setTimeout(() => {
+                        if ((window as any).YT && (window as any).YT.Player) {
+                          initializeYouTubePlayers();
+                        }
+                      }, 500);
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className={isZoomed ? "space-y-2 rounded-lg border border-white/15 bg-black/60 p-3" : "mt-3 space-y-2"}>
+                <input
+                  type="range"
+                  min={0}
+                  max={sliderMax}
+                  value={Math.min(Math.floor(videoCurrentTime), sliderMax)}
+                  onChange={(event) => handleVideoSeek(content.id, Number(event.target.value))}
+                  className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-slate-200 accent-blue-600 dark:bg-slate-700"
+                />
+                <div className={sliderInfoClass}>
+                  <span>{formatTime(videoCurrentTime)}</span>
+                  <span>Last unlocked: {formatTime(unlockedTime)}</span>
+                  <span>{formatTime(videoDuration)}</span>
+                </div>
+              </div>
+
+              <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                {isVideoCompleted ? (
+                  <div className="flex items-center text-sm text-green-600 dark:text-green-400">
+                    <svg className="mr-1 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    Video completed
+                  </div>
+                ) : (
+                  <div className="text-sm leading-relaxed text-yellow-600 dark:text-yellow-400">
+                    Progress bar hanya bisa maju sampai posisi terakhir yang sudah ditonton.
+                  </div>
+                )}
+                <div className="flex items-center gap-2 self-start sm:self-auto">
+                  <div className={isZoomed ? "text-xs text-slate-200" : "text-xs text-gray-500 dark:text-gray-400"}>
+                    Status: {isVideoCompleted ? 'Completed' : 'In Progress'}
+                  </div>
+                  {!isZoomed && (
+                    <Button
+                      variant="outline"
+                      className="h-8 px-2 text-xs"
+                      onClick={() => setIsVideoZoomed(true)}
+                    >
+                      <Maximize2 className="mr-1 h-3.5 w-3.5" />
+                      Zoom
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -1343,27 +1418,11 @@ const CourseLearnPage = ({ id }: { id: string }) => {
         );
 
       case "quiz":
-        let questionCount = 0
-        let quizData: any[] = []
-        try {
-
-          if (typeof content.quiz_data === "string") {
-            quizData = JSON.parse(content.quiz_data)
-          } else if (Array.isArray(content.quiz_data)) {
-            quizData = content.quiz_data
-          } else if (typeof content.quiz_data === "object" && content.quiz_data !== null) {
-            quizData = [content.quiz_data]
-          } else {
-            quizData = []
-          }
-          if (Array.isArray(quizData)) questionCount = quizData.length
-
-        } catch (e) {
-
-          quizData = []
-        }
-        // Use content.duration for quiz time limit, fallback to 30 if not set
-        const quizTimeLimit = content.duration || 30;
+        const parsedQuizData = parseQuizData(content.quiz_data)
+        const questionCount = parsedQuizData.questions.length
+        const quizTimeLimit = content.duration && content.duration > 0
+          ? content.duration
+          : (parsedQuizData.timeLimit ?? 30)
         const submission = getQuizSubmission(content.id);
 
         // Check if this is a one submission only quiz and user has already taken it
@@ -1386,7 +1445,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
           <div className="p-4">
             <h3 className="mb-1 text-lg font-semibold">Quiz: {content.title}</h3>
             <p className="mb-2 text-gray-600 dark:text-gray-300">{content.description}</p>
-            <div className="flex items-center gap-4 mb-4">
+            <div className="flex flex-wrap items-center gap-2 mb-4 sm:gap-4">
               <span className="text-sm font-medium text-blue-700 dark:text-blue-300">{questionCount} Questions</span>
               <span className="text-sm font-medium text-blue-700 dark:text-blue-300">Time Limit: {quizTimeLimit} min</span>
             </div>
@@ -1394,7 +1453,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
             {/* Quiz Score Display */}
             {submission && (
               <div className="mb-4 p-3 bg-gray-50 dark:bg-blue-900/50 rounded-lg border border-gray-200 dark:border-blue-800">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Your Score:</span>
                     <span className={`text-lg font-bold ${submission.passed ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
@@ -1417,7 +1476,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
             )}
 
             {quizError && <div className="mb-2 text-sm text-red-500">{quizError}</div>}
-            {quizData.length === 0 && <div className="mb-2 text-sm text-red-500">Quiz data is invalid or missing.</div>}
+            {parsedQuizData.questions.length === 0 && <div className="mb-2 text-sm text-red-500">Quiz data is invalid or missing.</div>}
 
             {/* Show message if this is a one submission only quiz and user has already taken it */}
             {isOneSubmissionOnly && hasTakenQuiz ? (
@@ -1425,11 +1484,11 @@ const CourseLearnPage = ({ id }: { id: string }) => {
                 You have already completed this quiz. Only one submission is allowed.
               </div>
             ) : (
-              <Button
-                onClick={handleStartQuiz}
-                className="w-full"
-                disabled={quizLoading || quizData.length === 0}
-              >
+                <Button
+                  onClick={handleStartQuiz}
+                  className="w-full"
+                  disabled={quizLoading || parsedQuizData.questions.length === 0}
+                >
                 {quizLoading ? "Preparing Quiz..." : "Start Quiz"}
               </Button>
             )}
@@ -1437,7 +1496,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
             {/* Quiz Dialog */}
             <Dialog open={quizDialogOpen} onOpenChange={setQuizDialogOpen}>
               <DialogContent className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-                <div className="w-full max-w-md p-6 bg-white rounded-lg shadow-lg dark:bg-blue-900">
+                <div className="w-full max-w-md max-h-[90vh] mx-4 overflow-y-auto rounded-lg bg-white p-4 shadow-lg sm:p-6 dark:bg-blue-900">
                   <h2 className="mb-2 text-lg font-semibold">Start Quiz?</h2>
                   <p className="mb-4 text-gray-700 dark:text-gray-200">
                     You are about to start <b>{content.title}</b>.<br />
@@ -1449,11 +1508,11 @@ const CourseLearnPage = ({ id }: { id: string }) => {
                     <br />
                     Once started, you cannot return until you finish. Are you ready?
                   </p>
-                  <div className="flex justify-end gap-2 mt-4">
-                    <Button variant="outline" onClick={() => setQuizDialogOpen(false)} disabled={quizLoading}>
+                  <div className="flex flex-col-reverse gap-2 mt-4 sm:flex-row sm:justify-end">
+                    <Button variant="outline" onClick={() => setQuizDialogOpen(false)} disabled={quizLoading} className="w-full sm:w-auto">
                       Cancel
                     </Button>
-                    <Button onClick={() => handleQuizStart(content)} disabled={quizLoading}>
+                    <Button onClick={() => handleQuizStart(content)} disabled={quizLoading} className="w-full sm:w-auto">
                       {quizLoading ? "Starting..." : "Yes, Start Quiz"}
                     </Button>
                   </div>
@@ -1473,44 +1532,45 @@ const CourseLearnPage = ({ id }: { id: string }) => {
 
       {/* Header */}
       <header className="sticky top-0 z-30 border-b border-blue-100 bg-white/80 backdrop-blur-sm dark:border-blue-800 dark:bg-blue-900/80">
-        <div className="container px-4 py-4 mx-auto">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
+        <div className="container mx-auto px-3 py-2 sm:px-4 sm:py-3 md:py-4">
+          <div className="flex items-center justify-between gap-2 md:gap-3">
+            <div className="flex min-w-0 items-center gap-1.5 md:gap-2">
               <Button
                 variant="ghost"
                 onClick={() => router.visit('/dashboard/courses')}
-                className="flex items-center gap-2"
+                className="h-8 px-2 text-xs sm:h-9 sm:px-3 sm:text-sm"
               >
                 <ArrowLeft className="w-4 h-4" />
-                Back to Courses
+                <span className="hidden sm:inline">Back to Courses</span>
+                <span className="sm:hidden">Back</span>
               </Button>
-              <div className="w-px h-6 bg-gray-200 dark:bg-gray-700" />
-              <div className="flex items-center gap-3">
+              <div className="hidden w-px h-6 bg-gray-200 md:block dark:bg-gray-700" />
+              <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                 <div className="relative">
                   <img
                     src={toAbsoluteAssetUrl(course.url_thumbnail, "/placeholder.svg")}
                     alt={course.judul_kursus}
-                    className="object-cover w-10 h-10 rounded-lg ring-2 ring-blue-100 dark:ring-blue-800"
+                    className="h-8 w-8 rounded-lg object-cover ring-2 ring-blue-100 sm:h-10 sm:w-10 dark:ring-blue-800"
                   />
-                  <div className="absolute w-4 h-4 bg-green-500 border-2 border-white rounded-full -bottom-1 -right-1 dark:border-gray-900" />
+                  <div className="absolute -bottom-1 -right-1 h-3 w-3 rounded-full border-2 border-white bg-green-500 sm:h-4 sm:w-4 dark:border-gray-900" />
                 </div>
-                <div>
-                  <h1 className="text-lg font-semibold text-gray-900 dark:text-white line-clamp-1">
+                <div className="min-w-0">
+                  <h1 className="line-clamp-1 text-sm font-semibold text-gray-900 sm:text-base dark:text-white">
                     {course.judul_kursus}
                   </h1>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{course.mapel?.nama_mapel}</p>
+                  <p className="hidden line-clamp-1 text-[11px] text-gray-500 sm:block sm:text-xs dark:text-gray-400">{course.mapel?.nama_mapel}</p>
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="text-blue-700 bg-blue-50 dark:bg-blue-800/50 dark:text-blue-200">
+            <div className="flex shrink-0 items-center gap-2">
+              <Badge variant="outline" className="hidden text-blue-700 bg-blue-50 dark:bg-blue-800/50 dark:text-blue-200 text-xs sm:inline-flex sm:text-sm">
                 <Calendar className="w-3 h-3 mr-1" />
                 {new Date().toLocaleDateString()}
               </Badge>
               <Button
                 variant="ghost"
                 onClick={handleLogout}
-                className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                className="h-8 px-2 text-xs text-red-600 hover:text-red-700 sm:h-9 sm:px-3 sm:text-sm dark:text-red-400 dark:hover:text-red-300"
               >
                 Logout
               </Button>
@@ -1774,17 +1834,17 @@ const CourseLearnPage = ({ id }: { id: string }) => {
                     {activeContent.type === "video" && <Video className="w-5 h-5 text-blue-600 dark:text-blue-400" />}
                     {activeContent.type === "pdf" && <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />}
                     {activeContent.type === "quiz" && <Book className="w-5 h-5 text-blue-600 dark:text-blue-400" />}
-                    <CardTitle className="text-xl">{activeContent.title}</CardTitle>
+                    <CardTitle className="text-base break-words sm:text-xl">{activeContent.title}</CardTitle>
                   </div>
                   {activeContent.description && (
-                    <CardDescription className="mt-2 text-base">{activeContent.description}</CardDescription>
+                    <CardDescription className="mt-2 text-sm sm:text-base">{activeContent.description}</CardDescription>
                   )}
                 </CardHeader>
                 <CardContent>
                   <div className="overflow-hidden bg-white border border-gray-200 rounded-lg shadow-sm dark:border-gray-700 dark:bg-gray-800">
                     {renderContent(activeContent)}
                   </div>
-                  <div className="flex items-center justify-between mt-4">
+                  <div className="flex flex-col gap-3 mt-4 sm:flex-row sm:items-center sm:justify-between">
                     {(() => {
                       // Get current sub-pembahasan contents only
                       const currentSubPembahasanContents = activeContent
@@ -1862,7 +1922,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
                         <>
                           <Button
                             variant="outline"
-                            className="gap-2 transition-colors bg-transparent hover:bg-blue-50 dark:hover:bg-blue-800/50"
+                            className="w-full gap-2 transition-colors bg-transparent sm:w-auto hover:bg-blue-50 dark:hover:bg-blue-800/50"
                             disabled={isFirstInSection}
                             onClick={() => {
 
@@ -1887,7 +1947,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
                             <ArrowLeft className="w-4 h-4" />
                             Previous
                           </Button>
-                          <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                          <div className="flex flex-wrap items-center justify-center gap-2 text-sm text-gray-500 dark:text-gray-400">
                             <span>
                               {currentIndex + 1} of {currentSubPembahasanContents.length}
                             </span>
@@ -1902,7 +1962,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
                             )}
                           </div>
                           <Button
-                            className="gap-2 transition-colors bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
+                            className="w-full gap-2 transition-colors bg-blue-600 sm:w-auto hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
                             disabled={isLastInSection}
                             onClick={() => {
 
