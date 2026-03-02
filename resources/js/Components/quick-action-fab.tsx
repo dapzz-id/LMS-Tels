@@ -44,7 +44,7 @@ export function QuickActionFAB() {
           variant="outline"
           size="icon"
           className="w-12 h-12 bg-white rounded-full shadow-lg hover:bg-gray-50"
-          onClick={() => handleAction("/teacher/students")}
+          onClick={() => handleAction("/teacher/student-progress")}
         >
           <Users className="w-5 h-5" />
         </Button>

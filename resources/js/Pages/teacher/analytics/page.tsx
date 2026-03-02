@@ -267,7 +267,7 @@ export default function AnalyticsPage() {
               <Card className="border-0 shadow-md rounded-xl">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-lg font-semibold">Course Growth</CardTitle>
-                  <CardDescription>Monthly growth trends</CardDescription>
+                  <CardDescription>Monthly growth trends (January until current month)</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="h-[300px]">
@@ -462,5 +462,4 @@ export default function AnalyticsPage() {
     </TeacherLayout>
   )
 }
-
 

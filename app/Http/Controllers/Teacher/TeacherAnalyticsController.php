@@ -98,8 +98,8 @@ class TeacherAnalyticsController extends Controller
                     ];
                 });
 
-            // Monthly data for teacher's courses
-            $monthlyData = $this->getTeacherMonthlyData($teacherId, $startDate, $endDate);
+            // Monthly chart data for current year (Jan -> current month)
+            $monthlyData = $this->getTeacherMonthlyDataYearToDate($teacherId, $teacherCourses);
 
             // Top courses by enrollment for this teacher
             $topCourses = DB::table('kursus')
@@ -194,10 +194,11 @@ class TeacherAnalyticsController extends Controller
         return $totalStudents > 0 ? round(($completedStudents / $totalStudents) * 100, 1) : 0;
     }
 
-    private function getTeacherMonthlyData($teacherId, $startDate, $endDate)
+    private function getTeacherMonthlyDataYearToDate($teacherId, $teacherCourses)
     {
         $months = [];
-        $current = $startDate->copy();
+        $current = Carbon::now()->startOfYear();
+        $endDate = Carbon::now();
 
         while ($current <= $endDate) {
             $monthName = $current->format('M Y');
@@ -214,7 +215,7 @@ class TeacherAnalyticsController extends Controller
                 ->whereMonth('siswa_kursus.created_at', $current->month)
                 ->count();
 
-            $quizzes = CourseContent::whereIn('kursus_id', Kursus::where('teacher_id', $teacherId)->pluck('id'))
+            $quizzes = CourseContent::whereIn('kursus_id', $teacherCourses)
                 ->where('type', 'quiz')
                 ->whereYear('created_at', $current->year)
                 ->whereMonth('created_at', $current->month)

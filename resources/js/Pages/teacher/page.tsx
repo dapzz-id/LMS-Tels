@@ -75,7 +75,7 @@ export default function TeacherDashboard() {
               </Link>
             </Button>
             <Button variant="outline" className="text-blue-600 border-blue-200 bg-blue-50 hover:bg-blue-100" asChild>
-              <Link href="/teacher/students">
+              <Link href="/teacher/student-progress">
                 <Users className="w-4 h-4 mr-2" />
                 View Students
               </Link>
@@ -153,7 +153,7 @@ export default function TeacherDashboard() {
                   <CardDescription>Latest enrolled students</CardDescription>
                 </div>
                 <Button variant="outline" size="sm" asChild>
-                  <Link href="/teacher/students">
+                  <Link href="/teacher/student-progress">
                     <Users className="w-4 h-4 mr-2" />
                     View All
                   </Link>
@@ -259,4 +259,3 @@ export default function TeacherDashboard() {
     </TeacherLayout>
   )
 }
-

@@ -9,6 +9,7 @@ use App\Models\QuizSubmission;
 use App\Models\ProgressCourse;
 use App\Models\CourseContent;
 use Exception;
+use RuntimeException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
@@ -16,6 +17,68 @@ use Illuminate\Support\Facades\DB;
 
 class TeacherStudentsController extends Controller
 {
+    public function removeFromCourse(int $studentId, int $courseId)
+    {
+        try {
+            $teacherId = auth()->id();
+
+            $isTeacherCourse = DB::table('kursus')
+                ->where('id', $courseId)
+                ->where('teacher_id', $teacherId)
+                ->exists();
+
+            if (!$isTeacherCourse) {
+                return response()->json([
+                    'status' => 'failed',
+                    'message' => 'Unauthorized access to this course',
+                ], 403);
+            }
+
+            $result = DB::transaction(function () use ($studentId, $courseId) {
+                $enrollmentDeleted = DB::table('siswa_kursus')
+                    ->where('id_siswa', $studentId)
+                    ->where('id_kursus', $courseId)
+                    ->delete();
+
+                if ($enrollmentDeleted === 0) {
+                    throw new RuntimeException('Student is not enrolled in this course.');
+                }
+
+                $progressDeleted = ProgressCourse::query()
+                    ->where('id_siswa', $studentId)
+                    ->where('id_kursus', $courseId)
+                    ->delete();
+
+                return [
+                    'enrollment_deleted' => $enrollmentDeleted,
+                    'progress_deleted' => $progressDeleted,
+                ];
+            });
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Student removed from course and progress deleted successfully.',
+                'data' => $result,
+            ]);
+        } catch (RuntimeException $e) {
+            return response()->json([
+                'status' => 'failed',
+                'message' => $e->getMessage(),
+            ], 404);
+        } catch (Exception $e) {
+            Log::error('Error removing student from course: ' . $e->getMessage(), [
+                'student_id' => $studentId,
+                'course_id' => $courseId,
+                'teacher_id' => auth()->id(),
+            ]);
+
+            return response()->json([
+                'status' => 'failed',
+                'message' => 'Terjadi kesalahan teknis saat menghapus siswa dari course.',
+            ], 500);
+        }
+    }
+
     public function index()
     {
         try {

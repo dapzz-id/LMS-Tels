@@ -1,5 +1,5 @@
 import type React from "react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Link, usePage } from "@inertiajs/react"
 import {
   BookOpen,
@@ -30,8 +30,35 @@ export default function TeacherLayout({
   children: React.ReactNode
 }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
-  const { auth } = usePage<TeacherLayoutPageProps>().props
+  const page = usePage<TeacherLayoutPageProps>()
+  const { auth } = page.props
+  const currentUrl = page.url
+  const currentPath = currentUrl.split("?")[0]
   const displayName = auth.user?.nama_lengkap || auth.user?.name || "Teacher"
+
+  useEffect(() => {
+    setIsSidebarOpen(false)
+  }, [currentUrl])
+
+  const isActivePath = (path: string, options?: { exact?: boolean; aliases?: string[] }) => {
+    const exact = options?.exact ?? false
+    const aliases = options?.aliases ?? []
+    const candidates = [path, ...aliases]
+
+    return candidates.some((candidate) =>
+      exact ? currentPath === candidate : currentPath === candidate || currentPath.startsWith(`${candidate}/`),
+    )
+  }
+
+  const navButtonClass = (active: boolean) =>
+    `justify-start w-full h-12 gap-2 rounded-xl ${
+      active
+        ? "bg-blue-100 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/40 dark:text-blue-300"
+        : "hover:bg-blue-50 dark:hover:bg-blue-950"
+    }`
+
+  const navIconClass = (active: boolean) =>
+    active ? "w-5 h-5 text-blue-700 dark:text-blue-300" : "w-5 h-5 text-blue-600 dark:text-blue-500"
 
   return (
     <div className="flex min-h-screen">
@@ -57,61 +84,97 @@ export default function TeacherLayout({
           <p className="hidden text-sm text-slate-500 dark:text-slate-400 lg:block">Manage your courses and students</p>
         </div>
         <nav className="grid gap-1 px-2">
-          <Link href="/teacher">
-            <Button
-              variant="ghost"
-              className="justify-start w-full h-12 gap-2 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-950"
-            >
-              <LayoutDashboard className="w-5 h-5 text-blue-600 dark:text-blue-500" />
+          {(() => {
+            const active = isActivePath("/teacher", { exact: true })
+            return (
+          <Button
+            asChild
+            variant="ghost"
+            className={navButtonClass(active)}
+          >
+            <Link href="/teacher">
+              <LayoutDashboard className={navIconClass(active)} />
               <span>Dashboard</span>
-            </Button>
-          </Link>
-          <Link href="/teacher/courses">
-            <Button
-              variant="ghost"
-              className="justify-start w-full h-12 gap-2 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-950"
-            >
-              <BookOpen className="w-5 h-5 text-blue-600 dark:text-blue-500" />
+            </Link>
+          </Button>
+            )
+          })()}
+          {(() => {
+            const active = isActivePath("/teacher/courses")
+            return (
+          <Button
+            asChild
+            variant="ghost"
+            className={navButtonClass(active)}
+          >
+            <Link href="/teacher/courses">
+              <BookOpen className={navIconClass(active)} />
               <span>Courses</span>
-            </Button>
-          </Link>
+            </Link>
+          </Button>
+            )
+          })()}
 
-          <Link href="/teacher/analytics">
-            <Button
-              variant="ghost"
-              className="justify-start w-full h-12 gap-2 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-950"
-            >
-              <LineChart className="w-5 h-5 text-blue-600 dark:text-blue-500" />
+          {(() => {
+            const active = isActivePath("/teacher/analytics")
+            return (
+          <Button
+            asChild
+            variant="ghost"
+            className={navButtonClass(active)}
+          >
+            <Link href="/teacher/analytics">
+              <LineChart className={navIconClass(active)} />
               <span>Analytics</span>
-            </Button>
-          </Link>
-          <Link href="/teacher/student-grades">
-            <Button
-              variant="ghost"
-              className="justify-start w-full h-12 gap-2 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-950"
-            >
-              <Award className="w-5 h-5 text-blue-600 dark:text-blue-500" />
+            </Link>
+          </Button>
+            )
+          })()}
+          {(() => {
+            const active = isActivePath("/teacher/student-grades")
+            return (
+          <Button
+            asChild
+            variant="ghost"
+            className={navButtonClass(active)}
+          >
+            <Link href="/teacher/student-grades">
+              <Award className={navIconClass(active)} />
               <span>Student Grades</span>
-            </Button>
-          </Link>
-          <Link href="/teacher/student-monitoring">
-            <Button
-              variant="ghost"
-              className="justify-start w-full h-12 gap-2 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-950"
-            >
-              <Users className="w-5 h-5 text-blue-600 dark:text-blue-500" />
+            </Link>
+          </Button>
+            )
+          })()}
+          {(() => {
+            const active = isActivePath("/teacher/student-monitoring")
+            return (
+          <Button
+            asChild
+            variant="ghost"
+            className={navButtonClass(active)}
+          >
+            <Link href="/teacher/student-monitoring">
+              <Users className={navIconClass(active)} />
               <span>Student Monitoring</span>
-            </Button>
-          </Link>
-          <Link href="/teacher/student-progress">
-            <Button
-              variant="ghost"
-              className="justify-start w-full h-12 gap-2 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-950"
-            >
-              <Users className="w-5 h-5 text-blue-600 dark:text-blue-500" />
+            </Link>
+          </Button>
+            )
+          })()}
+          {(() => {
+            const active = isActivePath("/teacher/student-progress", { aliases: ["/teacher/students"] })
+            return (
+          <Button
+            asChild
+            variant="ghost"
+            className={navButtonClass(active)}
+          >
+            <Link href="/teacher/student-progress">
+              <Users className={navIconClass(active)} />
               <span>Student Progress</span>
-            </Button>
-          </Link>
+            </Link>
+          </Button>
+            )
+          })()}
         </nav>
         <div className="p-4 mt-auto">
         </div>

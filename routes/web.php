@@ -203,7 +203,8 @@ Route::middleware(['auth', 'role:guru'])->prefix('teacher')->group(function () {
     });
 
     Route::get('/students', [App\Http\Controllers\Teacher\TeacherStudentsController::class, 'index'])->name('teacher.students');
-    Route::get('/student-progress', [App\Http\Controllers\Teacher\TeacherStudentsController::class, 'progress'])->name('teacher.student-progress');
+    Route::get('/student-progress', [App\Http\Controllers\Teacher\TeacherStudentsController::class, 'index'])->name('teacher.student-progress');
+    Route::delete('/students/{studentId}/courses/{courseId}', [App\Http\Controllers\Teacher\TeacherStudentsController::class, 'removeFromCourse'])->name('teacher.students.remove-course');
 
     Route::get('/assignments', function () {
         return Inertia::render('teacher/assignments/page');
