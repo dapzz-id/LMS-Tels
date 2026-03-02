@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Teacher;
 
+use App\Exports\TeacherProgressReportExport;
 use App\Http\Controllers\Controller;
 use App\Models\Kursus;
 use App\Models\User;
@@ -13,6 +14,7 @@ use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use App\Models\CourseContent;
 use App\Models\QuizSubmission;
+use Maatwebsite\Excel\Facades\Excel;
 
 class TeacherAnalyticsController extends Controller
 {
@@ -152,6 +154,21 @@ class TeacherAnalyticsController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to fetch teacher analytics data: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function exportProgressReport(Request $request)
+    {
+        try {
+            $teacherId = auth()->id();
+            $fileName = 'teacher-progress-report-' . now()->format('Ymd_His') . '.xlsx';
+
+            return Excel::download(new TeacherProgressReportExport($teacherId), $fileName);
+        } catch (Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to export teacher progress report: ' . $e->getMessage()
             ], 500);
         }
     }

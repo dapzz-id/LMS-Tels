@@ -309,6 +309,7 @@ Route::post('/quiz/{id}/submit', [QuizController::class, 'submit'])->name('stude
 // Teacher Analytics API route (keep this as API since it's used by the analytics page)
 Route::prefix('api/teacher')->middleware(['auth', 'role:guru'])->group(function () {
     Route::get('/analytics', [App\Http\Controllers\Teacher\TeacherAnalyticsController::class, 'analytics'])->name('api.teacher.analytics');
+    Route::get('/analytics/export', [App\Http\Controllers\Teacher\TeacherAnalyticsController::class, 'exportProgressReport'])->name('api.teacher.analytics.export');
 
     // Teacher Student Monitoring API routes
     Route::get('/student-monitoring/live-data', [App\Http\Controllers\Admin\StudentMonitoringController::class, 'getLiveData'])->name('api.teacher.student-monitoring.live-data');

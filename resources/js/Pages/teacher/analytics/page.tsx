@@ -89,7 +89,41 @@ interface AnalyticsData {
 export default function AnalyticsPage() {
   const [data, setData] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [isExporting, setIsExporting] = useState(false)
   const [timeRange, setTimeRange] = useState("last-30-days")
+
+  const handleExportReport = async () => {
+    const params = new URLSearchParams({ range: timeRange })
+
+    try {
+      setIsExporting(true)
+
+      const response = await axios.get(`/api/teacher/analytics/export?${params.toString()}`, {
+        responseType: "blob",
+      })
+
+      const disposition = response.headers["content-disposition"] as string | undefined
+      const fileNameMatch = disposition?.match(/filename="?([^"]+)"?/)
+      const fileName = fileNameMatch?.[1] ?? `teacher-progress-report-${Date.now()}.xlsx`
+
+      const blob = new Blob([response.data], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      })
+
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement("a")
+      link.href = url
+      link.download = fileName
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error("Failed to export report:", error)
+    } finally {
+      setIsExporting(false)
+    }
+  }
 
   useEffect(() => {
     const fetchAnalytics = async () => {
@@ -147,9 +181,14 @@ export default function AnalyticsPage() {
                 <SelectItem value="all-time">All time</SelectItem>
               </SelectContent>
             </Select>
-            <Button variant="outline" className="rounded-xl border-slate-200 dark:border-slate-800">
+            <Button
+              variant="outline"
+              className="rounded-xl border-slate-200 dark:border-slate-800"
+              onClick={handleExportReport}
+              disabled={isExporting}
+            >
               <Download className="w-4 h-4 mr-2" />
-              Export Report
+              {isExporting ? "Exporting..." : "Export Report"}
             </Button>
           </div>
         </div>
@@ -462,4 +501,3 @@ export default function AnalyticsPage() {
     </TeacherLayout>
   )
 }
-
