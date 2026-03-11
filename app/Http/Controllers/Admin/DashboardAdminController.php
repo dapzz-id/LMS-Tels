@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Exports\TeacherProgressReportExport;
 use App\Http\Controllers\Controller;
 use App\Models\Kursus;
 use App\Models\User;
@@ -14,6 +15,9 @@ use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use App\Models\CourseContent;
 use App\Models\QuizSubmission;
+use Maatwebsite\Excel\Excel as ExcelFormat;
+use Maatwebsite\Excel\Facades\Excel;
+use ZipArchive;
 
 class DashboardAdminController extends Controller
 {
@@ -212,6 +216,67 @@ class DashboardAdminController extends Controller
         }
     }
 
+    public function exportProgressReport()
+    {
+        try {
+            $teachers = User::query()
+                ->select(['users.id', 'users.nama_lengkap'])
+                ->where('users.tipe_user', 'guru')
+                ->whereExists(function ($query) {
+                    $query->select(DB::raw(1))
+                        ->from('kursus')
+                        ->whereColumn('kursus.teacher_id', 'users.id');
+                })
+                ->orderBy('users.nama_lengkap')
+                ->get();
+
+            if ($teachers->isEmpty()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'No course data available to export.',
+                ], 404);
+            }
+
+            $timestamp = now()->format('Ymd_His');
+            $zipFileName = 'admin-progress-reports-' . $timestamp . '.zip';
+            $tempDirectory = storage_path('app/temp/exports');
+            $zipPath = $tempDirectory . DIRECTORY_SEPARATOR . $zipFileName;
+
+            if (!is_dir($tempDirectory) && !mkdir($tempDirectory, 0755, true) && !is_dir($tempDirectory)) {
+                throw new Exception('Failed to prepare temporary export directory.');
+            }
+
+            $zip = new ZipArchive();
+            $zipStatus = $zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
+            if ($zipStatus !== true) {
+                throw new Exception('Failed to create ZIP archive.');
+            }
+
+            foreach ($teachers as $index => $teacher) {
+                $teacherId = (int) $teacher->id;
+                $teacherName = $this->makeSafeExportName((string) $teacher->nama_lengkap, 'teacher-' . $teacherId);
+                $filePrefix = str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT);
+                $entryName = $filePrefix . '-' . $teacherName . '-progress-report.xlsx';
+
+                $excelBinary = Excel::raw(new TeacherProgressReportExport($teacherId), ExcelFormat::XLSX);
+                if ($zip->addFromString($entryName, $excelBinary) === false) {
+                    throw new Exception('Failed to append Excel report into ZIP archive.');
+                }
+            }
+
+            $zip->close();
+
+            return response()
+                ->download($zipPath, $zipFileName, ['Content-Type' => 'application/zip'])
+                ->deleteFileAfterSend(true);
+        } catch (Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to export analytics report: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
     private function calculateQuizCompletionRate()
     {
         $totalQuizzes = CourseContent::where('type', 'quiz')->count();
@@ -296,5 +361,13 @@ class DashboardAdminController extends Controller
         }
 
         return $activity;
+    }
+
+    private function makeSafeExportName(string $rawName, string $fallback): string
+    {
+        $safeName = preg_replace('/[^A-Za-z0-9_-]+/', '-', $rawName) ?? '';
+        $safeName = trim($safeName, '-_');
+
+        return $safeName !== '' ? $safeName : $fallback;
     }
 }

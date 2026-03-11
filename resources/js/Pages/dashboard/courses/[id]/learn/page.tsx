@@ -1241,14 +1241,14 @@ const CourseLearnPage = ({ id }: { id: string }) => {
           <div className={isZoomed ? "fixed inset-0 z-[70] overflow-y-auto bg-black/95 p-3 sm:p-4" : "w-full"}>
             <div className={isZoomed ? "mx-auto flex w-full max-w-6xl flex-col gap-3" : "w-full"}>
               {isZoomed && (
-                <div className="flex items-center justify-between gap-2 rounded-lg border border-white/15 bg-black/60 px-3 py-2 text-white">
-                  <p className="truncate text-sm font-medium">{content.title}</p>
+                <div className="flex items-center justify-between gap-2 px-3 py-2 text-white border rounded-lg border-white/15 bg-black/60">
+                  <p className="text-sm font-medium truncate">{content.title}</p>
                   <Button
                     variant="outline"
-                    className="h-8 border-white/30 bg-transparent px-2 text-white hover:bg-white/10"
+                    className="h-8 px-2 text-white bg-transparent border-white/30 hover:bg-white/10"
                     onClick={() => setIsVideoZoomed(false)}
                   >
-                    <Minimize2 className="mr-1 h-4 w-4" />
+                    <Minimize2 className="w-4 h-4 mr-1" />
                     Exit Zoom
                   </Button>
                 </div>
@@ -1290,7 +1290,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
                   max={sliderMax}
                   value={Math.min(Math.floor(videoCurrentTime), sliderMax)}
                   onChange={(event) => handleVideoSeek(content.id, Number(event.target.value))}
-                  className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-slate-200 accent-blue-600 dark:bg-slate-700"
+                  className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-slate-200 accent-blue-600 dark:bg-slate-700"
                 />
                 <div className={sliderInfoClass}>
                   <span>{formatTime(videoCurrentTime)}</span>
@@ -1299,10 +1299,10 @@ const CourseLearnPage = ({ id }: { id: string }) => {
                 </div>
               </div>
 
-              <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-2 mt-2 sm:flex-row sm:items-center sm:justify-between">
                 {isVideoCompleted ? (
                   <div className="flex items-center text-sm text-green-600 dark:text-green-400">
-                    <svg className="mr-1 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                     </svg>
                     Video completed
@@ -1312,7 +1312,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
                     Progress bar hanya bisa maju sampai posisi terakhir yang sudah ditonton.
                   </div>
                 )}
-                <div className="flex items-center gap-2 self-start sm:self-auto">
+                <div className="flex items-center self-start gap-2 sm:self-auto">
                   <div className={isZoomed ? "text-xs text-slate-200" : "text-xs text-gray-500 dark:text-gray-400"}>
                     Status: {isVideoCompleted ? 'Completed' : 'In Progress'}
                   </div>
@@ -1408,7 +1408,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
                 {isPDFDownloaded ? 'Downloaded' : 'Not Downloaded'}
               </div>
               <button
-                className="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                className="px-4 py-2 mt-2 text-white bg-blue-500 rounded hover:bg-blue-600"
                 onClick={handlePDFDownload}
               >
                 {isPDFDownloaded ? 'Open PDF' : 'Download PDF'}
@@ -1452,7 +1452,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
 
             {/* Quiz Score Display */}
             {submission && (
-              <div className="mb-4 p-3 bg-gray-50 dark:bg-blue-900/50 rounded-lg border border-gray-200 dark:border-blue-800">
+              <div className="p-3 mb-4 border border-gray-200 rounded-lg bg-gray-50 dark:bg-blue-900/50 dark:border-blue-800">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Your Score:</span>
@@ -1480,7 +1480,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
 
             {/* Show message if this is a one submission only quiz and user has already taken it */}
             {isOneSubmissionOnly && hasTakenQuiz ? (
-              <div className="p-3 text-sm text-center text-blue-700 bg-blue-50 rounded-lg dark:bg-blue-900/50 dark:text-blue-300">
+              <div className="p-3 text-sm text-center text-blue-700 rounded-lg bg-blue-50 dark:bg-blue-900/50 dark:text-blue-300">
                 You have already completed this quiz. Only one submission is allowed.
               </div>
             ) : (
@@ -1532,7 +1532,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
 
       {/* Header */}
       <header className="sticky top-0 z-30 border-b border-blue-100 bg-white/80 backdrop-blur-sm dark:border-blue-800 dark:bg-blue-900/80">
-        <div className="container mx-auto px-3 py-2 sm:px-4 sm:py-3 md:py-4">
+        <div className="container px-3 py-2 mx-auto sm:px-4 sm:py-3 md:py-4">
           <div className="flex items-center justify-between gap-2 md:gap-3">
             <div className="flex min-w-0 items-center gap-1.5 md:gap-2">
               <Button
@@ -1545,25 +1545,25 @@ const CourseLearnPage = ({ id }: { id: string }) => {
                 <span className="sm:hidden">Back</span>
               </Button>
               <div className="hidden w-px h-6 bg-gray-200 md:block dark:bg-gray-700" />
-              <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+              <div className="flex items-center min-w-0 gap-2 sm:gap-3">
                 <div className="relative">
                   <img
                     src={toAbsoluteAssetUrl(course.url_thumbnail, "/placeholder.svg")}
                     alt={course.judul_kursus}
-                    className="h-8 w-8 rounded-lg object-cover ring-2 ring-blue-100 sm:h-10 sm:w-10 dark:ring-blue-800"
+                    className="object-cover w-8 h-8 rounded-lg ring-2 ring-blue-100 sm:h-10 sm:w-10 dark:ring-blue-800"
                   />
-                  <div className="absolute -bottom-1 -right-1 h-3 w-3 rounded-full border-2 border-white bg-green-500 sm:h-4 sm:w-4 dark:border-gray-900" />
+                  <div className="absolute w-3 h-3 bg-green-500 border-2 border-white rounded-full -bottom-1 -right-1 sm:h-4 sm:w-4 dark:border-gray-900" />
                 </div>
                 <div className="min-w-0">
-                  <h1 className="line-clamp-1 text-sm font-semibold text-gray-900 sm:text-base dark:text-white">
+                  <h1 className="text-sm font-semibold text-gray-900 line-clamp-1 sm:text-base dark:text-white">
                     {course.judul_kursus}
                   </h1>
                   <p className="hidden line-clamp-1 text-[11px] text-gray-500 sm:block sm:text-xs dark:text-gray-400">{course.mapel?.nama_mapel}</p>
                 </div>
               </div>
             </div>
-            <div className="flex shrink-0 items-center gap-2">
-              <Badge variant="outline" className="hidden text-blue-700 bg-blue-50 dark:bg-blue-800/50 dark:text-blue-200 text-xs sm:inline-flex sm:text-sm">
+            <div className="flex items-center gap-2 shrink-0">
+              <Badge variant="outline" className="hidden text-xs text-blue-700 bg-blue-50 dark:bg-blue-800/50 dark:text-blue-200 sm:inline-flex sm:text-sm">
                 <Calendar className="w-3 h-3 mr-1" />
                 {new Date().toLocaleDateString()}
               </Badge>
@@ -1794,8 +1794,8 @@ const CourseLearnPage = ({ id }: { id: string }) => {
 
                   {/* Certificate Claiming Section */}
                   {courseCompleted && (
-                    <div className="border border-gray-100 rounded-lg dark:border-gray-800 mt-4">
-                      <div className="p-3 bg-green-50 dark:bg-green-900/30 rounded-lg">
+                    <div className="mt-4 border border-gray-100 rounded-lg dark:border-gray-800">
+                      <div className="p-3 rounded-lg bg-green-50 dark:bg-green-900/30">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <Award className="w-5 h-5 text-green-600 dark:text-green-400" />
@@ -1811,7 +1811,7 @@ const CourseLearnPage = ({ id }: { id: string }) => {
                         </div>
                         <Button
                           onClick={handleClaimCertificate}
-                          className="w-full mt-3 bg-green-600 hover:bg-green-700 text-white"
+                          className="w-full mt-3 text-white bg-green-600 hover:bg-green-700"
                           disabled={certificateChecked && !certificateEligible}
                         >
                           <Award className="w-4 h-4 mr-2" />
@@ -2012,19 +2012,19 @@ const CourseLearnPage = ({ id }: { id: string }) => {
 
                   {/* Certificate Claiming Section when no content is selected but course is completed */}
                   {courseCompleted && (
-                    <div className="mt-6 p-4 bg-green-50 dark:bg-green-900/30 rounded-lg w-full max-w-md">
+                    <div className="w-full max-w-md p-4 mt-6 rounded-lg bg-green-50 dark:bg-green-900/30">
                       <div className="flex items-center justify-center gap-2 mb-3">
                         <Award className="w-6 h-6 text-green-600 dark:text-green-400" />
                         <p className="text-lg font-medium text-green-800 dark:text-green-200">
                           Course Completed!
                         </p>
                       </div>
-                      <p className="text-sm text-green-600 dark:text-green-400 mb-4 text-center">
+                      <p className="mb-4 text-sm text-center text-green-600 dark:text-green-400">
                         Congratulations! You've completed all required content. Claim your certificate now.
                       </p>
                       <Button
                         onClick={handleClaimCertificate}
-                        className="w-full bg-green-600 hover:bg-green-700 text-white"
+                        className="w-full text-white bg-green-600 hover:bg-green-700"
                       >
                         <Award className="w-4 h-4 mr-2" />
                         Claim Certificate

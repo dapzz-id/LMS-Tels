@@ -86,7 +86,39 @@ interface AnalyticsData {
 export default function AdminAnalyticsPage() {
   const [data, setData] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [isExporting, setIsExporting] = useState(false)
   const [timeRange, setTimeRange] = useState("last-30-days")
+
+  const handleExportReport = async () => {
+    try {
+      setIsExporting(true)
+
+      const response = await axios.get("/api/admin/analytics/export", {
+        responseType: "blob",
+      })
+
+      const disposition = response.headers["content-disposition"] as string | undefined
+      const fileNameMatch = disposition?.match(/filename="?([^"]+)"?/)
+      const fileName = fileNameMatch?.[1] ?? `admin-progress-reports-${Date.now()}.zip`
+
+      const blob = new Blob([response.data], {
+        type: "application/zip",
+      })
+
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement("a")
+      link.href = url
+      link.download = fileName
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error("Failed to export admin analytics report:", error)
+    } finally {
+      setIsExporting(false)
+    }
+  }
 
   useEffect(() => {
     const fetchAnalytics = async () => {
@@ -142,9 +174,14 @@ export default function AdminAnalyticsPage() {
                 <SelectItem value="all-time">All time</SelectItem>
               </SelectContent>
             </Select>
-            <Button variant="outline" className="rounded-xl border-slate-200 dark:border-slate-800">
+            <Button
+              variant="outline"
+              className="rounded-xl border-slate-200 dark:border-slate-800"
+              onClick={handleExportReport}
+              disabled={isExporting}
+            >
               <Download className="w-4 h-4 mr-2" />
-              Export Report
+              {isExporting ? "Exporting..." : "Export Report"}
             </Button>
           </div>
         </div>

@@ -83,6 +83,7 @@ Route::middleware(['web', 'auth'])->group(function () {
         Route::prefix('admin')->middleware('role:admin')->group(function () {
             Route::get('/get-stats', [DashboardAdminController::class, 'getStats']);
             Route::get('/analytics', [DashboardAdminController::class, 'analytics']);
+            Route::get('/analytics/export', [DashboardAdminController::class, 'exportProgressReport']);
             Route::post('/upload', [KelolaSubPembahasanAdminController::class, 'store']);
             Route::post('/upload-pdf', [KelolaSubPembahasanAdminController::class, 'uploadPdf']);
 
