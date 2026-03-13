@@ -10,10 +10,8 @@ import StudentActivityIntegration from './Components/StudentActivityIntegration'
 import GlobalApiErrorHandler from './Components/GlobalApiErrorHandler';
 import { Toaster } from 'sonner';
 
-const appName = import.meta.env.VITE_APP_NAME ?? 'Laravel';
-
 createInertiaApp({
-    title: (title) => `${title} - ${appName}`,
+    title: (title) => `${title} - ${import.meta.env.VITE_APP_NAME}`,
     resolve: (name) => resolvePageComponent(
         `./Pages/${name}.tsx`,
         import.meta.glob('./Pages/**/*.tsx')
