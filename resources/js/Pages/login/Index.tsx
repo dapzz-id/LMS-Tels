@@ -148,7 +148,7 @@ export default function LoginPage() {
           <div className="flex flex-col items-center justify-center flex-1 px-10 pb-10">
             <div className="relative h-[300px] w-[300px] overflow-hidden rounded-2xl shadow-2xl transition-all duration-500 hover:scale-105">
               <img
-                src="/placeholder.svg?height=600&width=600"
+                src="/logotelesandi.png"
                 alt="School illustration"
                 className="object-cover w-full h-full"
               />
