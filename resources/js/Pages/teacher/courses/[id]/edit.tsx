@@ -1204,7 +1204,7 @@ export default function EditCoursePage({ course, mapel, availableClasses = [] }:
                                                           <FormItem>
                                                             <FormControl>
                                                               <RadioGroup
-                                                                value={field.value.toString()}
+                                                                value={field.value?.toString() ?? ''}
                                                                 onValueChange={(value) =>
                                                                   field.onChange(Number.parseInt(value))
                                                                 }

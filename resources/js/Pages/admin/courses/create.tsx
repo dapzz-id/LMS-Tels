@@ -1250,7 +1250,7 @@ export default function CreateCoursePage({ mapel }: Props) {
                                                         <FormItem>
                                                           <FormControl>
                                                             <RadioGroup
-                                                              value={field.value.toString()}
+                                                              value={field.value?.toString() ?? ''}
                                                               onValueChange={(value) => field.onChange(parseInt(value))}
                                                               className="flex items-center"
                                                             >
