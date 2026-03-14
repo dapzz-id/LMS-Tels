@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/Com
 import { Users, BookOpen, GraduationCap, BarChart3, Activity, Calendar, Plus, ArrowUpRight, ArrowDownRight, Building2, FileText } from "lucide-react"
 import { Button } from "@/Components/ui/button"
 import { Progress } from "@/Components/ui/progress"
-import { Link } from "@inertiajs/react"
+import { Link, Head } from "@inertiajs/react"
 import { useEffect, useState } from "react"
 import axios from "axios"
 import { Badge } from "@/Components/ui/badge"
@@ -60,6 +60,7 @@ export default function AdminDashboard() {
 
   return (
     <AdminPageLayout>
+      <Head title="Dashboard" />
       <div className="space-y-6">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
@@ -69,13 +70,13 @@ export default function AdminDashboard() {
             <p className="text-slate-500 dark:text-slate-400">Welcome to the Telesandi admin dashboard</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" className="text-red-600 border-red-200 bg-red-50 hover:bg-red-100" asChild>
+            <Button variant="outline" className="text-red-600 border-red-200 bg-red-50 hover:bg-red-100 hover:text-black" asChild>
               <Link href="/admin/users/new">
                 <Users className="w-4 h-4 mr-2" />
                 Add User
               </Link>
             </Button>
-            <Button variant="outline" className="text-red-600 border-red-200 bg-red-50 hover:bg-red-100" asChild>
+            <Button variant="outline" className="text-red-600 border-red-200 bg-red-50 hover:bg-red-100 hover:text-black" asChild>
               <Link href="/admin/courses/create">
                 <BookOpen className="w-4 h-4 mr-2" />
                 New Course

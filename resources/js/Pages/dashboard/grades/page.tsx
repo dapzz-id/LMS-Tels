@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Link, router, usePage } from "@inertiajs/react"
+import { Link, router, usePage, Head } from "@inertiajs/react"
 import {
   Book,
   Calendar,
@@ -155,6 +155,7 @@ export default function GradesPage() {
 
   return (
     <div className="flex min-h-screen">
+      <Head title="My Grades" />
       <StudentSidebar
         active="grades"
         isOpen={isSidebarOpen}
@@ -256,7 +257,7 @@ export default function GradesPage() {
                     <div>
                       <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Overall Grade</p>
                       <p className={`text-2xl font-bold ${getGradeColor(statistics.overallGrade)}`}>
-                        {statistics.overallGrade}
+                        {statistics.overallGrade ?? 'N/A'}
                       </p>
                     </div>
                   </div>

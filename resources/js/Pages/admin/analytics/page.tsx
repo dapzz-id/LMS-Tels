@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { Head } from "@inertiajs/react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/Components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/Components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/Components/ui/select"
@@ -154,6 +155,7 @@ export default function AdminAnalyticsPage() {
 
   return (
     <AdminPageLayout>
+      <Head title="Analytics & Reports" />
       <div className="space-y-8">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>

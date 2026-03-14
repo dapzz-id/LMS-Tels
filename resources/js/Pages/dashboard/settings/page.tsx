@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Link, usePage, useForm } from "@inertiajs/react"
+import { Link, usePage, useForm, Head } from "@inertiajs/react"
 import {
   BookOpen,
   ChevronDown,
@@ -100,6 +100,7 @@ export default function SettingsPage() {
 
   return (
     <div className="flex min-h-screen">
+      <Head title="Settings" />
       <StudentSidebar
         active="settings"
         isOpen={isSidebarOpen}

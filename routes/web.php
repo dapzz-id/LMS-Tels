@@ -45,8 +45,8 @@ Route::get('/', function (\Illuminate\Http\Request $request) {
 Route::get('/login', [LoginController::class, 'index'])->name('login');
 Route::post('/login', [LoginController::class, 'login'])->name('login.post');
 
-Route::get('register', [RegisteredUserController::class, 'create'])->name('register');
-Route::post('register', [RegisteredUserController::class, 'store']);
+// Route::get('register', [RegisteredUserController::class, 'create'])->name('register');
+// Route::post('register', [RegisteredUserController::class, 'store']);
 
 // Password Reset Routes
 Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])

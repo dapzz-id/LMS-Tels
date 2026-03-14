@@ -95,7 +95,7 @@ export default function UpdateProfileInformation({
 
                     <TextInput
                         id="nama_lengkap"
-                        className="mt-1 block w-full"
+                        className="mt-1 block w-full p-2"
                         value={data.nama_lengkap}
                         onChange={(e) => updateProfileField('nama_lengkap', e.target.value)}
                         required
@@ -114,7 +114,7 @@ export default function UpdateProfileInformation({
 
                     <TextInput
                         id="username"
-                        className="mt-1 block w-full"
+                        className="mt-1 block w-full p-2"
                         value={data.username}
                         onChange={(e) => updateProfileField('username', e.target.value)}
                         required
@@ -133,7 +133,7 @@ export default function UpdateProfileInformation({
                     <TextInput
                         id="email"
                         type="email"
-                        className="mt-1 block w-full"
+                        className="mt-1 block w-full p-2"
                         value={data.email}
                         onChange={(e) => updateProfileField('email', e.target.value)}
                         required

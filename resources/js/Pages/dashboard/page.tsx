@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { Link, usePage } from "@inertiajs/react"
+import { Link, usePage, Head } from "@inertiajs/react"
 import type { PageProps as BasePageProps } from "@/types"
 import {
   Award,
@@ -67,6 +67,7 @@ export default function MainDashboard() {
 
   return (
     <div className="flex min-h-screen">
+      <Head title="Dashboard" />
       <StudentSidebar
         active="dashboard"
         isOpen={isSidebarOpen}

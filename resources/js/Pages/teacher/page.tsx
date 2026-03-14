@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/Com
 import { Users, BookOpen, GraduationCap, BarChart3, Activity, Calendar, Plus, ArrowUpRight, ArrowDownRight, Building2, FileText } from "lucide-react"
 import { Button } from "@/Components/ui/button"
 import { Progress } from "@/Components/ui/progress"
-import { Link } from "@inertiajs/react"
+import { Link, Head } from "@inertiajs/react"
 import { useEffect, useState } from "react"
 import axios from "axios"
 import { Badge } from "@/Components/ui/badge"
@@ -59,6 +59,7 @@ export default function TeacherDashboard() {
 
   return (
     <TeacherLayout>
+      <Head title="Dashboard" />
       <div className="space-y-6">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
@@ -68,13 +69,13 @@ export default function TeacherDashboard() {
             <p className="text-slate-500 dark:text-slate-400">Welcome to the Telesandi teacher dashboard</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" className="text-blue-600 border-blue-200 bg-blue-50 hover:bg-blue-100" asChild>
+            <Button variant="outline" className="text-blue-600 border-blue-200 bg-blue-50 hover:bg-blue-100 hover:text-black" asChild>
               <Link href="/teacher/courses/create">
                 <BookOpen className="w-4 h-4 mr-2" />
                 New Course
               </Link>
             </Button>
-            <Button variant="outline" className="text-blue-600 border-blue-200 bg-blue-50 hover:bg-blue-100" asChild>
+            <Button variant="outline" className="text-blue-600 border-blue-200 bg-blue-50 hover:bg-blue-100 hover:text-black" asChild>
               <Link href="/teacher/student-progress">
                 <Users className="w-4 h-4 mr-2" />
                 View Students

@@ -33,7 +33,9 @@ export default function TeacherLayout({
   const page = usePage<TeacherLayoutPageProps>()
   const { auth } = page.props
   const currentUrl = page.url
-  const currentPath = currentUrl.split("?")[0]
+  const normalizePath = (path: string) =>
+    path.split("?")[0].replace(/\/+$/, "") || "/"
+  const currentPath = normalizePath(currentUrl)
   const displayName = auth.user?.nama_lengkap || auth.user?.name || "Teacher"
 
   useEffect(() => {
@@ -198,11 +200,11 @@ export default function TeacherLayout({
             <Menu className="w-5 h-5" />
           </button>
           <Link href="/teacher" className="flex items-center gap-2 font-semibold">
-            <BookOpen className="w-6 h-6 text-blue-600 dark:text-blue-500" />
+            <img src="/logotelesandi.png" alt="Logo" className="h-8 w-8 rounded-full" />
             <span className="text-lg font-bold text-transparent bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text">
               LMS Tels
             </span>
-            <span className="rounded-md bg-blue-100 dark:bg-blue-900 px-2 py-0.5 text-xs font-medium text-blue-600 dark:text-blue-400">
+            <span className="rounded-md bg-blue-100 dark:bg-blue-900 px-2 ml-1 py-0.5 text-xs font-medium text-blue-600 dark:text-blue-400">
               Teacher
             </span>
           </Link>

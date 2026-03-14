@@ -195,6 +195,7 @@ const StudentCoursesPage = () => {
 
   return (
     <div className="flex min-h-screen">
+      <Head title="My Courses" />
       <StudentSidebar
         active="courses"
         isOpen={isSidebarOpen}

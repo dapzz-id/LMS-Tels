@@ -171,15 +171,6 @@ export default function LoginPage() {
                     <p className="text-blue-200">View lessons, assignments, and grades</p>
                   </div>
                 </div>
-                <div className="flex items-center p-5 space-x-4 transition-all duration-300 group rounded-xl bg-white/10 hover:bg-white/15">
-                  <div className="flex items-center justify-center w-12 h-12 rounded-full bg-white/10 backdrop-blur-sm">
-                    <Users className="w-6 h-6 text-white transition-transform duration-300 group-hover:scale-110" />
-                  </div>
-                  <div className="text-white">
-                    <p className="font-medium">Collaborate with classmates</p>
-                    <p className="text-blue-200">Participate in discussions and group projects</p>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
@@ -317,20 +308,16 @@ export default function LoginPage() {
                 <h4 className="text-lg font-medium">Need help?</h4>
                 <p className="mt-2 text-muted-foreground">
                   If you're having trouble logging in, please contact your school's IT support at{" "}
-                  <span className="font-medium text-foreground">support@school.edu</span> or call{" "}
-                  <span className="font-medium text-foreground">(555) 123-4567</span>.
+                  <span className="font-medium text-foreground">telesandismk@gmail.com</span> or call{" "}
+                  <span className="font-medium text-foreground">+62 813-2525-0554</span>.
                 </p>
                 <div className="flex flex-wrap gap-3 mt-4">
                   <Button
                     variant="outline"
                     size="sm"
-                    className="transition-all duration-200 h-9 hover:bg-blue-50 dark:hover:bg-blue-950/20"
-                  >
-                    View FAQ
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
+                    onClick={() => {
+                      window.location.href = "/forgot-password"
+                    }}
                     className="transition-all duration-200 h-9 hover:bg-blue-50 dark:hover:bg-blue-950/20"
                   >
                     Reset Password
@@ -338,17 +325,6 @@ export default function LoginPage() {
                 </div>
               </div>
             </div>
-          </div>
-
-          {/* Return to home link */}
-          <div className="flex justify-center py-4">
-            <Link
-              href="/"
-              className="flex items-center text-sm transition-colors group text-muted-foreground hover:text-blue-600"
-            >
-              <ArrowRight className="w-3 h-3 mr-1 transition-transform rotate-180 group-hover:-translate-x-1" />
-              Return to Home
-            </Link>
           </div>
         </div>
       </div>

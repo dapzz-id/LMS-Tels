@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Log;
 
 class LoginController extends Controller
 {
@@ -36,44 +37,28 @@ class LoginController extends Controller
             'password.required' => 'Password wajib diisi.',
         ]);
 
-        $user = User::where('email', $credentials['email'])->first();
-
-        if (!$user) {
+        if (!Auth::attempt($credentials)) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Email tidak terdaftar'
+                'message' => 'Email atau password salah'
             ], 401);
         }
 
-        if (!Hash::check($credentials['password'], $user->password)) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Password salah'
-            ], 401);
-        }
-
-        if (Auth::attempt($credentials)) {
-            $request->session()->regenerate();
-
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Login berhasil',
-                'data' => [
-                    'user' => [
-                        'id' => Auth::id(),
-                        'nama_lengkap' => Auth::user()->nama_lengkap,
-                        'email' => Auth::user()->email,
-                        'tipe_user' => Auth::user()->tipe_user,
-                    ],
-                    'tipe_user' => Auth::user()->tipe_user,
-                ]
-            ]);
-        }
+        $request->session()->regenerate();
 
         return response()->json([
-            'status' => 'error',
-            'message' => 'Login gagal. Silakan coba lagi.'
-        ], 401);
+            'status' => 'success',
+            'message' => 'Login berhasil',
+            'data' => [
+                'user' => [
+                    'id' => Auth::id(),
+                    'nama_lengkap' => Auth::user()->nama_lengkap,
+                    'email' => Auth::user()->email,
+                    'tipe_user' => Auth::user()->tipe_user,
+                ],
+                'tipe_user' => Auth::user()->tipe_user,
+            ]
+        ]);
     }
 
     public function logout(Request $request)

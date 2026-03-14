@@ -38,15 +38,51 @@ export default function AdminLayout({
   children: React.ReactNode
 }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
-  const { app } = usePage<PageProps<{ app?: { vNetLink?: string | null } }>>().props
+
+  const page = usePage<PageProps<{ app?: { vNetLink?: string | null } }>>()
+  const { app } = page.props
   const vNetLink = app?.vNetLink ?? null
+
+  const currentUrl = page.url
+  const normalizePath = (path: string) =>
+    path.split("?")[0].replace(/\/+$/, "") || "/"
+  const currentPath = normalizePath(currentUrl)
+
+  const isActivePath = (
+    path: string,
+    options?: { exact?: boolean; aliases?: string[] }
+  ) => {
+    const exact = options?.exact ?? false
+    const aliases = options?.aliases ?? []
+    const candidates = [path, ...aliases]
+
+    return candidates.some((candidate) =>
+      exact
+        ? currentPath === candidate
+        : currentPath === candidate || currentPath.startsWith(`${candidate}/`)
+    )
+  }
+
+  const navButtonClass = (active: boolean) =>
+    `w-full justify-start gap-2 h-12 rounded-xl ${
+      active
+        ? "bg-red-100 text-red-700 hover:bg-red-100 dark:bg-red-900/40 dark:text-red-300"
+        : "hover:bg-red-50 dark:hover:bg-red-950"
+    }`
+
+  const navIconClass = (active: boolean) =>
+    active
+      ? "h-5 w-5 text-red-700 dark:text-red-300"
+      : "h-5 w-5 text-red-600 dark:text-red-500"
 
   return (
     <div className="flex min-h-screen">
       {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col overflow-y-auto border-r bg-white dark:bg-slate-950 shadow-sm transition-transform duration-300 lg:translate-x-0 ${
-        isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
-      }`}>
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col overflow-y-auto border-r bg-white dark:bg-slate-950 shadow-sm transition-transform duration-300 lg:translate-x-0 ${
+          isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+        }`}
+      >
         <div className="flex h-16 items-center justify-between border-b px-6 lg:hidden">
           <h2 className="text-lg font-semibold bg-gradient-to-r from-red-600 to-red-500 bg-clip-text text-transparent">
             Admin Portal
@@ -58,86 +94,116 @@ export default function AdminLayout({
             <X className="h-5 w-5" />
           </button>
         </div>
+
         <div className="p-6">
           <h2 className="text-lg font-semibold bg-gradient-to-r from-red-600 to-red-500 bg-clip-text text-transparent hidden lg:block">
             Admin Portal
           </h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 hidden lg:block">System management & control</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 hidden lg:block">
+            System management & control
+          </p>
         </div>
+
         <nav className="grid gap-1 px-2">
-          <Link href="/admin">
-            <Button
-              variant="ghost"
-              className="w-full justify-start gap-2 h-12 rounded-xl hover:bg-red-50 dark:hover:bg-red-950"
-            >
-              <LayoutDashboard className="h-5 w-5 text-red-600 dark:text-red-500" />
-              <span>Dashboard</span>
-            </Button>
-          </Link>
-          <Link href="/admin/users">
-            <Button
-              variant="ghost"
-              className="w-full justify-start gap-2 h-12 rounded-xl hover:bg-red-50 dark:hover:bg-red-950"
-            >
-              <Users className="h-5 w-5 text-red-600 dark:text-red-500" />
-              <span>User Management</span>
-            </Button>
-          </Link>
-          <Link href="/admin/courses">
-            <Button
-              variant="ghost"
-              className="w-full justify-start gap-2 h-12 rounded-xl hover:bg-red-50 dark:hover:bg-red-950"
-            >
-              <BookOpen className="h-5 w-5 text-red-600 dark:text-red-500" />
-              <span>Course Management</span>
-            </Button>
-          </Link>
-          <Link href="/admin/departments">
-            <Button
-              variant="ghost"
-              className="w-full justify-start gap-2 h-12 rounded-xl hover:bg-red-50 dark:hover:bg-red-950"
-            >
-              <Building2 className="h-5 w-5 text-red-600 dark:text-red-500" />
-              <span>Subject Management</span>
-            </Button>
-          </Link>
-          <Link href="/admin/analytics">
-            <Button
-              variant="ghost"
-              className="w-full justify-start gap-2 h-12 rounded-xl hover:bg-red-50 dark:hover:bg-red-950"
-            >
-              <LineChart className="h-5 w-5 text-red-600 dark:text-red-500" />
-              <span>Analytics & Reports</span>
-            </Button>
-          </Link>
-          <Link href="/admin/grades">
-            <Button
-              variant="ghost"
-              className="w-full justify-start gap-2 h-12 rounded-xl hover:bg-red-50 dark:hover:bg-red-950"
-            >
-              <Award className="h-5 w-5 text-red-600 dark:text-red-500" />
-              <span>Grades Management</span>
-            </Button>
-          </Link>
-          <Link href="/admin/student-monitoring">
-            <Button
-              variant="ghost"
-              className="w-full justify-start gap-2 h-12 rounded-xl hover:bg-red-50 dark:hover:bg-red-950"
-            >
-              <Monitor className="h-5 w-5 text-red-600 dark:text-red-500" />
-              <span>Student Monitoring</span>
-            </Button>
-          </Link>
-          <Link href="/admin/student-progress">
-            <Button
-              variant="ghost"
-              className="w-full justify-start gap-2 h-12 rounded-xl hover:bg-red-50 dark:hover:bg-red-950"
-            >
-              <ScrollText className="h-5 w-5 text-red-600 dark:text-red-500" />
-              <span>Student Progress</span>
-            </Button>
-          </Link>
+
+          {(() => {
+            const active = isActivePath("/admin", { exact: true })
+            return (
+              <Button asChild variant="ghost" className={navButtonClass(active)}>
+                <Link href="/admin">
+                  <LayoutDashboard className={navIconClass(active)} />
+                  <span>Dashboard</span>
+                </Link>
+              </Button>
+            )
+          })()}
+
+          {(() => {
+            const active = isActivePath("/admin/users")
+            return (
+              <Button asChild variant="ghost" className={navButtonClass(active)}>
+                <Link href="/admin/users">
+                  <Users className={navIconClass(active)} />
+                  <span>User Management</span>
+                </Link>
+              </Button>
+            )
+          })()}
+
+          {(() => {
+            const active = isActivePath("/admin/courses")
+            return (
+              <Button asChild variant="ghost" className={navButtonClass(active)}>
+                <Link href="/admin/courses">
+                  <BookOpen className={navIconClass(active)} />
+                  <span>Course Management</span>
+                </Link>
+              </Button>
+            )
+          })()}
+
+          {(() => {
+            const active = isActivePath("/admin/departments")
+            return (
+              <Button asChild variant="ghost" className={navButtonClass(active)}>
+                <Link href="/admin/departments">
+                  <Building2 className={navIconClass(active)} />
+                  <span>Subject Management</span>
+                </Link>
+              </Button>
+            )
+          })()}
+
+          {(() => {
+            const active = isActivePath("/admin/analytics")
+            return (
+              <Button asChild variant="ghost" className={navButtonClass(active)}>
+                <Link href="/admin/analytics">
+                  <LineChart className={navIconClass(active)} />
+                  <span>Analytics & Reports</span>
+                </Link>
+              </Button>
+            )
+          })()}
+
+          {(() => {
+            const active = isActivePath("/admin/grades")
+            return (
+              <Button asChild variant="ghost" className={navButtonClass(active)}>
+                <Link href="/admin/grades">
+                  <Award className={navIconClass(active)} />
+                  <span>Grades Management</span>
+                </Link>
+              </Button>
+            )
+          })()}
+
+          {(() => {
+            const active = isActivePath("/admin/student-monitoring")
+            return (
+              <Button asChild variant="ghost" className={navButtonClass(active)}>
+                <Link href="/admin/student-monitoring">
+                  <Monitor className={navIconClass(active)} />
+                  <span>Student Monitoring</span>
+                </Link>
+              </Button>
+            )
+          })()}
+
+          {(() => {
+            const active = isActivePath("/admin/student-progress")
+            return (
+              <Button asChild variant="ghost" className={navButtonClass(active)}>
+                <Link href="/admin/student-progress">
+                  <ScrollText className={navIconClass(active)} />
+                  <span>Student Progress</span>
+                </Link>
+              </Button>
+            )
+          })()}
+
         </nav>
+
         <div className="mt-auto p-2">
           <Dialog>
             <DialogTrigger asChild>
@@ -149,6 +215,7 @@ export default function AdminLayout({
                 <span>Login V-Net</span>
               </Button>
             </DialogTrigger>
+
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Login V-Net</DialogTitle>
@@ -156,12 +223,14 @@ export default function AdminLayout({
                   Anda akan diarahkan ke halaman login V-Net di tab baru.
                 </DialogDescription>
               </DialogHeader>
+
               <DialogFooter className="gap-2 sm:justify-end">
                 <DialogClose asChild>
                   <Button type="button" variant="secondary">
                     Tutup
                   </Button>
                 </DialogClose>
+
                 {vNetLink ? (
                   <Button type="button" asChild>
                     <a href={vNetLink} target="_blank" rel="noopener noreferrer">
@@ -179,7 +248,6 @@ export default function AdminLayout({
         </div>
       </aside>
 
-      {/* Mobile overlay */}
       {isSidebarOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/50 lg:hidden"
@@ -187,7 +255,6 @@ export default function AdminLayout({
         />
       )}
 
-      {/* Main content */}
       <div className="flex-1 lg:pl-64">
         <header className="sticky top-0 z-40 flex h-16 items-center border-b bg-white px-4 dark:border-slate-800 dark:bg-slate-950 lg:px-6">
           <button
@@ -196,15 +263,17 @@ export default function AdminLayout({
           >
             <Menu className="h-5 w-5" />
           </button>
+
           <Link href="/admin" className="flex items-center gap-2 font-semibold">
-            <BookOpen className="h-6 w-6 text-red-600 dark:text-red-500" />
+            <img src="/logotelesandi.png" alt="Logo" className="h-8 w-8 rounded-full" />
             <span className="text-lg font-bold bg-gradient-to-r from-red-600 to-red-500 bg-clip-text text-transparent">
               LMS Tels
             </span>
-            <span className="rounded-md bg-red-100 dark:bg-red-900 px-2 py-0.5 text-xs font-medium text-red-600 dark:text-red-400">
+            <span className="rounded-md bg-red-100 dark:bg-red-900 px-2 ml-2 py-0.5 text-xs font-medium text-red-600 dark:text-red-400">
               Admin
             </span>
           </Link>
+
           <div className="flex items-center gap-4 ml-auto">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -219,6 +288,7 @@ export default function AdminLayout({
                   <ChevronDown className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
+
               <DropdownMenuContent align="end" className="w-56 rounded-xl p-2">
                 <DropdownMenuItem asChild className="cursor-pointer rounded-lg">
                   <Link href="/admin/settings" className="flex w-full items-center gap-2">
@@ -226,6 +296,7 @@ export default function AdminLayout({
                     <span>Settings</span>
                   </Link>
                 </DropdownMenuItem>
+
                 <DropdownMenuItem asChild className="cursor-pointer rounded-lg">
                   <Link href={route("logout")} method="post" as="button" className="flex w-full items-center gap-2">
                     <LogOut className="h-4 w-4" />
@@ -236,6 +307,7 @@ export default function AdminLayout({
             </DropdownMenu>
           </div>
         </header>
+
         <main className="flex-1 overflow-auto bg-slate-50 dark:bg-slate-950 p-6">
           {children}
         </main>

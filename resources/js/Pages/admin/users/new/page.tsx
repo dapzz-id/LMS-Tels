@@ -7,7 +7,7 @@ import { Input } from "@/Components/ui/input"
 import { Label } from "@/Components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/Components/ui/select"
 import AdminPageLayout from "../../layout"
-import { Link, router } from "@inertiajs/react"
+import { Link, router, Head } from "@inertiajs/react"
 
 import type { Errors } from "@inertiajs/core"
 import { getFieldErrorMessage } from "@/lib/api-messages"
@@ -64,6 +64,7 @@ export default function NewUserPage() {
 
   return (
     <AdminPageLayout>
+      <Head title="Add New User" />
       <div className="space-y-6">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>

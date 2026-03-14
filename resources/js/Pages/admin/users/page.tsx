@@ -31,7 +31,7 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/Components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/Components/ui/select"
 import AdminPageLayout from "../layout"
-import { Link, router } from "@inertiajs/react"
+import { Link, router, Head } from "@inertiajs/react"
 import { Label } from "@/Components/ui/label"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/Components/ui/dialog"
 import { getFieldErrorMessage } from "@/lib/api-messages"
@@ -379,6 +379,7 @@ export default function UsersPage({ users = [] }: Props) {
 
   return (
     <AdminPageLayout>
+      <Head title="Users Management" />
       <div className="space-y-6">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
@@ -388,7 +389,7 @@ export default function UsersPage({ users = [] }: Props) {
             <p className="text-slate-500 dark:text-slate-400">Manage user accounts and permissions</p>
           </div>
           <Link href="/admin/users/new">
-            <Button className="bg-red-600 hover:bg-red-700">
+            <Button className="bg-red-600 hover:bg-red-700 text-white">
               <Plus className="w-4 h-4 mr-2" />
               Add User
             </Button>
@@ -463,7 +464,7 @@ export default function UsersPage({ users = [] }: Props) {
                   <p className="mt-1 text-xs text-gray-500">Supported formats: .xlsx, .xls, .csv (Max 10MB)</p>
                   {fileError && <p className="mt-1 text-sm text-red-500">{fileError}</p>}
                 </div>
-                <Button type="submit" className="bg-red-600 hover:bg-red-700" disabled={isImporting}>
+                <Button type="submit" className="bg-red-600 hover:bg-red-700 text-white" disabled={isImporting}>
                   {isImporting ? (
                     <>
                       <div className="w-4 h-4 mr-2 border-2 border-current rounded-full animate-spin border-t-transparent"></div>

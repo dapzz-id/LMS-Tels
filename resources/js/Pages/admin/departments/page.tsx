@@ -261,7 +261,7 @@ export default function DepartmentsPage({ departments }: Props) {
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-red-600 hover:bg-red-700">
+              <Button className="bg-red-600 hover:bg-red-700 text-white">
                 <Plus className="w-4 h-4 mr-2" />
                 Add Subject
               </Button>
