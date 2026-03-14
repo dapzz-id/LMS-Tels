@@ -211,12 +211,12 @@ const StudentCoursesPage = () => {
           >
             <Menu className="h-5 w-5" />
           </button>
-          <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
-            <BookOpen className="h-6 w-6 text-blue-600 dark:text-blue-500" />
-            <span className="text-lg font-bold bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">
+          <Link href="/" className="flex items-center gap-2 font-semibold">
+            <img src="/logotelesandi.png" alt="Logo" className="h-8 w-8 rounded-full" />
+            <span className="bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-lg font-bold text-transparent">
               LMS Tels
             </span>
-            <span className="rounded-md bg-blue-100 dark:bg-blue-900 px-2 py-0.5 text-xs font-medium text-blue-600 dark:text-blue-400">
+            <span className="rounded-md bg-blue-100 px-2 ml-1 py-0.5 text-xs font-medium text-blue-600 dark:bg-blue-900 dark:text-blue-400">
               Student
             </span>
           </Link>

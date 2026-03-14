@@ -296,28 +296,6 @@ export default function MainDashboard() {
                     )}
                   </CardContent>
                 </Card>
-
-                {/* <Card className="rounded-xl border-0 bg-white shadow-sm dark:bg-slate-900">
-                  <CardHeader>
-                    <CardTitle className="text-xl">Upcoming Deadlines</CardTitle>
-                    <CardDescription>Don't miss these important dates</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-3">
-                        <div className="flex flex-col items-center">
-                          <span className="text-sm font-medium text-slate-900 dark:text-slate-100">15</span>
-                          <span className="text-xs text-slate-500">Jun</span>
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-slate-900 dark:text-slate-100">Mathematics Quiz</p>
-                          <p className="text-xs text-slate-500 dark:text-slate-400">Due tomorrow</p>
-                        </div>
-                        <Badge variant="destructive" className="text-xs">Urgent</Badge>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card> */}
               </div>
             </div>
           </div>

@@ -1,14 +1,21 @@
-import { Head } from "@inertiajs/react";
+import { Head, Link, usePage } from "@inertiajs/react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/Components/ui/card";
 import { Button } from "@/Components/ui/button";
 import { Badge } from "@/Components/ui/badge";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
-import { Award, DownloadIcon, Calendar, Menu } from "lucide-react";
+import { Award, DownloadIcon, Calendar, Menu, ChevronDown, Settings, LogOut } from "lucide-react";
 import { router } from "@inertiajs/react";
 import { useState } from "react";
 import StudentSidebar from "@/Components/StudentSidebar";
 import ClientPagination from "@/Components/ui/client-pagination";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/Components/ui/dropdown-menu";
+import { Avatar, AvatarImage, AvatarFallback } from "@/Components/ui/avatar";
 
 interface Certificate {
   id: number;
@@ -25,6 +32,8 @@ export default function CertificatesPage({ certificates }: { certificates: Certi
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [perPage, setPerPage] = useState(6);
+  const { auth } = usePage().props as any
+  const user = auth.user
 
   const paginatedCertificates = certificates.slice(
     (currentPage - 1) * perPage,
@@ -52,7 +61,45 @@ export default function CertificatesPage({ certificates }: { certificates: Certi
             <Menu className="h-5 w-5" />
             <span className="sr-only">Toggle sidebar</span>
           </Button>
-          <h1 className="text-lg font-semibold text-gray-900 dark:text-white">My Certificates</h1>
+          <Link href="/" className="flex items-center gap-2 font-semibold">
+            <img src="/logotelesandi.png" alt="Logo" className="h-8 w-8 rounded-full" />
+            <span className="bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-lg font-bold text-transparent">
+              LMS Tels
+            </span>
+            <span className="rounded-md bg-blue-100 px-2 ml-1 py-0.5 text-xs font-medium text-blue-600 dark:bg-blue-900 dark:text-blue-400">
+              Student
+            </span>
+          </Link>
+          <div className="flex items-center gap-4 ml-auto">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="gap-2 rounded-full">
+                  <Avatar className="h-8 w-8 border-2 border-blue-100 dark:border-blue-800">
+                    <AvatarImage src="/placeholder.svg?height=32&width=32" alt="Student" />
+                    <AvatarFallback className="bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400">
+                      ST
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="hidden md:inline-flex font-medium">{user?.nama_lengkap || 'Student'}</span>
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 rounded-xl p-2">
+                <DropdownMenuItem asChild className="rounded-lg cursor-pointer">
+                  <Link href="/profile" className="flex w-full items-center gap-2">
+                    <Settings className="h-4 w-4" />
+                    <span>Profile</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild className="rounded-lg cursor-pointer">
+                  <Link href={route("logout")} method="post" as="button" className="flex w-full items-center gap-2">
+                    <LogOut className="h-4 w-4" />
+                    <span>Logout</span>
+                  </Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </header>
 
         <main className="flex-1 overflow-auto bg-slate-50 dark:bg-slate-950 p-6">
